@@ -1,7 +1,7 @@
 #ifndef LOAD_H
 #define LOAD_H
 
-#include "calculations.h"
+#include "storage.h"
 #include "error.h"
 
 #include <stdio.h>
@@ -14,11 +14,11 @@ typedef enum {
 } ParseState;
 
 
-base *load_bases(const char *filename, unsigned *out_count);
-target *load_targets(const char *filename, unsigned *out_count);
+Base *load_bases(const char *filename, unsigned *out_count);
+Target *load_targets(const char *filename, unsigned *out_count);
 int peek(FILE *file);
 
-typedef void (*RecordHandler)(const char *record);
-HRESULT scan(const char *filename, RecordHandler handler);
+typedef HRESULT (*RecordHandler)(const char *record, void *data);
+HRESULT scan(const char *filename, RecordHandler handler, void *list);
 
 #endif

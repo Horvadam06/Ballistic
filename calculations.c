@@ -1,4 +1,5 @@
 #include "calculations.h"
+#include "storage.h"
 #include "load.h"
 
 #define _USE_MATH_DEFINES
@@ -20,13 +21,13 @@ int CalculateDistance(coordinate coord1, coordinate coord2, double *distance)
     double b = (1.0 - f) * a;
 
     // convert degrees to radians
-    coord1.latitide = DegToRad(coord1.latitide);
-    coord2.latitide = DegToRad(coord2.latitide);
+    coord1.latitude = DegToRad(coord1.latitude);
+    coord2.latitude = DegToRad(coord2.latitude);
     coord1.longitude = DegToRad(coord1.longitude);
     coord2.longitude = DegToRad(coord2.longitude);
     
-    double U1 = atan((1.0 - f) * tan(coord1.latitide));
-    double U2 = atan((1.0 - f) * tan(coord2.latitide));
+    double U1 = atan((1.0 - f) * tan(coord1.latitude));
+    double U2 = atan((1.0 - f) * tan(coord2.latitude));
     double L = coord2.longitude - coord1.longitude;
 
     double lambda = L, prev_lambda;
@@ -88,16 +89,16 @@ int CalculateDistance(coordinate coord1, coordinate coord2, double *distance)
 
 int ListBases(){
         unsigned count = 0;
-        base *bases = load_bases("C:\\vscode\\ballistic\\bin\\bases.txt", &count);
+        Base *bases = load_bases("C:\\vscode\\ballistic\\bin\\bases.txt", &count);
         if (!bases) return -1;
 
         printf("Loaded %u points:\n", count);
         for (unsigned i = 0; i < count; i++) {
             printf("[%d] [%s] [%.5f', %.5f', %.5f]\n",
                 bases[i].id,
-                bases[i].name,
+                bases[i].label,
+                bases[i].position.latitude,
                 bases[i].position.longitude,
-                bases[i].position.latitide,
                 bases[i].position.altitude);
         }
 
@@ -108,16 +109,16 @@ int ListBases(){
 
 int ListTargets(){
         unsigned count = 0;
-        target *targets = load_targets("C:\\vscode\\ballistic\\bin\\targets.txt", &count);
+        Target *targets = load_targets("C:\\vscode\\ballistic\\bin\\targets.txt", &count);
         if (!targets) return -1;
 
         printf("Loaded %u points:\n", count);
         for (unsigned i = 0; i < count; i++) {
             printf("[%d] [%s] [%.5f', %.5f', %.5f] [%.2f m2]\n",
                 targets[i].id,
-                targets[i].name,
+                targets[i].label,
+                targets[i].position.latitude,
                 targets[i].position.longitude,
-                targets[i].position.latitide,
                 targets[i].position.altitude,
                 targets[i].area);
         }

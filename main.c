@@ -6,6 +6,7 @@
 #include "calculations.h"
 #include "load.h"
 #include "error.h"
+#include "storage.h"
 
 //=========================================
 // Created by.:
@@ -42,7 +43,18 @@ PROCESS Setup()
         CalculateDistance(start[i], end[i], &distance);
         printf("Raw distance: %f meters\n", distance);
     } */
-   scan("C:\\vscode\\ballistic\\bin\\structure.txt", NULL);
+
+    BaseList bases;
+    init_base_list(&bases);
+
+   scan("C:\\vscode\\ballistic\\bin\\bases.txt", handle_base, &bases);
+   printf("capacity: %d, items: %d\n", bases.capacity, bases.count);
+   for (int i = 0; i<bases.count; i++){
+    printf("%d %s\n", bases.items[i].id, bases.items[i].label);
+
+   }
+
+   free_base_list(&bases);
 
     return S_RUNNING;
 }
