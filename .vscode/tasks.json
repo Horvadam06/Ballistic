@@ -12,6 +12,7 @@
                 "${workspaceFolder}\\commands.c",
                 "${workspaceFolder}\\calculations.c",
                 "${workspaceFolder}\\load.c",
+                "${workspaceFolder}\\error.c",
                 "-I${workspaceFolder}",
                 "-o",
                 "${workspaceFolder}/bin/ballistic.exe"

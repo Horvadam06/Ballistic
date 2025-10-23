@@ -2,6 +2,7 @@
 #define LOAD_H
 
 #include "calculations.h"
+#include "error.h"
 
 #include <stdio.h>
 
@@ -16,6 +17,8 @@ typedef enum {
 base *load_bases(const char *filename, unsigned *out_count);
 target *load_targets(const char *filename, unsigned *out_count);
 int peek(FILE *file);
-int scan(const char *filename);
+
+typedef void (*RecordHandler)(const char *record);
+HRESULT scan(const char *filename, RecordHandler handler);
 
 #endif

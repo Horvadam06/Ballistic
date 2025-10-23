@@ -5,6 +5,7 @@
 #include "commands.h"
 #include "calculations.h"
 #include "load.h"
+#include "error.h"
 
 //=========================================
 // Created by.:
@@ -12,7 +13,7 @@
 // Finishing date:
 //=========================================
 
-int Setup()
+PROCESS Setup()
 {
     printf("\n");
     printf("==================================\n");
@@ -41,20 +42,20 @@ int Setup()
         CalculateDistance(start[i], end[i], &distance);
         printf("Raw distance: %f meters\n", distance);
     } */
-   scan("C:\\vscode\\ballistic\\bin\\structure.txt");
+   scan("C:\\vscode\\ballistic\\bin\\structure.txt", NULL);
 
-    return 1;
+    return S_RUNNING;
 }
 
 int main(void)
 {
-    int running = Setup();
-    while (running)
+    PROCESS state = Setup();
+    while (state == S_RUNNING)
     {
         printf("> ");
-        GetCommand(&running);
-    }
-    if (running == 0) printf("Program exited succesfully!\n");
-    else printf("Program terminated with -1!\n");
+        GetCommand(&state);
+    }    
+    if (state == S_END) printf("Program exited succesfully!\n");
+    else if (state == S_TERMINATE) printf("Program terminated!\n");
     return 0;
 }

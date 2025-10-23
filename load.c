@@ -1,5 +1,6 @@
 #include "load.h"
 #include "calculations.h"
+#include "error.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -123,18 +124,20 @@ target *load_targets(const char *filename, unsigned *out_count)
     return targets;
 }
 
-int scan(const char *filename)
+HRESULT scan(const char *filename, RecordHandler handler)
 {
     FILE *file = fopen(filename, "r"); // "r" open file in read only mode
     if (!file)
     {
-        perror("Failed to open file");
-        return 0;
+        printf("Failed to open [%s]!\n", filename);
+        return S_FALSE;
     }
+
     int c;
     ParseState state;
     char buffer[256];
     int index = 0;
+    HRESULT hr; // handle to a result
 
     while ((c = fgetc(file)) != EOF)
     {
@@ -165,8 +168,12 @@ int scan(const char *filename)
 
         case LINE_COMMENT:
             printf("[Line comment]: ");
-            while ((c = fgetc(file)) != EOF && c != '\n')
+            while ((c = fgetc(file)) != EOF)
+            {
                 putchar(c);
+                if (c == '\n')
+                    break;
+            }
             state = NORMAL;
             break;
 
@@ -187,20 +194,25 @@ int scan(const char *filename)
             {
                 // terminate buffer
                 buffer[index] = '\0';
-                // parse_record(buffer);
+                if (handler)
+                    handler(buffer);        // pass the buffer to the function
+                else
+                {
+                    printf("No input handler!\n");
+                    hr = S_FALSE;
+                } 
                 index = 0;
                 state = NORMAL;
             }
             else if (index < sizeof(buffer) - 1)
-            {
                 buffer[index++] = (char)c;
-            }
+
             break;
         }
     }
 
-    fclose(file);
-    return 1;
+    hr = (SUCCEEDED(hr) && fclose(file) == EOF) ? S_OK : E_FAIL;
+    return hr;
 }
 
 int peek(FILE *file)

@@ -1,4 +1,5 @@
 #include "commands.h"
+#include "error.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,18 +20,18 @@ int command_count = sizeof(commands) / sizeof(commands[0]);
 
 //================================================
 
-void cmd_exit(const char *args, int *running)
+void cmd_exit(const char *args, PROCESS *running)
 {
     printf("Exiting...\n");
     if (running)
-        *running = 0;
+        *running = S_END;
     else
     {
         printf("Running pointer error\n");
     }
 }
 
-void cmd_help(const char *args, int *running)
+void cmd_help(const char *args, PROCESS *running)
 {
     for (int i = 0; i < command_count; i++)
     {
@@ -40,19 +41,19 @@ void cmd_help(const char *args, int *running)
     }
 }
 
-void cmd_target(const char *args, int *running)
+void cmd_target(const char *args, PROCESS *running)
 {
     *running = ListTargets();
 }
 
-void cmd_base(const char *args, int *running)
+void cmd_base(const char *args, PROCESS *running)
 {
     *running = ListBases();
 }
 
 //================================================
 
-void GetCommand(int *running)
+void GetCommand(PROCESS *running)
 {
     char input[128];
 
