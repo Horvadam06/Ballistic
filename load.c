@@ -129,7 +129,7 @@ HRESULT scan(const char *filename, RecordHandler handler, void *data)
     FILE *file = fopen(filename, "r"); // "r" open file in read only mode
     if (!file)
     {
-        printf("Failed to open [%s]!\n", filename);
+        printf("Failed to open or locate [%s] in the working directory!\n", filename);
         return S_FALSE;
     }
 
