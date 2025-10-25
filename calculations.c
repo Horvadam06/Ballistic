@@ -95,11 +95,11 @@ int ListBases(){
         printf("Loaded %u points:\n", count);
         for (unsigned i = 0; i < count; i++) {
             printf("[%d] [%s] [%.5f', %.5f', %.5f]\n",
-                bases[i].id,
-                bases[i].label,
-                bases[i].position.latitude,
-                bases[i].position.longitude,
-                bases[i].position.altitude);
+                bases[i].info.id,
+                bases[i].info.label,
+                bases[i].info.position.latitude,
+                bases[i].info.position.longitude,
+                bases[i].info.position.altitude);
         }
 
         free(bases);
@@ -115,11 +115,11 @@ int ListTargets(){
         printf("Loaded %u points:\n", count);
         for (unsigned i = 0; i < count; i++) {
             printf("[%d] [%s] [%.5f', %.5f', %.5f] [%.2f m2]\n",
-                targets[i].id,
-                targets[i].label,
-                targets[i].position.latitude,
-                targets[i].position.longitude,
-                targets[i].position.altitude,
+                targets[i].info.id,
+                targets[i].info.label,
+                targets[i].info.position.latitude,
+                targets[i].info.position.longitude,
+                targets[i].info.position.altitude,
                 targets[i].area);
         }
 

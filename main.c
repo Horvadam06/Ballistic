@@ -47,7 +47,7 @@ PROCESS Setup()
     printf("capacity: %d, items: %d\n", bases.capacity, bases.count);
     for (int i = 0; i < bases.count; i++)
     {
-        printf("%d %s\n", bases.items[i].id, bases.items[i].label);
+        printf("%d %s\n", bases.items[i].info.id, bases.items[i].info.label);
     }
 
     free_base_list(&bases);

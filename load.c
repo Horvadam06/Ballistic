@@ -32,7 +32,7 @@ Base *load_bases(const char *filename, unsigned *out_count)
     {
         Base temp;
         int read = fscanf(file, "%d %63s %lf %lf %lf", // limits the input string length to 63 characters
-                          &temp.id, &temp.label, &temp.position.latitude, &temp.position.longitude, &temp.position.altitude);
+                          &temp.info.id, &temp.info.label, &temp.info.position.latitude, &temp.info.position.longitude, &temp.info.position.altitude);
         if (read == 5)
         {
             if (count >= capacity)
@@ -88,8 +88,8 @@ Target *load_targets(const char *filename, unsigned *out_count)
     {
         Target temp;
         int read = fscanf(file, "%d %63s %lf %lf %lf %lf", // limits the input string length to 63 characters
-                          &temp.id, &temp.label,
-                          &temp.position.latitude, &temp.position.longitude, &temp.position.altitude,
+                          &temp.info.id, &temp.info.label,
+                          &temp.info.position.latitude, &temp.info.position.longitude, &temp.info.position.altitude,
                           &temp.area);
         if (read == 6)
         {
@@ -202,12 +202,15 @@ HRESULT scan(const char *filename, RecordHandler handler, void *data)
                     printf("No input handler!\n");
                     hr = S_FALSE;
                 }
+                if (hr == S_PARTIAL)
+                    printf("Warning! Partial parameter in the file [%s] : \n [%s]\n", filename, buffer);
                 index = 0;
                 state = NORMAL;
             }
             else if (index < sizeof(buffer) - 1)
                 buffer[index++] = (char)c;
-            else {
+            else
+            {
                 printf("[Error] buffer overflow!'");
                 hr = S_FALSE;
             }
