@@ -139,7 +139,7 @@ HRESULT scan(const char *filename, RecordHandler handler, void *data)
     int index = 0;
     HRESULT hr = S_OK; // handle to a result
 
-    while ((c = fgetc(file)) != EOF && hr == S_OK)
+    while ((c = fgetc(file)) != EOF && SUCCEEDED(hr))
     {
         switch (state)
         {
@@ -195,15 +195,22 @@ HRESULT scan(const char *filename, RecordHandler handler, void *data)
             {
                 // terminate buffer
                 buffer[index] = '\0';
+                int error_flags[5] = {0};
                 if (handler && data)
-                    hr = handler(buffer, data); // pass the buffer and the user input address to the function
+                    hr = handler(buffer, data, error_flags); // pass the buffer and the user input address to the function
+
                 else
                 {
                     printf("No input handler!\n");
                     hr = S_FALSE;
                 }
+
                 if (hr == S_PARTIAL)
-                    printf("Warning! Partial parameter in the file [%s] : \n [%s]\n", filename, buffer);
+                {
+                    char error[128] = {0};
+                    if (format_def_error(error, error_flags) == S_FALSE) printf("[Error] : Error buffer overflow!\n");
+                    printf("[Warning] : Missing parameter in the file [%s] : \nat the line [%s] : \n suggested parameters to add [%s]\n", filename, buffer, error);
+                }
                 index = 0;
                 state = NORMAL;
             }
@@ -211,7 +218,7 @@ HRESULT scan(const char *filename, RecordHandler handler, void *data)
                 buffer[index++] = (char)c;
             else
             {
-                printf("[Error] buffer overflow!'");
+                printf("[Error] buffer overflow!");
                 hr = S_FALSE;
             }
 
@@ -219,7 +226,7 @@ HRESULT scan(const char *filename, RecordHandler handler, void *data)
         }
     }
 
-    if (fclose(file) != EOF)
+    if (fclose(file) == EOF)
         hr = E_FAIL;
     return hr;
 }
@@ -230,4 +237,63 @@ int peek(FILE *file)
     if (c != EOF)
         ungetc(c, file); // put it back
     return c;
+}
+
+HRESULT format_def_error(char *error_buffer, int *error_flags)
+{
+    int er_cnt = -1;
+
+    for (int i = 0; i < 5; i++)
+    {
+        if (error_flags[i] != 1)
+        {
+            er_cnt++;
+            switch (i)
+            {
+            case F_ID:
+            {
+                const char *id = "I";
+                if (er_cnt > 0)
+                    id = ", I";
+                strncat(error_buffer, id, sizeof(error_buffer) - strlen(error_buffer) - 1);
+                continue;
+            }
+            case F_LABEL:
+            {
+                const char *id = "L";
+                if (er_cnt > 0)
+                    id = ", L";
+                strncat(error_buffer, id, sizeof(error_buffer) - strlen(error_buffer) - 1);
+                continue;
+            }
+            case F_LATITUDE:
+            {
+                const char *id = "CLA";
+                if (er_cnt > 0)
+                    id = ", CLA";
+                strncat(error_buffer, id, sizeof(error_buffer) - strlen(error_buffer) - 1);
+                continue;
+            }
+            case F_LONGITUDE:
+            {
+                const char *id = "CLO";
+                if (er_cnt > 0)
+                    id = ", CLO";
+                strncat(error_buffer, id, sizeof(error_buffer) - strlen(error_buffer) - 1);
+                continue;
+            }
+            case F_ALTITUDE:
+            {
+                const char *id = "CA";
+                if (er_cnt > 0)
+                    id = ", CA";
+                strncat(error_buffer, id, sizeof(error_buffer) - strlen(error_buffer) - 1);
+                continue;
+            }
+            }
+        return S_FALSE;
+        }
+    }
+    strncat(error_buffer, "\0", sizeof(error_buffer) - strlen(error_buffer));
+    return S_OK;
 }

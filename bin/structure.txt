@@ -4,4 +4,4 @@ this is a comment too
 I0 LF_unit CLA40.00 CLO20.0 CA0.00;
 */
 
-I0 LSchonherz CA0.00 test CLA40.00 CLO20.0;
+I0 LSchonherz CA0.00 test ;

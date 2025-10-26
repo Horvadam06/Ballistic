@@ -43,7 +43,8 @@ PROCESS Setup()
     BaseList bases;
     init_base_list(&bases);
 
-    scan("C:\\vscode\\ballistic\\bin\\structure.txt", handle_base, &bases);
+    HRESULT hr = S_OK;
+    hr = scan("C:\\vscode\\ballistic\\bin\\structure.txt", handle_base, &bases);
     printf("capacity: %d, items: %d\n", bases.capacity, bases.count);
     for (int i = 0; i < bases.count; i++)
     {
@@ -52,7 +53,7 @@ PROCESS Setup()
 
     free_base_list(&bases);
 
-    return S_RUNNING;
+    return hr;
 }
 
 int main(void)
