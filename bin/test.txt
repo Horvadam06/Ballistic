@@ -1,0 +1,8 @@
+//------------Input test--------------
+//this is a comment
+/*
+this is a comment too
+I0 LTeSt_DaTa CLA40.05 CLO20.0 CA0-5.023044;
+*/
+I0 LTeSt_DaTa0 CLA40.05 CLO20.0 CA0-5.023044;
+CLO20.0 CA0-5.023044          I1 CLA40.05      LTeSt_DaTa1;

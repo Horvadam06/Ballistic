@@ -1,5 +1,6 @@
 #include "commands.h"
 #include "error.h"
+#include "debug.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +11,7 @@
 Command commands[] = {
     {"bases", CMD_BASE, cmd_base, "List bases"},
     {"targets", CMD_TARGET, cmd_target, "List targets"},
+    {"test", CMD_TEST, cmd_test, "Do a manual self-test"},
     {"exit", CMD_EXIT, cmd_exit, "Exit program"},
     {"help", CMD_HELP, cmd_help, "Show commands"},
     // non list commands
@@ -49,6 +51,11 @@ void cmd_target(const char *args, PROCESS *running)
 void cmd_base(const char *args, PROCESS *running)
 {
     *running = ListBases();
+}
+
+void cmd_test(const char *args, PROCESS *running)
+{
+    run_pre_test();
 }
 
 //================================================

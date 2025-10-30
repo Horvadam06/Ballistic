@@ -1,5 +1,6 @@
 #include "storage.h"
 #include "commands.h"
+#include "load.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -88,6 +89,7 @@ HRESULT ext_basic_info(const char *record, Default *info, int *error_flags)
     for (int i = 0; record[i] != '\0' && i < length; i++)
     {
         char c = record[i];
+        char next_c = (record[i+1]) ? record[i+1] : '\0';
         char *end;
         switch (flag)
         {
@@ -117,7 +119,7 @@ HRESULT ext_basic_info(const char *record, Default *info, int *error_flags)
         }
         case T_ID:
         {
-            if (isspace(c) || c == '\n')
+            if (isspace(c) || c == '\n' || c == '\0')
             {
                 flag = T_WHITESPACE;
                 break;
@@ -128,10 +130,10 @@ HRESULT ext_basic_info(const char *record, Default *info, int *error_flags)
         }
         case T_LABEL:
         {
-            if (isspace(c) || c == '\n')
+            if (isspace(c) || c == '\n' || next_c == '\0')
             {
                 flag = T_WHITESPACE;
-                int len = i - label_start;
+                int len = (next_c == '\0') ? i - label_start + 1 : i - label_start;     //if the loop exit's with \0, there is going to be a missing charcter, so it's needed for compensation
                 if (len >= sizeof(info->label))
                     len = sizeof(info->label) - 1;
                 if (len > 0)
@@ -147,7 +149,7 @@ HRESULT ext_basic_info(const char *record, Default *info, int *error_flags)
         }
         case T_DATA:
         {
-            if (isspace(c) || c == '\n')
+            if (isspace(c) || c == '\n' || c == '\0')
             {
                 flag = T_WHITESPACE;
                 break;

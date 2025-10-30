@@ -1,1 +1,21 @@
+/*
+=====================================================
+use the following structure for data:
+--------The defaults---------------------------------
+	[I] : 	the id of the location, could be the
+		same for every object, but it's not suggested
+	[L] : 	the label of the location, could be the
+		same for every object, but it's not suggested
+	[CLA] :	the latitude of the location
+	[CLO] : the longitude of the location
+	[CA]  :	the altitude of the location
+
+--------The parameters-------------------------------
+
+=====================================================
+The order of data doesn't matter, neither does that
+the id's are lower or upper-case charcter's
+=====================================================
+*/
+
 0 Corvin 47.4729283 19.0531429 0.0 23456.0

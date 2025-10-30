@@ -124,7 +124,7 @@ Target *load_targets(const char *filename, unsigned *out_count)
     return targets;
 }
 
-HRESULT scan(const char *filename, RecordHandler handler, void *data)
+HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS mode)
 {
     FILE *file = fopen(filename, "r"); // "r" open file in read only mode
     if (!file)
@@ -168,10 +168,12 @@ HRESULT scan(const char *filename, RecordHandler handler, void *data)
             break;
 
         case LINE_COMMENT:
-            printf("[Line comment]: ");
+            if (mode == S_DEBUG)
+                printf("[Line comment] : \n");
             while ((c = fgetc(file)) != EOF)
             {
-                putchar(c);
+                if (mode == S_DEBUG)
+                    putchar(c);
                 if (c == '\n')
                     break;
             }
@@ -179,11 +181,12 @@ HRESULT scan(const char *filename, RecordHandler handler, void *data)
             break;
 
         case BLOCK_COMMENT:
-            printf("[Block comment]: ");
+            if (mode == S_DEBUG)
+                printf("[Block comment] : \n");
             while ((c = fgetc(file)) != EOF)
                 if (c == '*' && peek(file) == '/')
                     break;
-                else
+                else if (mode == S_DEBUG)
                     putchar(c);
 
             fgetc(file);
@@ -208,14 +211,19 @@ HRESULT scan(const char *filename, RecordHandler handler, void *data)
                 if (hr == S_PARTIAL)
                 {
                     char error[128] = {0};
-                    if (format_def_error(error, error_flags) == S_FALSE) printf("[Error] : Error buffer overflow!\n");
+                    if (format_basic_error_string(error, error_flags) == S_FALSE)
+                        printf("[Error] : Error buffer overflow!\n");
                     printf("[Warning] : Missing parameter in the file [%s] : \nat the line [%s] : \n suggested parameters to add [%s]\n", filename, buffer, error);
                 }
                 index = 0;
                 state = NORMAL;
             }
-            else if (index < sizeof(buffer) - 1)
+            else if (index < sizeof(buffer) - 1) // update the buffer loader to not store useless spaces, only store 1
+            {
+                if (isspace(c))
+                    state = NORMAL;
                 buffer[index++] = (char)c;
+            }
             else
             {
                 printf("[Error] buffer overflow!");
@@ -239,7 +247,7 @@ int peek(FILE *file)
     return c;
 }
 
-HRESULT format_def_error(char *error_buffer, int *error_flags)
+HRESULT format_basic_error_string(char *error_buffer, int *error_flags)
 {
     int er_cnt = -1;
 
@@ -291,7 +299,7 @@ HRESULT format_def_error(char *error_buffer, int *error_flags)
                 continue;
             }
             }
-        return S_FALSE;
+            return S_FALSE;
         }
     }
     strncat(error_buffer, "\0", sizeof(error_buffer) - strlen(error_buffer));

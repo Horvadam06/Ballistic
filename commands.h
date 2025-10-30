@@ -14,6 +14,7 @@ typedef enum
     CMD_RESET,
     CMD_TARGET,
     CMD_BASE,
+    CMD_TEST,
 } CommandType;
 
 typedef struct
@@ -35,6 +36,7 @@ void cmd_exit(const char *args, PROCESS *running);
 void cmd_help(const char *args, PROCESS *running);
 void cmd_base(const char *args, PROCESS *running);
 void cmd_target(const char *args, PROCESS *running);
+void cmd_test(const char *args, PROCESS *running);
 
 //=====================================================
 

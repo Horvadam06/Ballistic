@@ -11,7 +11,8 @@ typedef enum{
 typedef enum{
     S_RUNNING,
     S_END,
-    S_TERMINATE
+    S_TERMINATE,
+    S_DEBUG
 } PROCESS;
 
 int SUCCEEDED(HRESULT hr);

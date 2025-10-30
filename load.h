@@ -19,7 +19,7 @@ Target *load_targets(const char *filename, unsigned *out_count);
 int peek(FILE *file);
 
 typedef HRESULT (*RecordHandler)(const char *record, void *data, int *error_flags);
-HRESULT scan(const char *filename, RecordHandler handler, void *list);
-HRESULT format_def_error(char *error_buffer, int *error_flags);
+HRESULT scan(const char *filename, RecordHandler handler, void *list, PROCESS mode);
+HRESULT format_basic_error_string(char *error_buffer, int *error_flags);
 
 #endif
