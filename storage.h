@@ -13,6 +13,13 @@ typedef struct
 
 typedef struct
 {
+    double weight;
+    double diameter;
+    double blastRadius;
+} ammunition;
+
+typedef struct
+{
     Default info;
     ammunition stock[];
 } Base;

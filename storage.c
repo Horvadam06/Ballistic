@@ -16,10 +16,12 @@ void init_base_list(BaseList *list)
 
 void free_base_list(BaseList *list)
 {
+    if (!list) return;
     free(list->items);
     list->items = NULL;
     list->count = 0;
     list->capacity = 0;
+    printf("Memory cleared succesfully!\n");
 }
 
 HRESULT add_base(BaseList *list, Base new_item, HRESULT hr)
@@ -55,6 +57,7 @@ HRESULT handle_base(const char *record, void *data, int *error_flags)
 
     return add_base(list, new_base, hr);
 }
+
 
 HRESULT norm_strncmp(const char *record, const char *str2, int charc)
 {

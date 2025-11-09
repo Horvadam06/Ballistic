@@ -6,13 +6,18 @@
 
 #include <stdio.h>
 
-typedef enum {
-    NORMAL,          // reading data
-    LINE_COMMENT,    // inside //
-    BLOCK_COMMENT,   // inside /* ... */
-    RECORD           // collecting record text until ';'
+typedef enum
+{
+    NORMAL,        // reading data
+    LINE_COMMENT,  // inside //
+    BLOCK_COMMENT, // inside /* ... */
+    RECORD         // collecting record text until ';'
 } ParseState;
 
+extern char *folder_path;
+
+void set_folder_path(const char *new_path);
+void free_folder_path(void);
 
 Base *load_bases(const char *filename, unsigned *out_count);
 Target *load_targets(const char *filename, unsigned *out_count);

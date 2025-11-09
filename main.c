@@ -16,6 +16,9 @@
 
 PROCESS Setup()
 {
+    if (!SUCCEEDED(first_run_test("config.txt")))
+        return S_TERMINATE;
+
     if (!SUCCEEDED(run_pre_test()))
         return S_TERMINATE;
 
@@ -30,17 +33,23 @@ PROCESS Setup()
     return S_RUNNING;
 }
 
+void CleanUp()
+{
+    free_folder_path();
+}
+
 int main(void)
 {
     PROCESS state = Setup();
     while (state == S_RUNNING)
     {
-        printf("> ");
-        GetCommand(&state);
+        GetCommand(CMD_C_LOAD | CMD_C_SYSTEM, &state);
     }
     if (state == S_END)
         printf("Program exited succesfully!\n");
     else if (state == S_TERMINATE)
         printf("Program terminated!\n");
+
+    CleanUp();
     return 0;
 }

@@ -10,6 +10,31 @@
 // rewrite the loading to scan per charcter till ;, store the input, and format it, and search for identifing charcters I, N, C, A (area)
 // add comment support, for easier readability
 
+char *folder_path = NULL;
+
+void set_folder_path(const char *new_path)
+{
+    if (!new_path) return;
+
+    // Free old memory if already allocated
+    free(folder_path);
+
+    // Allocate new memory for the new path
+    folder_path = malloc(strlen(new_path) + 1);
+    if (!folder_path) {
+        fprintf(stderr, "Memory allocation failed for folder_path\n");
+        return;
+    }
+
+    strcpy(folder_path, new_path);
+}
+
+void free_folder_path(void)
+{
+    free(folder_path);
+    folder_path = NULL;
+}
+
 Base *load_bases(const char *filename, unsigned *out_count)
 {
     FILE *file = fopen(filename, "r"); // "r" open file in read only mode

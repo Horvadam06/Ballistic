@@ -3,13 +3,6 @@
 
 typedef struct
 {
-    double weight;
-    double diameter;
-    double blastRadius;
-} ammunition;
-
-typedef struct
-{
     double latitude;  // latitide or phi
     double longitude; // longitude
     double altitude;  // distance from sea level
