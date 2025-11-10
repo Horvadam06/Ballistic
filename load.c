@@ -1,6 +1,7 @@
 #include "load.h"
 #include "calculations.h"
 #include "error.h"
+#include "commands.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,14 +15,16 @@ char *folder_path = NULL;
 
 void set_folder_path(const char *new_path)
 {
-    if (!new_path) return;
+    if (!new_path)
+        return;
 
     // Free old memory if already allocated
     free(folder_path);
 
     // Allocate new memory for the new path
     folder_path = malloc(strlen(new_path) + 1);
-    if (!folder_path) {
+    if (!folder_path)
+    {
         fprintf(stderr, "Memory allocation failed for folder_path\n");
         return;
     }
@@ -329,4 +332,141 @@ HRESULT format_basic_error_string(char *error_buffer, int *error_flags)
     }
     strncat(error_buffer, "\0", sizeof(error_buffer) - strlen(error_buffer));
     return S_OK;
+}
+
+HRESULT first_run_test(const char *config_file) // check if it's the first time, that the program is being ran, or if there is any missing info
+{
+    HRESULT hr = S_OK;
+    FILE *configfile = fopen(config_file, "r"); // "r" open file in read only mode
+    if (!configfile)
+    {
+        printf("Failed to open or locate [%s] in the working directory!\n", config_file);
+        printf("Do you want to create a new one?\n");
+
+        switch (GetCommand(CMD_C_LOOP | CMD_C_YESNO, NULL))
+        {
+        case CMD_YES:
+        {
+            char temp[1024]; // temporary buffer for user input
+            printf("Enter a folder path:\n");
+            /*
+            after reading the length of the data, for example 10 bytes, it leaves the rest there,
+            which cause the next command read to read in a false value
+            if (scanf("%1023s", temp) == 1) // read at most 1023 chars, prevent overflow
+                set_folder_path(temp);      // pass directly to your dynamic setter
+            */
+            if (fgets(temp, sizeof(temp), stdin))
+            {
+                /*char *pos = strchr(temp, '\n'); // find the first newline
+                if (pos)                        // overwrite starting at '\n'
+                    strcpy(pos, config_file);   // used instead of cat, beacause I want to copy the string to a specific
+                                                // location instead of at the end of a string
+                else
+                    strcat(temp, config_file);*/
+
+                temp[strcspn(temp, "\n")] = '\0'; // remove trailing newline
+
+                ensure_trailing_backslash(temp, sizeof(temp));
+                Normalize_path(temp, sizeof(temp));
+
+                set_folder_path(temp);
+            }
+
+            configfile = fopen(config_file, "w"); // create a new config file
+            if (!config_file)
+                return S_FALSE;
+
+            printf("Enter the colour mode:\n");
+
+            switch (GetCommand(CMD_C_LOOP | CMD_C_SETUP, NULL))
+            {
+            case CMD_COLOUR:
+                strcpy(temp, "colour");
+                break;
+            case CMD_MONO:
+                strcpy(temp, "monochrome");
+                break;
+            }
+
+            fprintf(configfile, "=====================================================\n");
+            fprintf(configfile, "--------Parameters-------------------------------\n");
+            fprintf(configfile, "working directory []\n");
+            fprintf(configfile, "color mode []\n");
+            fprintf(configfile, "=====================================================\n");
+            fprintf(configfile, "-the id gets normalized\n");
+            fprintf(configfile, "-end every line with ;\n");
+            fprintf(configfile, "=====================================================\n");
+            fprintf(configfile, "\n");
+            fprintf(configfile, "DIR [%s];\n", folder_path);
+            fprintf(configfile, "COLOURM [%s];\n", temp);
+
+            fclose(configfile);
+            break;
+        }
+        case CMD_NO:
+        {
+            hr = E_FAIL;
+            break;
+        }
+        }
+        return hr;
+    }
+
+    configfile = fopen(config_file, "r");
+    if (!configfile)
+    {
+        printf("Failed to open or locate [%s] in the working directory!\n", config_file);
+        return S_FALSE;
+    }
+
+    if (fclose(configfile) == EOF)
+        hr = E_FAIL;
+    return hr;
+}
+
+void ensure_trailing_backslash(char *str, size_t size)
+{
+    size_t len = strlen(str);
+
+    // Check bounds and avoid overflow
+    if (len + 1 >= size)
+        return;
+
+    if (len == 0 || str[len - 1] != '\\')
+    {
+        str[len] = '\\';     // place backslash before null terminator
+        str[len + 1] = '\0'; // new null terminator
+    }
+}
+
+void Normalize_path(char *path, size_t size)
+{
+    if (!path || size == 0)
+        return;
+
+    char *buffer = malloc(size);
+    if (!buffer)
+        return;
+
+    size_t j = 0;
+    for (size_t i = 0; path[i] != '\0' && j + 2 < size; i++)
+    {
+        if (path[i] == '/')
+            buffer[j++] = '\\';
+        else if (path[i] == (char)92)
+        {
+            if (path[i + 1] != (char)92)
+                buffer[j++] = '\\';
+            /*if (path[i + 1] != '\\' && j + 1 < size)
+                buffer[j++] = '\\';*/
+        }
+        else
+            buffer[j++] = path[i];
+    }
+
+    buffer[j] = '\0';
+    strncpy(path, buffer, size - 1);
+    path[size - 1] = '\0';
+
+    free(buffer);
 }
