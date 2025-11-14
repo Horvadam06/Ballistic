@@ -334,7 +334,7 @@ HRESULT format_basic_error_string(char *error_buffer, int *error_flags)
     return S_OK;
 }
 
-HRESULT first_run_test(const char *config_file) // check if it's the first time, that the program is being ran, or if there is any missing info
+HRESULT run_test_config(const char *config_file) // check if it's the first time, that the program is being ran, or if there is any missing info
 {
     HRESULT hr = S_OK;
     FILE *configfile = fopen(config_file, "r"); // "r" open file in read only mode

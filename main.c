@@ -16,7 +16,9 @@
 
 PROCESS Setup()
 {
-    if (!SUCCEEDED(first_run_test("config.txt")))
+    if (SUCCEEDED(run_test_config("config.txt")))
+        printf("Config loaded succesfully!\n");
+    else
         return S_TERMINATE;
 
     if (!SUCCEEDED(run_pre_test()))

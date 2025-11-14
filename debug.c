@@ -22,7 +22,7 @@ HRESULT run_pre_test()
     }
     free_base_list(&bases);
 
-    printf(ANSI_COLOR_RED "This text is RED!" ANSI_COLOR_RESET "\n");
+    print_colored(ANSI_COLOR_RED, "This text should be RED!\n");
 
     printf("----------------------------------\n");
     if (hr == S_OK)

@@ -1,12 +1,14 @@
 #include "commands.h"
 #include "error.h"
 #include "debug.h"
+#include "calculations.h"
+#include "color.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "calculations.h"
+
 
 Command commands[] = {
     {"bases", CMD_BASE, cmd_base, "List bases", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_LOAD},
@@ -63,12 +65,12 @@ void cmd_test(const char *args, Command_case case_flags, PROCESS *running)
 
 void cmd_colour(const char *args, Command_case case_flags, PROCESS *running)
 {
-    printf("Colour mode set to asdasdsadd\n");
+    set_color_mode(CMD_COLOUR);
 }
 
 void cmd_mono(const char *args, Command_case case_flags, PROCESS *running)
 {
-    printf("Colour mode set to idgaf\n");
+    set_color_mode(CM_MONO);
 }
 
 //================================================
