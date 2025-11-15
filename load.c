@@ -7,9 +7,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <color.h>
 
-// rewrite the loading to scan per charcter till ;, store the input, and format it, and search for identifing charcters I, N, C, A (area)
-// add comment support, for easier readability
+// seperate config from loading, beacuse it's messy asf
 
 char *folder_path = NULL;
 
@@ -162,7 +162,7 @@ HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS mo
     }
 
     int c;
-    ParseState state;
+    ParseState state = NORMAL;
     char buffer[256];
     int index = 0;
     HRESULT hr = S_OK; // handle to a result
@@ -172,6 +172,7 @@ HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS mo
         switch (state)
         {
         case NORMAL:
+        {
             if (c == '/')
             {
                 int value = peek(file);
@@ -194,8 +195,9 @@ HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS mo
             }
 
             break;
-
+        }
         case LINE_COMMENT:
+        {
             if (mode == S_DEBUG)
                 printf("[Line comment] : \n");
             while ((c = fgetc(file)) != EOF)
@@ -207,8 +209,9 @@ HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS mo
             }
             state = NORMAL;
             break;
-
+        }
         case BLOCK_COMMENT:
+        {
             if (mode == S_DEBUG)
                 printf("[Block comment] : \n");
             while ((c = fgetc(file)) != EOF)
@@ -220,8 +223,9 @@ HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS mo
             fgetc(file);
             state = NORMAL;
             break;
-
+        }
         case RECORD:
+        {
             if (c == ';')
             {
                 // terminate buffer
@@ -259,6 +263,7 @@ HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS mo
             }
 
             break;
+        }
         }
     }
 
@@ -334,6 +339,8 @@ HRESULT format_basic_error_string(char *error_buffer, int *error_flags)
     return S_OK;
 }
 
+// config===========================================
+
 HRESULT run_test_config(const char *config_file) // check if it's the first time, that the program is being ran, or if there is any missing info
 {
     HRESULT hr = S_OK;
@@ -347,60 +354,7 @@ HRESULT run_test_config(const char *config_file) // check if it's the first time
         {
         case CMD_YES:
         {
-            char temp[1024]; // temporary buffer for user input
-            printf("Enter a folder path:\n");
-            /*
-            after reading the length of the data, for example 10 bytes, it leaves the rest there,
-            which cause the next command read to read in a false value
-            if (scanf("%1023s", temp) == 1) // read at most 1023 chars, prevent overflow
-                set_folder_path(temp);      // pass directly to your dynamic setter
-            */
-            if (fgets(temp, sizeof(temp), stdin))
-            {
-                /*char *pos = strchr(temp, '\n'); // find the first newline
-                if (pos)                        // overwrite starting at '\n'
-                    strcpy(pos, config_file);   // used instead of cat, beacause I want to copy the string to a specific
-                                                // location instead of at the end of a string
-                else
-                    strcat(temp, config_file);*/
-
-                temp[strcspn(temp, "\n")] = '\0'; // remove trailing newline
-
-                ensure_trailing_backslash(temp, sizeof(temp));
-                Normalize_path(temp, sizeof(temp));
-
-                set_folder_path(temp);
-            }
-
-            configfile = fopen(config_file, "w"); // create a new config file
-            if (!config_file)
-                return S_FALSE;
-
-            printf("Enter the colour mode:\n");
-
-            switch (GetCommand(CMD_C_LOOP | CMD_C_SETUP, NULL))
-            {
-            case CMD_COLOUR:
-                strcpy(temp, "colour");
-                break;
-            case CMD_MONO:
-                strcpy(temp, "monochrome");
-                break;
-            }
-
-            fprintf(configfile, "=====================================================\n");
-            fprintf(configfile, "--------Parameters-------------------------------\n");
-            fprintf(configfile, "working directory []\n");
-            fprintf(configfile, "color mode []\n");
-            fprintf(configfile, "=====================================================\n");
-            fprintf(configfile, "-the id gets normalized\n");
-            fprintf(configfile, "-end every line with ;\n");
-            fprintf(configfile, "=====================================================\n");
-            fprintf(configfile, "\n");
-            fprintf(configfile, "DIR [%s];\n", folder_path);
-            fprintf(configfile, "COLOURM [%s];\n", temp);
-
-            fclose(configfile);
+            hr = generate_config(configfile, config_file);
             break;
         }
         case CMD_NO:
@@ -412,15 +366,177 @@ HRESULT run_test_config(const char *config_file) // check if it's the first time
         return hr;
     }
 
-    configfile = fopen(config_file, "r");
+   hr = read_config(config_file);
+
+    return hr;
+}
+
+HRESULT generate_config(FILE *configfile, const char *config_file)
+{
+    char temp[1024]; // temporary buffer for user input
+    printf("Enter a folder path:\n");
+    /*
+    after reading the length of the data, for example 10 bytes, it leaves the rest there,
+    which cause the next command read to read in a false value
+    if (scanf("%1023s", temp) == 1) // read at most 1023 chars, prevent overflow
+        set_folder_path(temp);      // pass directly to your dynamic setter
+    */
+    if (fgets(temp, sizeof(temp), stdin))
+    {
+        /*char *pos = strchr(temp, '\n'); // find the first newline
+        if (pos)                        // overwrite starting at '\n'
+            strcpy(pos, config_file);   // used instead of cat, beacause I want to copy the string to a specific
+                                        // location instead of at the end of a string
+        else
+            strcat(temp, config_file);*/
+
+        temp[strcspn(temp, "\n")] = '\0'; // remove trailing newline
+
+        ensure_trailing_backslash(temp, sizeof(temp));
+        Normalize_path(temp, sizeof(temp));
+
+        set_folder_path(temp);
+    }
+
+    configfile = fopen(config_file, "w"); // create a new config file
+    if (!config_file)
+        return S_FALSE;
+
+    printf("Enter the colour mode:\n");
+
+    switch (GetCommand(CMD_C_LOOP | CMD_C_SETUP, NULL))
+    {
+    case CMD_COLOUR:
+        set_color_mode(CM_COLOUR);
+        break;
+    case CMD_MONO:
+        set_color_mode(CM_MONO);
+        break;
+    }
+
+    fprintf(configfile, "/*\n=====================================================\n");
+    fprintf(configfile, "--------Parameters-------------------------------\n");
+    fprintf(configfile, "working directory []\n");
+    fprintf(configfile, "color mode []\n");
+    fprintf(configfile, "=====================================================\n");
+    fprintf(configfile, "-the id gets normalized\n");
+    fprintf(configfile, "-end every line with ;\n");
+    fprintf(configfile, "=====================================================\n*/\n");
+    fprintf(configfile, "\n");
+    fprintf(configfile, "DIR [%s];\n", folder_path);
+    fprintf(configfile, "COLOURM [%d];\n", get_color_mode());
+
+    if (fclose(configfile) == 0)
+        return S_OK;
+    printf("\n=========================\n");
+    printf("[ERROR] Config file creation error");
+    printf("\n=========================\n");
+    return S_FALSE;
+}
+
+HRESULT read_config(const char *config_file)
+{
+
+    FILE *configfile = fopen(config_file, "r");
     if (!configfile)
     {
         printf("Failed to open or locate [%s] in the working directory!\n", config_file);
         return S_FALSE;
     }
 
+    scan(config_file, handle_config, "idk", S_DEBUG);
+
     if (fclose(configfile) == EOF)
-        hr = E_FAIL;
+        return E_FAIL;
+
+    return S_OK;
+}
+
+HRESULT handle_config(const char *record, void *data, int *error_flags)
+{
+
+    InputFlags flag = T_WHITESPACE;
+    HRESULT hr = S_OK;
+    int length = strlen(record);
+    int label_start = 0;
+    for (int i = 0; record[i] != '\0' && i < length; i++)
+    {
+        char c = record[i];
+        char next_c = (record[i + 1]) ? record[i + 1] : '\0';
+        char *end;
+        switch (flag)
+        {
+        case T_WHITESPACE:
+        {
+            c = tolower(c);
+
+            switch (c)
+            {
+            case 'd':
+            case 'c':
+                flag = T_DATA;
+                break;
+            default:
+                const char *p = strchr(&record[i], ' ');
+                if (p)
+                    i = p - record;
+                break;
+            }
+            break;
+        }
+        case T_DATA:
+        {
+            if (isspace(c) || c == '\n' || c == '\0')
+            {
+                flag = T_WHITESPACE;
+                break;
+            }
+            if (norm_strncmp(&record[i], "IR", 2) == S_OK) // don't use the first letter of the word
+            {                                              // because it have been already checked
+                i += 2;
+                char *result = (char *)record;
+                if ((result = strchr(result, '[')) != NULL)
+                {
+                    //change up this, for manual string handling so it skips trough spaces, and replaces ] with null terminator
+                    //incremeant i too
+                    result++;
+                    size_t len = strlen(result) - 1;
+                    i  += len;
+                    char idgaf = result[len];
+                    if (result[len] == ']')
+                        result[len] = '\0'; // replace the ] with null terminator
+
+                    set_folder_path(result);
+
+                    // get the string until the ']' shit, and use the standard process on it
+                }
+                // implement something to offset the i value or no idk
+                // i = end - record;
+                flag = T_WHITESPACE;
+            }
+            else if (norm_strncmp(&record[i], "OLOUR_M", 7) == S_OK)
+            {
+                i += 7;
+                const char *result = record;
+                if ((result = strchr(result, '[')) != NULL)
+                {
+                    i = 0;
+                    // get the string until the ']' shit, and use the standard process on it
+                }
+                // implement something to offset the i value or no idk
+                // i = end - record;
+                flag = T_WHITESPACE;
+            }
+            else
+                flag = T_WHITESPACE;
+
+            break;
+        }
+        default:
+            return E_FAIL; // could only happen, if something goes very wrong
+        }
+    }
+
     return hr;
 }
 

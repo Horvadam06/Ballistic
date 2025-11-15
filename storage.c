@@ -16,7 +16,8 @@ void init_base_list(BaseList *list)
 
 void free_base_list(BaseList *list)
 {
-    if (!list) return;
+    if (!list)
+        return;
     free(list->items);
     list->items = NULL;
     list->count = 0;
@@ -49,7 +50,7 @@ HRESULT handle_base(const char *record, void *data, int *error_flags)
     Base new_base;
 
     HRESULT hr = S_OK;
-    
+
     hr = ext_basic_info(record, &new_base.info, error_flags);
 
     if (hr == S_FALSE)
@@ -57,7 +58,6 @@ HRESULT handle_base(const char *record, void *data, int *error_flags)
 
     return add_base(list, new_base, hr);
 }
-
 
 HRESULT norm_strncmp(const char *record, const char *str2, int charc)
 {
@@ -92,7 +92,7 @@ HRESULT ext_basic_info(const char *record, Default *info, int *error_flags)
     for (int i = 0; record[i] != '\0' && i < length; i++)
     {
         char c = record[i];
-        char next_c = (record[i+1]) ? record[i+1] : '\0';
+        char next_c = (record[i + 1]) ? record[i + 1] : '\0';
         char *end;
         switch (flag)
         {
@@ -136,7 +136,7 @@ HRESULT ext_basic_info(const char *record, Default *info, int *error_flags)
             if (isspace(c) || c == '\n' || next_c == '\0')
             {
                 flag = T_WHITESPACE;
-                int len = (next_c == '\0') ? i - label_start + 1 : i - label_start;     //if the loop exit's with \0, there is going to be a missing charcter, so it's needed for compensation
+                int len = (next_c == '\0') ? i - label_start + 1 : i - label_start; // if the loop exit's with \0, there is going to be a missing charcter, so it's needed for compensation
                 if (len >= sizeof(info->label))
                     len = sizeof(info->label) - 1;
                 if (len > 0)
@@ -187,8 +187,8 @@ HRESULT ext_basic_info(const char *record, Default *info, int *error_flags)
             break;
         }
         default:
-            return E_FAIL; // could only happen,
-        }                  // if something goes very wrong
+            return E_FAIL; // could only happen, if something goes very wrong
+        }
     }
 
     for (int i = 0; i < 5; i++)

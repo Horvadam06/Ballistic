@@ -27,6 +27,10 @@ typedef HRESULT (*RecordHandler)(const char *record, void *data, int *error_flag
 HRESULT scan(const char *filename, RecordHandler handler, void *list, PROCESS mode);
 HRESULT format_basic_error_string(char *error_buffer, int *error_flags);
 
+HRESULT generate_config(FILE *configfile, const char *config_file);
+HRESULT read_config(const char *config_file);
+HRESULT handle_config(const char *record, void *data, int *error_flags);
+
 HRESULT run_test_config(const char *config_file);
 void ensure_trailing_backslash(char *str, size_t size);
 void Normalize_path(char *path, size_t size);
