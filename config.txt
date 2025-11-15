@@ -1,13 +1,13 @@
 /*
 =====================================================
 --------Parameters-------------------------------
-working directory []
-color mode []
+working directory :
+color mode : [0=monochrome, 1=coloured]
 =====================================================
 -the id gets normalized
 -end every line with ;
 =====================================================
 */
 
-DIR [idk/test/killme];
-COLOURM [1];
+DIR: "im\losing\my\fucking\mind\aaaaaah\";
+COLOUR_M: 1;

@@ -366,8 +366,8 @@ HRESULT run_test_config(const char *config_file) // check if it's the first time
         return hr;
     }
 
-   hr = read_config(config_file);
-
+    hr = read_config(config_file);
+    if (SUCCEEDED(hr)) printf("Working directory have been set to: [%s]\n", folder_path);
     return hr;
 }
 
@@ -416,15 +416,15 @@ HRESULT generate_config(FILE *configfile, const char *config_file)
 
     fprintf(configfile, "/*\n=====================================================\n");
     fprintf(configfile, "--------Parameters-------------------------------\n");
-    fprintf(configfile, "working directory []\n");
-    fprintf(configfile, "color mode []\n");
+    fprintf(configfile, "working directory :\n");
+    fprintf(configfile, "color mode : [0=monochrome, 1=coloured]\n");
     fprintf(configfile, "=====================================================\n");
     fprintf(configfile, "-the id gets normalized\n");
     fprintf(configfile, "-end every line with ;\n");
     fprintf(configfile, "=====================================================\n*/\n");
     fprintf(configfile, "\n");
-    fprintf(configfile, "DIR [%s];\n", folder_path);
-    fprintf(configfile, "COLOURM [%d];\n", get_color_mode());
+    fprintf(configfile, "DIR: \"%s\";\n", folder_path);
+    fprintf(configfile, "COLOUR_M: %d;\n", get_color_mode());
 
     if (fclose(configfile) == 0)
         return S_OK;
@@ -452,6 +452,7 @@ HRESULT read_config(const char *config_file)
     return S_OK;
 }
 
+// rewrite this mess
 HRESULT handle_config(const char *record, void *data, int *error_flags)
 {
 
@@ -461,9 +462,10 @@ HRESULT handle_config(const char *record, void *data, int *error_flags)
     int label_start = 0;
     for (int i = 0; record[i] != '\0' && i < length; i++)
     {
+        // make all this shit tokenized
         char c = record[i];
         char next_c = (record[i + 1]) ? record[i + 1] : '\0';
-        char *end;
+
         switch (flag)
         {
         case T_WHITESPACE:
@@ -495,36 +497,31 @@ HRESULT handle_config(const char *record, void *data, int *error_flags)
             {                                              // because it have been already checked
                 i += 2;
                 char *result = (char *)record;
-                if ((result = strchr(result, '[')) != NULL)
+                if ((result = strchr(result, ':')) != NULL)
                 {
-                    //change up this, for manual string handling so it skips trough spaces, and replaces ] with null terminator
-                    //incremeant i too
                     result++;
-                    size_t len = strlen(result) - 1;
-                    i  += len;
-                    char idgaf = result[len];
-                    if (result[len] == ']')
-                        result[len] = '\0'; // replace the ] with null terminator
-
-                    set_folder_path(result);
+                    const char *end = NULL;
+                    set_folder_path(remove_quotes((char *)strtoken(result, &end), '\"'));
+                    i = end - record;
 
                     // get the string until the ']' shit, and use the standard process on it
                 }
-                // implement something to offset the i value or no idk
+                // implement something to offset the i value or no, idk
                 // i = end - record;
                 flag = T_WHITESPACE;
             }
             else if (norm_strncmp(&record[i], "OLOUR_M", 7) == S_OK)
             {
-                i += 7;
                 const char *result = record;
-                if ((result = strchr(result, '[')) != NULL)
+                if ((result = strchr(result, ':')) != NULL)
                 {
-                    i = 0;
-                    // get the string until the ']' shit, and use the standard process on it
+                    result++;
+                    char *end = NULL;
+                    set_color_mode((int)strtof(strtoken(result, (const char **)end), &end));
+                    i = end - record;
                 }
-                // implement something to offset the i value or no idk
-                // i = end - record;
+                // implement something to offset the i value or no, idk
+
                 flag = T_WHITESPACE;
             }
             else
@@ -585,4 +582,37 @@ void Normalize_path(char *path, size_t size)
     path[size - 1] = '\0';
 
     free(buffer);
+}
+
+const char *strtoken(const char *str, const char **endptr)
+{
+    while (*str == ' ' || *str == '\t' || *str == '\n')
+        str++;
+
+    const char *start = str;
+
+    while (*str && *str != ' ' && *str != '\t' && *str != '\n')
+        str++;
+
+    if (endptr)
+        *endptr = str;
+
+    return start;
+}
+
+char *remove_quotes(char *str, char symbol)
+{
+    int len = strlen(str);
+    if (len < 2)
+        return str;
+
+    char first = str[0];
+    char last = str[len - 1];
+
+    if (last == symbol)
+        str[len - 1] = '\0'; // remove closing quote
+    if (first == symbol)
+        return str + 1; // skip the opening quote
+
+    return str;
 }

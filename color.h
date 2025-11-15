@@ -12,7 +12,7 @@
 //reg add HKCU\\Console /v VirtualTerminalLevel /t REG_DWORD /d 1 /f
 //make it print out if no colours
 
-typedef enum { CM_MONO, CM_COLOUR } ColorMode;
+typedef enum { CM_MONO, CM_COLOUR} ColorMode;
 
 ColorMode get_color_mode(void);
 void set_color_mode(ColorMode mode);

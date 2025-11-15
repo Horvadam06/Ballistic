@@ -128,6 +128,7 @@ HRESULT ext_basic_info(const char *record, Default *info, int *error_flags)
                 break;
             }
             info->id = (int)strtof(&record[i], &end);
+            
             error_flags[F_ID] = 1;
             break;
         }

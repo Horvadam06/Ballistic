@@ -10,7 +10,15 @@ ColorMode get_color_mode(void)
 
 void set_color_mode(ColorMode mode)
 {
-    current_mode = mode;
+    switch (mode)
+    {
+    case CM_MONO:
+    case CM_COLOUR:
+        current_mode = mode;
+        break;
+    default:
+        current_mode = CM_MONO;
+    }
 }
 
 void print_colored(const char *color, const char *string)
