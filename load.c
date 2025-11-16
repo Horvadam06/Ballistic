@@ -152,6 +152,7 @@ Target *load_targets(const char *filename, unsigned *out_count)
     return targets;
 }
 
+/*file name to scan  |  handler function  |  external data  |  scan mode*/
 HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS mode)
 {
     FILE *file = fopen(filename, "r"); // "r" open file in read only mode
@@ -231,6 +232,7 @@ HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS mo
                 // terminate buffer
                 buffer[index] = '\0';
                 int error_flags[5] = {0};
+                // a 256 sized array gets passed to the handler, so you can safely step it's ptr
                 if (handler && data)
                     hr = handler(buffer, data, error_flags); // pass the buffer and the user input address to the function
 
@@ -341,7 +343,7 @@ HRESULT format_basic_error_string(char *error_buffer, int *error_flags)
 
 // config===========================================
 
-HRESULT run_test_config(const char *config_file) // check if it's the first time, that the program is being ran, or if there is any missing info
+HRESULT test_and_run_config(const char *config_file, PROCESS mode) // check if it's the first time, that the program is being ran, or if there is any missing info
 {
     HRESULT hr = S_OK;
     FILE *configfile = fopen(config_file, "r"); // "r" open file in read only mode
@@ -367,7 +369,15 @@ HRESULT run_test_config(const char *config_file) // check if it's the first time
     }
 
     hr = read_config(config_file);
-    if (SUCCEEDED(hr)) printf("Working directory have been set to: [%s]\n", folder_path);
+    if (SUCCEEDED(hr))
+    {
+        if (mode == S_DEBUG)
+            printf("Working directory have been set to: [%s]\n", folder_path);
+        printf("----------------------------------\n");
+        printf("Config loaded succesfully!\n");
+        printf("----------------------------------\n");
+        printf("\n");
+    }
     return hr;
 }
 
@@ -444,7 +454,7 @@ HRESULT read_config(const char *config_file)
         return S_FALSE;
     }
 
-    scan(config_file, handle_config, "idk", S_DEBUG);
+    scan(config_file, handle_config, "idk", S_RUNNING);
 
     if (fclose(configfile) == EOF)
         return E_FAIL;
@@ -456,86 +466,104 @@ HRESULT read_config(const char *config_file)
 HRESULT handle_config(const char *record, void *data, int *error_flags)
 {
 
-    InputFlags flag = T_WHITESPACE;
+    /*InputFlags flag = T_WHITESPACE;
     HRESULT hr = S_OK;
     int length = strlen(record);
-    int label_start = 0;
-    for (int i = 0; record[i] != '\0' && i < length; i++)
+    int label_start = 0;*/
+
+    const char *end = NULL;
+    /*searches for the normlaized DIR token, then if it is, searches for the value after the ':' charcter*/
+    if (norm_strncmp(strtoken(record, &end), "DIR") == S_OK && (record = strchr(end, ':')) != NULL)
     {
-        // make all this shit tokenized
-        char c = record[i];
-        char next_c = (record[i + 1]) ? record[i + 1] : '\0';
-
-        switch (flag)
-        {
-        case T_WHITESPACE:
-        {
-            c = tolower(c);
-
-            switch (c)
-            {
-            case 'd':
-            case 'c':
-                flag = T_DATA;
-                break;
-            default:
-                const char *p = strchr(&record[i], ' ');
-                if (p)
-                    i = p - record;
-                break;
-            }
-            break;
-        }
-        case T_DATA:
-        {
-            if (isspace(c) || c == '\n' || c == '\0')
-            {
-                flag = T_WHITESPACE;
-                break;
-            }
-            if (norm_strncmp(&record[i], "IR", 2) == S_OK) // don't use the first letter of the word
-            {                                              // because it have been already checked
-                i += 2;
-                char *result = (char *)record;
-                if ((result = strchr(result, ':')) != NULL)
-                {
-                    result++;
-                    const char *end = NULL;
-                    set_folder_path(remove_quotes((char *)strtoken(result, &end), '\"'));
-                    i = end - record;
-
-                    // get the string until the ']' shit, and use the standard process on it
-                }
-                // implement something to offset the i value or no, idk
-                // i = end - record;
-                flag = T_WHITESPACE;
-            }
-            else if (norm_strncmp(&record[i], "OLOUR_M", 7) == S_OK)
-            {
-                const char *result = record;
-                if ((result = strchr(result, ':')) != NULL)
-                {
-                    result++;
-                    char *end = NULL;
-                    set_color_mode((int)strtof(strtoken(result, (const char **)end), &end));
-                    i = end - record;
-                }
-                // implement something to offset the i value or no, idk
-
-                flag = T_WHITESPACE;
-            }
-            else
-                flag = T_WHITESPACE;
-
-            break;
-        }
-        default:
-            return E_FAIL; // could only happen, if something goes very wrong
-        }
+        set_folder_path(remove_quotes((char *)strtoken(record, &record), '\"'));
+        return S_OK;
     }
 
-    return hr;
+    /*searches for the normlaized COLOUR_M token, then if it is, searches for the value after  the ':' charcter*/
+    if (norm_strncmp(strtoken(record, &end), "COLOUR_M") == S_OK && (record = strchr(end, ':')) != NULL)
+    {
+        set_color_mode((int)strtof(strtoken(record, &end), (char **)record));
+        return S_OK;
+    }
+
+    /*    for (int i = 0; record[i] != '\0' && i < length; i++)
+        {
+            // make all this shit tokenized
+            char c = record[i];
+            char next_c = (record[i + 1]) ? record[i + 1] : '\0';
+
+                    switch (flag)
+                    {
+                    case T_WHITESPACE:
+                    {
+                        c = tolower(c);
+
+                        switch (c)
+                        {
+                        case 'd':
+                        case 'c':
+                            flag = T_DATA;
+                            break;
+                        default:
+                            const char *p = strchr(&record[i], ' ');
+                            if (p)
+                                i = p - record;
+                            break;
+                        }
+                        break;
+                    }
+                    case T_DATA:
+                    {
+                        if (isspace(c) || c == '\n' || c == '\0')
+                        {
+                            flag = T_WHITESPACE;
+                            break;
+                        }
+                        if (norm_strncmp(&record[i], "IR") == S_OK) // don't use the first letter of the word
+                        {                                           // because it have been already checked
+                            i += 2;
+                            char *result = (char *)record;
+                            if ((result = strchr(result, ':')) != NULL)
+                            {
+                                result++;
+                                const char *end = NULL;
+                                set_folder_path(remove_quotes((char *)strtoken(result, &end), '\"'));
+                                i = end - record;
+
+                                // get the string until the ']' shit, and use the standard process on it
+                            }
+                            // implement something to offset the i value or no, idk
+                            // i = end - record;
+                            flag = T_WHITESPACE;
+                        }
+                        else if (norm_strncmp(&record[i], "OLOUR_M") == S_OK)
+                        {
+                            const char *result = record;
+                            if ((result = strchr(result, ':')) != NULL)
+                            {
+                                result++;
+                                char *end = NULL;
+                                set_color_mode((int)strtof(strtoken(result, (const char **)end), &end));
+                                i = end - record;
+                            }
+                            // implement something to offset the i value or no, idk
+
+                            flag = T_WHITESPACE;
+                        }
+                        else
+                            flag = T_WHITESPACE;
+
+                        break;
+                    }
+                    default:
+                        return E_FAIL; // could only happen, if something goes very wrong
+                    }
+                }
+            */
+    return S_OK;
 }
+
+// create a sub file for these...things
 
 void ensure_trailing_backslash(char *str, size_t size)
 {
@@ -586,12 +614,12 @@ void Normalize_path(char *path, size_t size)
 
 const char *strtoken(const char *str, const char **endptr)
 {
-    while (*str == ' ' || *str == '\t' || *str == '\n')
+    while (*str == ' ' || *str == '\t' || *str == '\n' || *str == ':')
         str++;
 
     const char *start = str;
 
-    while (*str && *str != ' ' && *str != '\t' && *str != '\n')
+    while (*str && *str != ' ' && *str != '\t' && *str != '\n' && *str != ':')
         str++;
 
     if (endptr)

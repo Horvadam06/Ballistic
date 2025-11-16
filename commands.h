@@ -59,15 +59,18 @@ typedef struct
 Command_t GetCommand(Command_case case_flags, PROCESS *running);
 void NormalizeInput(char *input);
 
+void add_seperator(const char *str, char symbol, unsigned sep_length);
+
 //=====================================================
 
-void cmd_exit(const char *args, Command_case case_flags, PROCESS *running);
-void cmd_help(const char *args, Command_case case_flags, PROCESS *running);
-void cmd_base(const char *args, Command_case case_flags, PROCESS *running);
-void cmd_target(const char *args, Command_case case_flags, PROCESS *running);
-void cmd_test(const char *args, Command_case case_flags, PROCESS *running);
-void cmd_colour(const char *args, Command_case case_flags, PROCESS *running);
-void cmd_mono(const char *args, Command_case case_flags, PROCESS *running);
+void cmd_exit(const char    *args, Command_case case_flags, PROCESS *running);
+void cmd_help(const char    *args, Command_case case_flags, PROCESS *running);
+void cmd_base(const char    *args, Command_case case_flags, PROCESS *running);
+void cmd_target(const char  *args, Command_case case_flags, PROCESS *running);
+void cmd_test(const char    *args, Command_case case_flags, PROCESS *running);
+void cmd_config(const char  *args, Command_case case_flags, PROCESS *running);
+void cmd_colour(const char  *args, Command_case case_flags, PROCESS *running);
+void cmd_mono(const char    *args, Command_case case_flags, PROCESS *running);
 
 //=====================================================
 

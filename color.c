@@ -21,10 +21,16 @@ void set_color_mode(ColorMode mode)
     }
 }
 
-void print_colored(const char *color, const char *string)
+HRESULT print_colored(const char *color, const char *string, bool always_p)
 {
     if (current_mode == CM_COLOUR)
+    {
         printf("%s%s%s", color, string, ANSI_COLOR_RESET);
-    else
+        return S_OK;
+    }
+    else if (always_p)
+    {
         printf("%s", string);
+    }
+    return S_FALSE;
 }

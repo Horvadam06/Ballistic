@@ -59,9 +59,10 @@ HRESULT handle_base(const char *record, void *data, int *error_flags)
     return add_base(list, new_base, hr);
 }
 
-HRESULT norm_strncmp(const char *record, const char *str2, int charc)
+HRESULT norm_strncmp(const char *record, const char *str2)
 {
-    for (int i = 0; record[i] != '\0' && i < charc; i++)
+    size_t length = strlen(str2);
+    for (int i = 0; record[i] != '\0' && i < length; i++)
     {
         char str = record[i];
         char str1 = str2[i];
@@ -71,7 +72,7 @@ HRESULT norm_strncmp(const char *record, const char *str2, int charc)
         if (str != str1)
             return S_FALSE;
 
-        if (charc - i > 1 && record[i + 1] == '\0')
+        if (length - i > 1 && record[i + 1] == '\0')
             return S_FALSE;
     }
 
@@ -158,7 +159,7 @@ HRESULT ext_basic_info(const char *record, Default *info, int *error_flags)
                 flag = T_WHITESPACE;
                 break;
             }
-            if (norm_strncmp(&record[i], "LA", 2) == S_OK)
+            if (norm_strncmp(&record[i], "LA") == S_OK)
             {
                 i += 2;
                 info->position.latitude = strtod(&record[i], &end);
@@ -166,7 +167,7 @@ HRESULT ext_basic_info(const char *record, Default *info, int *error_flags)
                 i = end - record;
                 flag = T_WHITESPACE;
             }
-            else if (norm_strncmp(&record[i], "LO", 2) == S_OK)
+            else if (norm_strncmp(&record[i], "LO") == S_OK)
             {
                 i += 2;
                 info->position.longitude = strtod(&record[i], &end);
@@ -174,7 +175,7 @@ HRESULT ext_basic_info(const char *record, Default *info, int *error_flags)
                 i = end - record;
                 flag = T_WHITESPACE;
             }
-            else if (norm_strncmp(&record[i], "A", 1) == S_OK)
+            else if (norm_strncmp(&record[i], "A") == S_OK)
             {
                 i += 2;
                 info->position.altitude = strtod(&record[i], &end);

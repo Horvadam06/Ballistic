@@ -8,12 +8,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-
-
 Command commands[] = {
     {"bases", CMD_BASE, cmd_base, "List bases", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_LOAD},
     {"targets", CMD_TARGET, cmd_target, "List targets", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_LOAD},
     {"test", CMD_TEST, cmd_test, "Do a manual self-test", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
+    {"config", CMD_TEST, cmd_config, "Modify config", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
     {"exit", CMD_EXIT, cmd_exit, "Exit program", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
     {"help", CMD_HELP, cmd_help, "Show commands", CMD_C_ALL},
     {"colour", CMD_COLOUR, cmd_colour, "coloured mode command", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SETUP},
@@ -38,12 +37,15 @@ void cmd_exit(const char *args, Command_case case_flags, PROCESS *running)
 
 void cmd_help(const char *args, Command_case case_flags, PROCESS *running)
 {
+    add_seperator("command list", '-', 30);
+
     for (int i = 0; i < command_count; i++)
     {
         if (!(commands[i].case_mask & case_flags) || (commands[i].type == CMD_HELP))
             continue; // command not available in this mode
-        printf("    %-2s - %s\n", commands[i].name, commands[i].description);
+        printf("    %-2s\t- %s\n", commands[i].name, commands[i].description);
     }
+    add_seperator(NULL, '-', 30);
 }
 
 void cmd_target(const char *args, Command_case case_flags, PROCESS *running)
@@ -73,6 +75,9 @@ void cmd_mono(const char *args, Command_case case_flags, PROCESS *running)
     set_color_mode(CM_MONO);
 }
 
+void cmd_config(const char *args, Command_case case_flags, PROCESS *running)
+{
+}
 //================================================
 
 Command_t GetCommand(Command_case case_flags, PROCESS *running)
@@ -110,7 +115,7 @@ Command_t GetCommand(Command_case case_flags, PROCESS *running)
 
                         if (commands[i].handler)
                             commands[i].handler(args, case_flags, running);
-                            
+
                         command = commands[i].type;
                     }
                 }
@@ -137,4 +142,24 @@ void NormalizeInput(char *input)
     for (int i = 0; i < sizeof(input); i++)
         if (input[i] >= 'A' && input[i] <= 'Z')
             input[i] += 'a' - 'A';
+}
+
+// later make it enum dependent
+void add_seperator(const char *str, char symbol, unsigned sep_length)
+{
+    size_t str_length = (str) ? strlen(str) : 0;
+    int start = (sep_length - str_length) / 2;
+    int cnt = 0;
+
+    for (cnt = 0; cnt < start; cnt++)
+    {
+        printf("%c", symbol);
+    };
+    if (str)
+        printf("%s", str);
+    for (cnt += str_length; cnt < sep_length; cnt++)
+    {
+        printf("%c", symbol);
+    };
+    printf("\n");
 }

@@ -22,15 +22,17 @@ HRESULT run_pre_test()
     }
     free_base_list(&bases);
 
-    print_colored(ANSI_COLOR_RED, "This text should be RED!\n");
+    if (print_colored(ANSI_COLOR_RED, "This text should be RED!\n", false) == S_FALSE)
+    {
+        printf("This text shouldn't be RED!\n");
+    }
 
     printf("----------------------------------\n");
     if (hr == S_OK)
-        printf("Test succeeded!\n");
+        print_colored(ANSI_COLOR_GREEN, "Test succeeded!\n", false);
     else
-        printf("Test failed!\n");
+        print_colored(ANSI_COLOR_RED, "Test failed!\n", true);
     printf("----------------------------------\n");
 
     return hr;
 }
-

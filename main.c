@@ -16,13 +16,14 @@
 
 PROCESS Setup()
 {
-    if (SUCCEEDED(run_test_config("config.txt")))
-        printf("Config loaded succesfully!\n");
-    else
+    printf("Starting setup...\n");
+    if (!SUCCEEDED(test_and_run_config("config.txt", S_RUNNING)))
         return S_TERMINATE;
 
     if (!SUCCEEDED(run_pre_test()))
         return S_TERMINATE;
+
+    printf("Setup finished!\n");
 
     printf("\n");
     printf("==================================\n");
