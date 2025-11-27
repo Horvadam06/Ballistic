@@ -2,12 +2,14 @@
 #include "calculations.h"
 #include "error.h"
 #include "commands.h"
+#include "color.h"
+#include "helpers.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <color.h>
+
 
 // seperate config from loading, beacuse it's messy asf
 
@@ -52,7 +54,10 @@ Base *load_bases(const char *filename, unsigned *out_count)
     Base *bases = malloc(capacity * sizeof(Base));
     if (!bases)
     {
-        fclose(file);
+        if (fclose(file) != 0)
+        {
+            // do proper error handling
+        }
         return NULL;
     }
 
@@ -89,7 +94,10 @@ Base *load_bases(const char *filename, unsigned *out_count)
     }
 
     *out_count = count;
-    fclose(file);
+    if (fclose(file) == 0)
+    {
+        // do proper error handling
+    }
 
     return bases;
 }
@@ -108,7 +116,10 @@ Target *load_targets(const char *filename, unsigned *out_count)
     Target *targets = malloc(capacity * sizeof(Target));
     if (!targets)
     {
-        fclose(file);
+        if (fclose(file) != 0)
+        {
+            // do propper error handling
+        }
         return NULL;
     }
 
@@ -129,7 +140,10 @@ Target *load_targets(const char *filename, unsigned *out_count)
                 {
                     perror("Memory allocation failed");
                     free(targets);
-                    fclose(file);
+                    if (fclose(file) != 0)
+                    {
+                        // do proper error handling
+                    }
                     return NULL;
                 }
                 targets = resized;
@@ -147,7 +161,10 @@ Target *load_targets(const char *filename, unsigned *out_count)
     }
 
     *out_count = count;
-    fclose(file);
+    if (fclose(file) != 0)
+    {
+        // do proper error handling
+    }
 
     return targets;
 }
@@ -381,6 +398,26 @@ HRESULT test_and_run_config(const char *config_file, PROCESS mode) // check if i
     return hr;
 }
 
+HRESULT recreate_config(const char *config_file, PROCESS mode)
+{
+    HRESULT hr = S_OK;
+    FILE *configfile = NULL; // "r" open file in read only mode
+
+    return generate_config(configfile, config_file);
+
+    hr = read_config(config_file);
+    if (SUCCEEDED(hr))
+    {
+        if (mode == S_DEBUG)
+            printf("Working directory have been set to: [%s]\n", folder_path);
+        printf("----------------------------------\n");
+        printf("Config updated successfully!\n");
+        printf("----------------------------------\n");
+        printf("\n");
+    }
+    return hr;
+}
+
 HRESULT generate_config(FILE *configfile, const char *config_file)
 {
     char temp[1024]; // temporary buffer for user input
@@ -436,12 +473,14 @@ HRESULT generate_config(FILE *configfile, const char *config_file)
     fprintf(configfile, "DIR: \"%s\";\n", folder_path);
     fprintf(configfile, "COLOUR_M: %d;\n", get_color_mode());
 
-    if (fclose(configfile) == 0)
-        return S_OK;
-    printf("\n=========================\n");
-    printf("[ERROR] Config file creation error");
-    printf("\n=========================\n");
-    return S_FALSE;
+    if (fclose(configfile) != 0)
+    {
+        printf("\n=========================\n");
+        printf("[ERROR] Config file creation error");
+        printf("\n=========================\n");
+        return S_TERMINATE;
+    }
+    return S_OK;
 }
 
 HRESULT read_config(const char *config_file)
@@ -457,6 +496,7 @@ HRESULT read_config(const char *config_file)
     scan(config_file, handle_config, "idk", S_RUNNING);
 
     if (fclose(configfile) == EOF)
+
         return E_FAIL;
 
     return S_OK;
@@ -564,83 +604,3 @@ HRESULT handle_config(const char *record, void *data, int *error_flags)
 }
 
 // create a sub file for these...things
-
-void ensure_trailing_backslash(char *str, size_t size)
-{
-    size_t len = strlen(str);
-
-    // Check bounds and avoid overflow
-    if (len + 1 >= size)
-        return;
-
-    if (len == 0 || str[len - 1] != '\\')
-    {
-        str[len] = '\\';     // place backslash before null terminator
-        str[len + 1] = '\0'; // new null terminator
-    }
-}
-
-void Normalize_path(char *path, size_t size)
-{
-    if (!path || size == 0)
-        return;
-
-    char *buffer = malloc(size);
-    if (!buffer)
-        return;
-
-    size_t j = 0;
-    for (size_t i = 0; path[i] != '\0' && j + 2 < size; i++)
-    {
-        if (path[i] == '/')
-            buffer[j++] = '\\';
-        else if (path[i] == (char)92)
-        {
-            if (path[i + 1] != (char)92)
-                buffer[j++] = '\\';
-            /*if (path[i + 1] != '\\' && j + 1 < size)
-                buffer[j++] = '\\';*/
-        }
-        else
-            buffer[j++] = path[i];
-    }
-
-    buffer[j] = '\0';
-    strncpy(path, buffer, size - 1);
-    path[size - 1] = '\0';
-
-    free(buffer);
-}
-
-const char *strtoken(const char *str, const char **endptr)
-{
-    while (*str == ' ' || *str == '\t' || *str == '\n' || *str == ':')
-        str++;
-
-    const char *start = str;
-
-    while (*str && *str != ' ' && *str != '\t' && *str != '\n' && *str != ':')
-        str++;
-
-    if (endptr)
-        *endptr = str;
-
-    return start;
-}
-
-char *remove_quotes(char *str, char symbol)
-{
-    int len = strlen(str);
-    if (len < 2)
-        return str;
-
-    char first = str[0];
-    char last = str[len - 1];
-
-    if (last == symbol)
-        str[len - 1] = '\0'; // remove closing quote
-    if (first == symbol)
-        return str + 1; // skip the opening quote
-
-    return str;
-}

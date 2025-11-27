@@ -28,16 +28,14 @@ HRESULT scan(const char *filename, RecordHandler handler, void *list, PROCESS mo
 HRESULT format_basic_error_string(char *error_buffer, int *error_flags);
 
 HRESULT generate_config(FILE *configfile, const char *config_file);
+HRESULT recreate_config(const char *config_file, PROCESS mode);
 HRESULT read_config(const char *config_file);
 HRESULT handle_config(const char *record, void *data, int *error_flags);
 
 HRESULT test_and_run_config(const char *config_file, PROCESS mode);
 
 //create a helper file for them or smth. idk
-void ensure_trailing_backslash(char *str, size_t size);
-void Normalize_path(char *path, size_t size);
-const char* strtoken(const char *s, const char **endptr);
-char *remove_quotes(char *str, char symbol);
+
 
 
 #endif

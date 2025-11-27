@@ -9,6 +9,6 @@ typedef enum
     true
 } bool;
 
-HRESULT run_pre_test();
+HRESULT run_pre_test(PROCESS process_state);
 
 #endif

@@ -15,6 +15,7 @@
                 "${workspaceFolder}\\error.c",
                 "${workspaceFolder}\\storage.c",
                 "${workspaceFolder}\\color.c",
+                "${workspaceFolder}\\helpers.c",
                 "-I${workspaceFolder}",
                 "-o",
                 "${workspaceFolder}/bin/ballistic.exe"

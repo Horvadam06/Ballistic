@@ -1,16 +1,16 @@
 #ifndef CALCULATIONS_H
 #define CALCULATIONS_H
 
-typedef struct
-{
-    double latitude;  // latitide or phi
-    double longitude; // longitude
-    double altitude;  // distance from sea level
-} coordinate;
+/// --- Coordinate ---
+typedef struct {
+    double latitude;
+    double longitude;
+    double altitude;
+} Coordinate;
 
 
 void SetupParameters();
-int CalculateDistance(coordinate coord1, coordinate coord2, double *distance);
+int CalculateDistance(Coordinate coord1, Coordinate coord2, double *distance);
 int ListBases();
 int ListTargets();
 

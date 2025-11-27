@@ -18,7 +18,8 @@ typedef enum
     CMD_BASE,
     CMD_TEST,
     CMD_COLOUR,
-    CMD_MONO
+    CMD_MONO,
+    CMD_CLEAR_TERMINAL
 } Command_t;
 
 /*=====command_case list==========
@@ -39,7 +40,7 @@ typedef enum
     CMD_C_YESNO = 1 << 3,   // only has acces for the yes no commands, doesn't uses the handlers
     CMD_C_LOAD = 1 << 4,    // only has acceses for the loading specific commands, uses the handlers
     CMD_C_SETUP = 1 << 5,   // only has acceses for the loading specific commands, uses the handlers
-    CMD_C_LOOP = 1 << 20    //special control flag, make's the get command loop until it get's a valid input for it's case
+    CMD_C_LOOP = 1 << 20    // special control flag, make's the get command loop until it get's a valid input for it's case
 
 } Command_case;
 
@@ -60,17 +61,19 @@ Command_t GetCommand(Command_case case_flags, PROCESS *running);
 void NormalizeInput(char *input);
 
 void add_seperator(const char *str, char symbol, unsigned sep_length);
+void clear_terminal();
 
 //=====================================================
 
-void cmd_exit(const char    *args, Command_case case_flags, PROCESS *running);
-void cmd_help(const char    *args, Command_case case_flags, PROCESS *running);
-void cmd_base(const char    *args, Command_case case_flags, PROCESS *running);
-void cmd_target(const char  *args, Command_case case_flags, PROCESS *running);
-void cmd_test(const char    *args, Command_case case_flags, PROCESS *running);
-void cmd_config(const char  *args, Command_case case_flags, PROCESS *running);
-void cmd_colour(const char  *args, Command_case case_flags, PROCESS *running);
-void cmd_mono(const char    *args, Command_case case_flags, PROCESS *running);
+void cmd_exit(const char *args, Command_case case_flags, PROCESS *running);
+void cmd_help(const char *args, Command_case case_flags, PROCESS *running);
+void cmd_base(const char *args, Command_case case_flags, PROCESS *running);
+void cmd_target(const char *args, Command_case case_flags, PROCESS *running);
+void cmd_test(const char *args, Command_case case_flags, PROCESS *running);
+void cmd_config(const char *args, Command_case case_flags, PROCESS *running);
+void cmd_colour(const char *args, Command_case case_flags, PROCESS *running);
+void cmd_mono(const char *args, Command_case case_flags, PROCESS *running);
+void cmd_clr_ter(const char *args, Command_case case_flags, PROCESS *running);
 
 //=====================================================
 

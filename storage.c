@@ -79,7 +79,7 @@ HRESULT norm_strncmp(const char *record, const char *str2)
     return S_OK;
 }
 
-HRESULT ext_basic_info(const char *record, Default *info, int *error_flags)
+HRESULT ext_basic_info(const char *record, Default_i *info, int *error_flags)
 {
     if (!info)
         return S_OK;

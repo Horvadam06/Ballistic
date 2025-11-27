@@ -13,7 +13,7 @@ double DegToRad(double deg){
     return deg*M_PI/180.0L;
 }
 
-int CalculateDistance(coordinate coord1, coordinate coord2, double *distance)
+int CalculateDistance(Coordinate coord1, Coordinate coord2, double *distance)
 {
     // WGS-84 constants
     double a = 6378137.0;

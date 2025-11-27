@@ -9,5 +9,5 @@ color mode : [0=monochrome, 1=coloured]
 =====================================================
 */
 
-DIR: "C:\vscode\";
+DIR: "C:\vscode\ballistic\bin\";
 COLOUR_M: 1;

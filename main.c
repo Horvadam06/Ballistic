@@ -7,6 +7,7 @@
 #include "load.h"
 #include "error.h"
 #include "storage.h"
+#include "color.h"
 
 //=========================================
 // Created by.:
@@ -20,10 +21,14 @@ PROCESS Setup()
     if (!SUCCEEDED(test_and_run_config("config.txt", S_RUNNING)))
         return S_TERMINATE;
 
-    if (!SUCCEEDED(run_pre_test()))
+    if (!SUCCEEDED(run_pre_test(S_RUNNING)))
         return S_TERMINATE;
 
     printf("Setup finished!\n");
+
+    if (get_color_mode()){
+        clear_terminal();
+    }
 
     printf("\n");
     printf("==================================\n");
@@ -44,6 +49,7 @@ void CleanUp()
 int main(void)
 {
     PROCESS state = Setup();
+    
     while (state == S_RUNNING)
     {
         GetCommand(CMD_C_LOAD | CMD_C_SYSTEM, &state);

@@ -3,6 +3,7 @@
 #include "debug.h"
 #include "calculations.h"
 #include "color.h"
+#include "load.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,6 +13,7 @@ Command commands[] = {
     {"bases", CMD_BASE, cmd_base, "List bases", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_LOAD},
     {"targets", CMD_TARGET, cmd_target, "List targets", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_LOAD},
     {"test", CMD_TEST, cmd_test, "Do a manual self-test", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
+    {"clear", CMD_CLEAR_TERMINAL, cmd_clr_ter, "Clears the terminal", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
     {"config", CMD_TEST, cmd_config, "Modify config", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
     {"exit", CMD_EXIT, cmd_exit, "Exit program", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
     {"help", CMD_HELP, cmd_help, "Show commands", CMD_C_ALL},
@@ -37,6 +39,7 @@ void cmd_exit(const char *args, Command_case case_flags, PROCESS *running)
 
 void cmd_help(const char *args, Command_case case_flags, PROCESS *running)
 {
+    clear_terminal();
     add_seperator("command list", '-', 30);
 
     for (int i = 0; i < command_count; i++)
@@ -62,7 +65,8 @@ void cmd_base(const char *args, Command_case case_flags, PROCESS *running)
 
 void cmd_test(const char *args, Command_case case_flags, PROCESS *running)
 {
-    run_pre_test();
+
+    run_pre_test(S_DEBUG);
 }
 
 void cmd_colour(const char *args, Command_case case_flags, PROCESS *running)
@@ -75,8 +79,16 @@ void cmd_mono(const char *args, Command_case case_flags, PROCESS *running)
     set_color_mode(CM_MONO);
 }
 
+// clear terminal command
+void cmd_clr_ter(const char *args, Command_case case_flags, PROCESS *running)
+{
+    if (get_color_mode())
+        clear_terminal();
+}
+
 void cmd_config(const char *args, Command_case case_flags, PROCESS *running)
 {
+    recreate_config("config.txt", S_DEBUG);
 }
 //================================================
 
@@ -163,3 +175,9 @@ void add_seperator(const char *str, char symbol, unsigned sep_length)
     };
     printf("\n");
 }
+
+void clear_terminal()
+{
+    if (get_color_mode() == CM_COLOUR)
+        printf("\033[2J\033[H");
+};
