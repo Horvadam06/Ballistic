@@ -12,6 +12,7 @@
 Command commands[] = {
     {"bases", CMD_BASE, cmd_base, "List bases", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_LOAD},
     {"targets", CMD_TARGET, cmd_target, "List targets", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_LOAD},
+    {"ammo", CMD_AMMO, cmd_ammo, "List ammo", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_LOAD},
     {"test", CMD_TEST, cmd_test, "Do a manual self-test", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
     {"clear", CMD_CLEAR_TERMINAL, cmd_clr_ter, "Clears the terminal", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
     {"config", CMD_TEST, cmd_config, "Modify config", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
@@ -61,6 +62,10 @@ void cmd_base(const char *args, Command_case case_flags, PROCESS *running)
 {
     if (running)
         *running = ListBases();
+}
+
+void cmd_ammo(const char *args, Command_case case_flags, PROCESS *running)
+{
 }
 
 void cmd_test(const char *args, Command_case case_flags, PROCESS *running)

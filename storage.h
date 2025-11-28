@@ -4,7 +4,7 @@
 #include "error.h"
 #include "calculations.h"
 
-/*
+
 //====================================
 //Global Ammo type
 typedef struct Ammo_t {
@@ -18,6 +18,7 @@ typedef struct Ammo_t {
 //Ammo_t_Node for linked list of global ammo
 typedef struct Ammo_t_Node {
     Ammo_t* ammoItem;
+    struct Ammo_t_Node* prev;
     struct Ammo_t_Node* next;
 } Ammo_t_Node;
 
@@ -27,6 +28,7 @@ typedef struct {
     Ammo_t_Node* tail;
 } Ammo_t_List;
 
+/*
 //====================================
 
 //Default_i (shared by Base and Target)
@@ -87,16 +89,18 @@ typedef struct {
     Target_Node* tail;
 } Target_List;
 
-
+*/
 
 // --- Ammo List ---
-void initAmmo_t_List(Ammo_t_List* list);
-Ammo_t_Node* addAmmo_t(Ammo_t_List* list, Ammo_t* ammo);       // ordered by id
-int deleteAmmo_t(Ammo_t_List* list, unsigned id);
-Ammo_t_Node* popFrontAmmo_t(Ammo_t_List* list);
-Ammo_t_Node* popBackAmmo_t(Ammo_t_List* list);
-void freeAmmo_t_List(Ammo_t_List* list);
+//requires a NULL valued, Ammo_t_list's address!    returns S_OK when succeded, S_FAILED when the given value is not NULL
+HRESULT init_Ammo_t_List(Ammo_t_List **list);
+Ammo_t_Node* add_Ammo_t(Ammo_t_List* list, Ammo_t* ammo);       // ordered by id
+int delete_Ammo_t(Ammo_t_List* list, unsigned id);
+Ammo_t_Node pop_FrontAmmo_t(Ammo_t_List* list);
+Ammo_t_Node pop_BackAmmo_t(Ammo_t_List* list);
+HRESULT free_Ammo_t_List(Ammo_t_List** list);
 
+/*
 // --- Base List ---
 void initBase_List(Base_List* list);
 Base_Node* addBase(Base_List* list, Base* base);               // ordered by id

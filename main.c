@@ -26,7 +26,19 @@ PROCESS Setup()
 
     printf("Setup finished!\n");
 
-    if (get_color_mode()){
+    Ammo_t_List *list = NULL;
+    init_Ammo_t_List(&list);
+
+    add_Ammo_t(list, NULL);
+    add_Ammo_t(list, NULL);
+    add_Ammo_t(list, NULL);
+    pop_BackAmmo_t(list);
+    pop_FrontAmmo_t(list);
+
+    free_Ammo_t_List(&list);
+
+    if (get_color_mode())
+    {
         clear_terminal();
     }
 
@@ -49,7 +61,7 @@ void CleanUp()
 int main(void)
 {
     PROCESS state = Setup();
-    
+
     while (state == S_RUNNING)
     {
         GetCommand(CMD_C_LOAD | CMD_C_SYSTEM, &state);

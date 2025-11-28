@@ -16,6 +16,7 @@ typedef enum
     CMD_RESET,
     CMD_TARGET,
     CMD_BASE,
+    CMD_AMMO,
     CMD_TEST,
     CMD_COLOUR,
     CMD_MONO,
@@ -68,6 +69,7 @@ void clear_terminal();
 void cmd_exit(const char *args, Command_case case_flags, PROCESS *running);
 void cmd_help(const char *args, Command_case case_flags, PROCESS *running);
 void cmd_base(const char *args, Command_case case_flags, PROCESS *running);
+void cmd_ammo(const char *args, Command_case case_flags, PROCESS *running);
 void cmd_target(const char *args, Command_case case_flags, PROCESS *running);
 void cmd_test(const char *args, Command_case case_flags, PROCESS *running);
 void cmd_config(const char *args, Command_case case_flags, PROCESS *running);

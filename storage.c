@@ -129,7 +129,7 @@ HRESULT ext_basic_info(const char *record, Default_i *info, int *error_flags)
                 break;
             }
             info->id = (int)strtof(&record[i], &end);
-            
+
             error_flags[F_ID] = 1;
             break;
         }
@@ -198,4 +198,89 @@ HRESULT ext_basic_info(const char *record, Default_i *info, int *error_flags)
             return S_PARTIAL;
 
     return hr;
+}
+
+HRESULT init_Ammo_t_List(Ammo_t_List **list)
+{
+    if (*list != NULL)
+        return S_FALSE;
+    Ammo_t_Node *head = (Ammo_t_Node *)malloc(sizeof(Ammo_t_Node));
+    Ammo_t_Node *tail = (Ammo_t_Node *)malloc(sizeof(Ammo_t_Node));
+
+    head->ammoItem = NULL;
+    head->prev = NULL;
+    head->next = tail;
+    tail->ammoItem = NULL;
+    tail->next = NULL;
+    tail->prev = head;
+
+    *list = (Ammo_t_List *)malloc(sizeof(Ammo_t_List));
+    (*list)->head = head;
+    (*list)->tail = tail;
+    return S_OK;
+}
+
+Ammo_t_Node *add_Ammo_t(Ammo_t_List *list, Ammo_t *ammo) // ordered by id, if ther are multiple id def's then just push semi front (later, rn push front)
+{
+    if (!list)
+        return NULL;
+
+    Ammo_t_Node *new = (Ammo_t_Node *)malloc(sizeof(Ammo_t_Node));
+
+    Ammo_t_Node *target = list->head;
+
+    // ah yes, free will
+    for (; target->next != list->tail && ((target->ammoItem && ammo) ? target->ammoItem->id <= ammo->id : 1); target = target->next)
+        ;
+
+    new->next = target->next;
+    new->prev = target;
+    target->next = new;
+    new->next->prev = new;
+    new->ammoItem = ammo;
+
+    return new;
+}
+
+int delete_Ammo_t(Ammo_t_List *list, unsigned id);
+
+Ammo_t_Node pop_FrontAmmo_t(Ammo_t_List *list)
+{
+    Ammo_t_Node value = {NULL, NULL, NULL};
+    if (!list)
+        return value;
+    Ammo_t_Node *target = list->head->next;
+    list->head->next = target->next;
+    target->next->prev = list->head;
+    value = *target;
+    free(target);
+    return value;
+}
+
+Ammo_t_Node pop_BackAmmo_t(Ammo_t_List *list)
+{
+    Ammo_t_Node value = {NULL, NULL, NULL};
+    if (!list)
+        return value;
+    Ammo_t_Node *target = list->tail->prev;
+    list->tail->prev = target->prev;
+    target->prev->next = list->tail;
+    value = *target;
+    free(target);
+    return value;
+}
+
+// lifo
+HRESULT free_Ammo_t_List(Ammo_t_List **list)
+{
+    if (!*list)
+        return S_FALSE;
+    while ((*list)->head->next != (*list)->tail)
+        pop_BackAmmo_t(*list);
+
+    free((*list)->head);
+    free((*list)->tail);
+    free(*list);
+
+    return S_OK;
 }
