@@ -27,14 +27,14 @@ PROCESS Setup()
 
     printf("Setup finished!\n");
 
-    init_Ammo_t_List(&ammo_t_list);
+    
 
     char folder_buffer[1024];
     strcpy(folder_buffer, folder_path);
     strcat(folder_buffer, "ammo_catalouge.txt");
+    init_Ammo_t_List(&ammo_t_list);
     scan(folder_buffer, handle_ammo_t, ammo_t_list, S_DEBUG);
     print_Ammo_t_List(ammo_t_list);
-    free_Ammo_t_List(&ammo_t_list);
 
     if (get_color_mode())
     {
@@ -54,6 +54,7 @@ PROCESS Setup()
 
 void CleanUp()
 {
+    free_Ammo_t_List(&ammo_t_list);
     free_folder_path();
 }
 

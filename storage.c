@@ -246,25 +246,52 @@ Ammo_t_Node *add_Ammo_t(Ammo_t_List *list, Ammo_t ammo)
     new_ammo->weight = ammo.weight;
 
     // searches for the non NULL id order, and "moves" the target there
-    Ammo_t_Node *target = list->head;
-    for (; (target->next != list->tail); target = target->next)
+    Ammo_t_Node *target = list->head->next;
+    for (; (target != list->tail); target = target->next)
         if ((target->ammoItem && new_ammo))
-            if (target->ammoItem->id < new_ammo->id)
+            if (target->ammoItem->id > new_ammo->id)
                 break;
 
     // insterts the new item before the target
     Ammo_t_Node *new = (Ammo_t_Node *)malloc(sizeof(Ammo_t_Node));
 
-    new->next = target->next;
-    new->prev = target;
-    target->next = new;
-    new->next->prev = new;
     new->ammoItem = new_ammo;
+    new->next = target;
+    new->prev = target->prev;
+    target->prev->next = new;
+    target->prev = new;
 
     return new;
 }
 
-int delete_Ammo_t(Ammo_t_List *list, unsigned id);
+int delete_Ammo_t(Ammo_t_List *list, unsigned id)
+{
+    if (!list)
+        return -1;
+
+    Ammo_t_Node *target = list->head->next;
+    int no_id = 1;
+    while (target != list->tail)
+        if (target->ammoItem && target->ammoItem->id == id)
+        {
+            target->next->prev = target->prev;
+            target->prev->next = target->next;
+
+            Ammo_t_Node *tmp = target->next;
+
+            free(target->ammoItem->name); // free the string
+            free(target->ammoItem);       // free the struct
+            free(target);
+
+            target = tmp;
+
+            no_id = 0;
+        }
+        else
+            target = target->next;
+
+    return (no_id) ? -1 : id;
+}
 
 Ammo_t_Node pop_FrontAmmo_t(Ammo_t_List *list)
 {
@@ -290,8 +317,9 @@ Ammo_t_Node pop_BackAmmo_t(Ammo_t_List *list)
     list->tail->prev = target->prev;
     target->prev->next = list->tail;
     value = *target;
-    free(target->ammoItem);
-    free(target);
+    free(target->ammoItem->name); // free the string
+    free(target->ammoItem);       // free the struct
+    free(target);                 // free the node
     return value;
 }
 
@@ -304,7 +332,8 @@ void print_Ammo_t_List(Ammo_t_List *list)
 
     for (; target != list->tail; target = target->next)
         if (target->ammoItem)
-            printf("id: %5u | label: %10s\n", target->ammoItem->id, target->ammoItem->name);
+            printf("id: %5u | label: %20s | weight: %10.2f kg | caliber: %10.2f mm | blast radius %10.2f m\n",
+                   target->ammoItem->id, target->ammoItem->name, target->ammoItem->weight, target->ammoItem->diameter, target->ammoItem->blastRadius);
         else
             printf("NULL ammo parameter\n");
 }

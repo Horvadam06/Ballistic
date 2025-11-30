@@ -515,46 +515,51 @@ HRESULT handle_ammo_t(char *record, void *data, int *error_flags)
     // record in the scan case is only on the stack, so I can modify the pointer without a problem
     Ammo_t ammo;
 
-    char *end = NULL;
-    /*id*/
-    if (norm_strncmp(record, "I") == S_OK)
+    // hard cap, so if the user gives some invalid parameters, the program won't get stuck
+    for (int i = 0; i < 15 && strlen(record) > 0; i++)
     {
-        record = strtoken(record, &end);
-        ammo.id = (unsigned)strtof(++record, &end);
-        record = strtoken(end, &end);
-    }
-    /*name*/
-    if (norm_strncmp(record, "N") == S_OK)
-    {
-        record = strtoken(record, &end);
-        record++;
-        ammo.name = (char *)malloc(end - record + 1); // +1 for null terminator
-        strncpy(ammo.name, record, end - record);
-        ammo.name[end - record] = '\0';
 
-        record = strtoken(end, &end);
-    }
-    /*weight*/
-    if (norm_strncmp(record, "W") == S_OK)
-    {
-        record = strtoken(record, &end);
-        ammo.weight = strtod(++record, &end);
-        record = strtoken(end, &end);
-    }
-    /*diameter*/
-    if (norm_strncmp(record, "D") == S_OK)
-    {
-        record = strtoken(record, &end);
-        ammo.diameter = strtod(++record, &end);
-        record = strtoken(end, &end);
-    }
-    /*blast radius*/
-    if (norm_strncmp(record, "BR") == S_OK)
-    {
-        record = strtoken(record, &end);
-        record++;
-        ammo.blastRadius = strtod(++record, &end);
-        record = strtoken(end, &end);
+        char *end = NULL;
+        /*id*/
+        if (norm_strncmp(record, "I") == S_OK)
+        {
+            record = strtoken(record, &end);
+            ammo.id = (unsigned)strtof(++record, &end);
+            record = strtoken(end, &end);
+        }
+        /*name*/
+        if (norm_strncmp(record, "N") == S_OK)
+        {
+            record = strtoken(record, &end);
+            record++;
+            ammo.name = (char *)malloc(end - record + 1); // +1 for null terminator
+            strncpy(ammo.name, record, end - record);
+            ammo.name[end - record] = '\0';
+
+            record = strtoken(end, &end);
+        }
+        /*weight*/
+        if (norm_strncmp(record, "W") == S_OK)
+        {
+            record = strtoken(record, &end);
+            ammo.weight = strtod(++record, &end);
+            record = strtoken(end, &end);
+        }
+        /*diameter*/
+        if (norm_strncmp(record, "D") == S_OK)
+        {
+            record = strtoken(record, &end);
+            ammo.diameter = strtod(++record, &end);
+            record = strtoken(end, &end);
+        }
+        /*blast radius*/
+        if (norm_strncmp(record, "BR") == S_OK)
+        {
+            record = strtoken(record, &end);
+            record++;
+            ammo.blastRadius = strtod(++record, &end);
+            record = strtoken(end, &end);
+        }
     }
 
     add_Ammo_t(data, ammo);

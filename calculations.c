@@ -13,6 +13,7 @@ double DegToRad(double deg){
     return deg*M_PI/180.0L;
 }
 
+//using Vincenty’s formula
 int CalculateDistance(Coordinate coord1, Coordinate coord2, double *distance)
 {
     // WGS-84 constants

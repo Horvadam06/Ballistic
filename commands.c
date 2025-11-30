@@ -68,7 +68,8 @@ void cmd_base(const char *args, Command_case case_flags, PROCESS *running)
 
 void cmd_ammo(const char *args, Command_case case_flags, PROCESS *running)
 {
-    EMPTY_MESSAGE
+    print_Ammo_t_List(ammo_t_list);
+    //EMPTY_MESSAGE
 }
 
 void cmd_test(const char *args, Command_case case_flags, PROCESS *running)
