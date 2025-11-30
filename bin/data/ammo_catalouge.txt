@@ -20,7 +20,6 @@ Use the following structure for the inputs:
 */
 
 /* ===================== LONG-RANGE ROCKETS ===================== */
-
 I0  N122GRAD_HE        W66.0    D122.0   BR28.0;  //122mm GRAD HE
 I1  N122GRAD_FRAG      W64.0    D122.0   BR35.0;  //122mm GRAD fragmentation
 I2  N122GRAD_SMK       W61.0    D122.0   BR0.0;   //122mm GRAD smoke

@@ -3,9 +3,9 @@
 
 #include <ctype.h>
 
-void ensure_trailing_backslash(char *str, size_t size);
-void Normalize_path(char *path, size_t size);
-const char* strtoken(const char *s, const char **endptr);
+char *ensure_trailing_backslash(char *str);
+char *Normalize_path(char *path);
+char* strtoken(char *s, char **endptr);
 char *remove_quotes(char *str, char symbol);
 
 #endif

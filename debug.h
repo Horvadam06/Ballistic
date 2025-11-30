@@ -3,6 +3,8 @@
 
 #include "error.h"
 
+#define EMPTY_MESSAGE printf("Nothing to see here! (yet)\n");
+
 typedef enum
 {
     false,

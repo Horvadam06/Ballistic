@@ -23,6 +23,8 @@ Command commands[] = {
     {"yes", CMD_YES, NULL, "yes command", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_YESNO},
     {"no", CMD_NO, NULL, "no command", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_YESNO}};
 
+/*calculates the number of commands, the division with the first value is needed,
+because we devide the whole size, with one entry's size, and by that we get the number of entry's*/
 int command_count = sizeof(commands) / sizeof(commands[0]);
 
 //================================================
@@ -66,6 +68,7 @@ void cmd_base(const char *args, Command_case case_flags, PROCESS *running)
 
 void cmd_ammo(const char *args, Command_case case_flags, PROCESS *running)
 {
+    EMPTY_MESSAGE
 }
 
 void cmd_test(const char *args, Command_case case_flags, PROCESS *running)

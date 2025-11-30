@@ -3,6 +3,10 @@
         "error.h": "c",
         "type_traits": "c",
         "xtr1common": "c",
-        "xutility": "c"
+        "xutility": "c",
+        "initializer_list": "c",
+        "utility": "c",
+        "xstring": "c",
+        "storage.h": "c"
     }
 }

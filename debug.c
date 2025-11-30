@@ -14,7 +14,12 @@ HRESULT run_pre_test(PROCESS process_state)
     init_base_list(&bases);
 
     HRESULT hr = S_OK;
-    hr = scan("C:\\vscode\\ballistic\\bin\\test.txt", handle_base, &bases, process_state);
+
+    char folder_buffer[1024];
+    strcpy(folder_buffer, folder_path);
+    strcat(folder_buffer, "test.txt");
+    
+    hr = scan(folder_buffer, handle_base, &bases, process_state);
     if (process_state == S_DEBUG)
     {
         printf("capacity: %d, items: %d\n", bases.capacity, bases.count);
@@ -27,6 +32,8 @@ HRESULT run_pre_test(PROCESS process_state)
         {
             printf("This text shouldn't be RED!\n");
         }
+        else
+            printf("if not, use the following command in the windows terminal, to enable ansi escape codes\n\"reg add HKCU\\Console /v VirtualTerminalLevel /t REG_DWORD /d 1 /f\"\n");
     }
     free_base_list(&bases);
 

@@ -3,59 +3,53 @@
 #include <string.h>
 #include <stdlib.h>
 
-void ensure_trailing_backslash(char *str, size_t size)
+char *ensure_trailing_backslash(char *str)
 {
     size_t len = strlen(str);
-
-    // Check bounds and avoid overflow
-    if (len + 1 >= size)
-        return;
 
     if (len == 0 || str[len - 1] != '\\')
     {
         str[len] = '\\';     // place backslash before null terminator
         str[len + 1] = '\0'; // new null terminator
     }
+    return str;
 }
 
-void Normalize_path(char *path, size_t size)
+char *Normalize_path(char *path)
 {
-    if (!path || size == 0)
-        return;
+    if (!path)
+        return NULL;
 
-    char *buffer = malloc(size);
-    if (!buffer)
-        return;
+    int offset = 0;
 
-    size_t j = 0;
-    for (size_t i = 0; path[i] != '\0' && j + 2 < size; i++)
+    for (int i = 0; path[i] != '\0'; i++)
     {
-        if (path[i] == '/')
-            buffer[j++] = '\\';
-        else if (path[i] == (char)92)
+
+        for (int j = 0; (path[i] == '/' || path[i] == '\\'); i++)
         {
-            if (path[i + 1] != (char)92)
-                buffer[j++] = '\\';
-            /*if (path[i + 1] != '\\' && j + 1 < size)
-                buffer[j++] = '\\';*/
+            if (j == 0)
+            {
+                j++;
+                path[i + offset] = '/';
+                continue;
+            }
+
+            offset--;
         }
-        else
-            buffer[j++] = path[i];
+
+        path[i + offset] = path[i];
     }
 
-    buffer[j] = '\0';
-    strncpy(path, buffer, size - 1);
-    path[size - 1] = '\0';
-
-    free(buffer);
+    return path;
 }
 
-const char *strtoken(const char *str, const char **endptr)
+//returns a token from a string, and changes the end ptr
+char *strtoken(char *str, char **endptr)
 {
     while (*str == ' ' || *str == '\t' || *str == '\n' || *str == ':')
         str++;
 
-    const char *start = str;
+    char *start = str;
 
     while (*str && *str != ' ' && *str != '\t' && *str != '\n' && *str != ':')
         str++;

@@ -28,6 +28,8 @@ typedef struct {
     Ammo_t_Node* tail;
 } Ammo_t_List;
 
+extern Ammo_t_List *ammo_t_list;
+
 /*
 //====================================
 
@@ -94,10 +96,11 @@ typedef struct {
 // --- Ammo List ---
 //requires a NULL valued, Ammo_t_list's address!    returns S_OK when succeded, S_FAILED when the given value is not NULL
 HRESULT init_Ammo_t_List(Ammo_t_List **list);
-Ammo_t_Node* add_Ammo_t(Ammo_t_List* list, Ammo_t* ammo);       // ordered by id
+Ammo_t_Node* add_Ammo_t(Ammo_t_List* list, Ammo_t ammo);       // ordered by id
 int delete_Ammo_t(Ammo_t_List* list, unsigned id);
 Ammo_t_Node pop_FrontAmmo_t(Ammo_t_List* list);
 Ammo_t_Node pop_BackAmmo_t(Ammo_t_List* list);
+void print_Ammo_t_List(Ammo_t_List *list);
 HRESULT free_Ammo_t_List(Ammo_t_List** list);
 
 /*
@@ -180,7 +183,7 @@ typedef enum
 void init_base_list(BaseList *list);
 void free_base_list(BaseList *list);
 
-HRESULT handle_base(const char *record, void *data, int *error_flags);
+HRESULT handle_base(char *record, void *data, int *error_flags);
 HRESULT add_base(BaseList *list, Base new_item, HRESULT hr);
 
 //input string; constant input value; length of constant

@@ -10,7 +10,6 @@
 #include <string.h>
 #include <ctype.h>
 
-
 // seperate config from loading, beacuse it's messy asf
 
 char *folder_path = NULL;
@@ -169,7 +168,7 @@ Target *load_targets(const char *filename, unsigned *out_count)
     return targets;
 }
 
-/*file name to scan  |  handler function  |  external data  |  scan mode*/
+/*file name to scan  |  handler function  |  external data for the handler  |  scan mode*/
 HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS mode)
 {
     FILE *file = fopen(filename, "r"); // "r" open file in read only mode
@@ -181,7 +180,7 @@ HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS mo
 
     int c;
     ParseState state = NORMAL;
-    char buffer[256];
+    char buffer[512];
     int index = 0;
     HRESULT hr = S_OK; // handle to a result
 
@@ -220,8 +219,10 @@ HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS mo
                 printf("[Line comment] : \n");
             while ((c = fgetc(file)) != EOF)
             {
+                char idk = (char)c;
                 if (mode == S_DEBUG)
-                    putchar(c);
+                    putchar((unsigned char)c);
+
                 if (c == '\n')
                     break;
             }
@@ -250,7 +251,7 @@ HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS mo
                 buffer[index] = '\0';
                 int error_flags[5] = {0};
                 // a 256 sized array gets passed to the handler, so you can safely step it's ptr
-                if (handler && data)
+                if (handler)
                     hr = handler(buffer, data, error_flags); // pass the buffer and the user input address to the function
 
                 else
@@ -420,27 +421,15 @@ HRESULT recreate_config(const char *config_file, PROCESS mode)
 
 HRESULT generate_config(FILE *configfile, const char *config_file)
 {
-    char temp[1024]; // temporary buffer for user input
     printf("Enter a folder path:\n");
-    /*
-    after reading the length of the data, for example 10 bytes, it leaves the rest there,
-    which cause the next command read to read in a false value
-    if (scanf("%1023s", temp) == 1) // read at most 1023 chars, prevent overflow
-        set_folder_path(temp);      // pass directly to your dynamic setter
-    */
+
+    char temp[1024]; // temporary buffer for user input
     if (fgets(temp, sizeof(temp), stdin))
     {
-        /*char *pos = strchr(temp, '\n'); // find the first newline
-        if (pos)                        // overwrite starting at '\n'
-            strcpy(pos, config_file);   // used instead of cat, beacause I want to copy the string to a specific
-                                        // location instead of at the end of a string
-        else
-            strcat(temp, config_file);*/
-
         temp[strcspn(temp, "\n")] = '\0'; // remove trailing newline
 
-        ensure_trailing_backslash(temp, sizeof(temp));
-        Normalize_path(temp, sizeof(temp));
+        ensure_trailing_backslash(temp);
+        Normalize_path(temp);
 
         set_folder_path(temp);
     }
@@ -493,7 +482,7 @@ HRESULT read_config(const char *config_file)
         return S_FALSE;
     }
 
-    scan(config_file, handle_config, "idk", S_RUNNING);
+    scan(config_file, handle_config, NULL, S_RUNNING);
 
     if (fclose(configfile) == EOF)
 
@@ -502,105 +491,75 @@ HRESULT read_config(const char *config_file)
     return S_OK;
 }
 
-// rewrite this mess
-HRESULT handle_config(const char *record, void *data, int *error_flags)
+HRESULT handle_config(char *record, void *data, int *error_flags)
 {
-
-    /*InputFlags flag = T_WHITESPACE;
-    HRESULT hr = S_OK;
-    int length = strlen(record);
-    int label_start = 0;*/
-
-    const char *end = NULL;
+    char *end = NULL;
     /*searches for the normlaized DIR token, then if it is, searches for the value after the ':' charcter*/
     if (norm_strncmp(strtoken(record, &end), "DIR") == S_OK && (record = strchr(end, ':')) != NULL)
     {
-        set_folder_path(remove_quotes((char *)strtoken(record, &record), '\"'));
+        set_folder_path(Normalize_path(ensure_trailing_backslash(remove_quotes((char *)strtoken(record, &record), '\"'))));
         return S_OK;
     }
 
     /*searches for the normlaized COLOUR_M token, then if it is, searches for the value after  the ':' charcter*/
     if (norm_strncmp(strtoken(record, &end), "COLOUR_M") == S_OK && (record = strchr(end, ':')) != NULL)
     {
-        set_color_mode((int)strtof(strtoken(record, &end), (char **)record));
+        set_color_mode((int)strtof(strtoken(record, &end), &record));
         return S_OK;
     }
-
-    /*    for (int i = 0; record[i] != '\0' && i < length; i++)
-        {
-            // make all this shit tokenized
-            char c = record[i];
-            char next_c = (record[i + 1]) ? record[i + 1] : '\0';
-
-                    switch (flag)
-                    {
-                    case T_WHITESPACE:
-                    {
-                        c = tolower(c);
-
-                        switch (c)
-                        {
-                        case 'd':
-                        case 'c':
-                            flag = T_DATA;
-                            break;
-                        default:
-                            const char *p = strchr(&record[i], ' ');
-                            if (p)
-                                i = p - record;
-                            break;
-                        }
-                        break;
-                    }
-                    case T_DATA:
-                    {
-                        if (isspace(c) || c == '\n' || c == '\0')
-                        {
-                            flag = T_WHITESPACE;
-                            break;
-                        }
-                        if (norm_strncmp(&record[i], "IR") == S_OK) // don't use the first letter of the word
-                        {                                           // because it have been already checked
-                            i += 2;
-                            char *result = (char *)record;
-                            if ((result = strchr(result, ':')) != NULL)
-                            {
-                                result++;
-                                const char *end = NULL;
-                                set_folder_path(remove_quotes((char *)strtoken(result, &end), '\"'));
-                                i = end - record;
-
-                                // get the string until the ']' shit, and use the standard process on it
-                            }
-                            // implement something to offset the i value or no, idk
-                            // i = end - record;
-                            flag = T_WHITESPACE;
-                        }
-                        else if (norm_strncmp(&record[i], "OLOUR_M") == S_OK)
-                        {
-                            const char *result = record;
-                            if ((result = strchr(result, ':')) != NULL)
-                            {
-                                result++;
-                                char *end = NULL;
-                                set_color_mode((int)strtof(strtoken(result, (const char **)end), &end));
-                                i = end - record;
-                            }
-                            // implement something to offset the i value or no, idk
-
-                            flag = T_WHITESPACE;
-                        }
-                        else
-                            flag = T_WHITESPACE;
-
-                        break;
-                    }
-                    default:
-                        return E_FAIL; // could only happen, if something goes very wrong
-                    }
-                }
-            */
     return S_OK;
 }
 
-// create a sub file for these...things
+HRESULT handle_ammo_t(char *record, void *data, int *error_flags)
+{
+    // record in the scan case is only on the stack, so I can modify the pointer without a problem
+    Ammo_t ammo;
+
+    char *end = NULL;
+    /*id*/
+    if (norm_strncmp(record, "I") == S_OK)
+    {
+        record = strtoken(record, &end);
+        ammo.id = (unsigned)strtof(++record, &end);
+        record = strtoken(end, &end);
+    }
+    /*name*/
+    if (norm_strncmp(record, "N") == S_OK)
+    {
+        record = strtoken(record, &end);
+        record++;
+        ammo.name = (char *)malloc(end - record + 1); // +1 for null terminator
+        strncpy(ammo.name, record, end - record);
+        ammo.name[end - record] = '\0';
+
+        record = strtoken(end, &end);
+    }
+    /*weight*/
+    if (norm_strncmp(record, "W") == S_OK)
+    {
+        record = strtoken(record, &end);
+        ammo.weight = strtod(++record, &end);
+        record = strtoken(end, &end);
+    }
+    /*diameter*/
+    if (norm_strncmp(record, "D") == S_OK)
+    {
+        record = strtoken(record, &end);
+        ammo.diameter = strtod(++record, &end);
+        record = strtoken(end, &end);
+    }
+    /*blast radius*/
+    if (norm_strncmp(record, "BR") == S_OK)
+    {
+        record = strtoken(record, &end);
+        record++;
+        ammo.blastRadius = strtod(++record, &end);
+        record = strtoken(end, &end);
+    }
+
+    add_Ammo_t(data, ammo);
+
+    free(ammo.name);
+
+    return S_OK;
+}

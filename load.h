@@ -23,17 +23,18 @@ Base *load_bases(const char *filename, unsigned *out_count);
 Target *load_targets(const char *filename, unsigned *out_count);
 int peek(FILE *file);
 
-typedef HRESULT (*RecordHandler)(const char *record, void *data, int *error_flags);
+typedef HRESULT (*RecordHandler)(char *record, void *data, int *error_flags);
 HRESULT scan(const char *filename, RecordHandler handler, void *list, PROCESS mode);
 HRESULT format_basic_error_string(char *error_buffer, int *error_flags);
 
 HRESULT generate_config(FILE *configfile, const char *config_file);
 HRESULT recreate_config(const char *config_file, PROCESS mode);
 HRESULT read_config(const char *config_file);
-HRESULT handle_config(const char *record, void *data, int *error_flags);
+HRESULT handle_config(char *record, void *data, int *error_flags);
 
 HRESULT test_and_run_config(const char *config_file, PROCESS mode);
 
+HRESULT handle_ammo_t(char *record, void *data, int *error_flags);
 //create a helper file for them or smth. idk
 
 

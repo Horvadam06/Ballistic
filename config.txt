@@ -9,5 +9,5 @@ color mode : [0=monochrome, 1=coloured]
 =====================================================
 */
 
-DIR: "im\losing\my\fucking\mind\aaaaaah\";
+DIR: "C:/vscode/Ballistic/bin/data/";
 COLOUR_M: 1;

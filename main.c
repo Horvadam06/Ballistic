@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "main.h"
 #include "debug.h"
@@ -18,24 +19,22 @@
 PROCESS Setup()
 {
     printf("Starting setup...\n");
-    if (!SUCCEEDED(test_and_run_config("config.txt", S_RUNNING)))
+    if (FAILED(test_and_run_config("config.txt", S_RUNNING)))
         return S_TERMINATE;
 
-    if (!SUCCEEDED(run_pre_test(S_RUNNING)))
+    if (FAILED(run_pre_test(S_RUNNING)))
         return S_TERMINATE;
 
     printf("Setup finished!\n");
 
-    Ammo_t_List *list = NULL;
-    init_Ammo_t_List(&list);
+    init_Ammo_t_List(&ammo_t_list);
 
-    add_Ammo_t(list, NULL);
-    add_Ammo_t(list, NULL);
-    add_Ammo_t(list, NULL);
-    pop_BackAmmo_t(list);
-    pop_FrontAmmo_t(list);
-
-    free_Ammo_t_List(&list);
+    char folder_buffer[1024];
+    strcpy(folder_buffer, folder_path);
+    strcat(folder_buffer, "ammo_catalouge.txt");
+    scan(folder_buffer, handle_ammo_t, ammo_t_list, S_DEBUG);
+    print_Ammo_t_List(ammo_t_list);
+    free_Ammo_t_List(&ammo_t_list);
 
     if (get_color_mode())
     {
@@ -66,11 +65,20 @@ int main(void)
     {
         GetCommand(CMD_C_LOAD | CMD_C_SYSTEM, &state);
     }
-    if (state == S_END)
-        printf("Program exited succesfully!\n");
-    else if (state == S_TERMINATE)
-        printf("Program terminated!\n");
 
     CleanUp();
+
+    if (state == S_END)
+    {
+        printf("Program exited succesfully!\n");
+        return 0;
+    }
+    else if (state == S_TERMINATE)
+    {
+        printf("Program terminated!\n");
+        // getchar(); maybe use it, so the terminal is left open till some keypress
+        return -1;
+    }
+
     return 0;
 }

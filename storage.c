@@ -7,6 +7,8 @@
 #include <string.h>
 #include <ctype.h>
 
+Ammo_t_List *ammo_t_list = NULL;
+
 void init_base_list(BaseList *list)
 {
     list->items = NULL;
@@ -44,7 +46,7 @@ HRESULT add_base(BaseList *list, Base new_item, HRESULT hr)
     return hr;
 }
 
-HRESULT handle_base(const char *record, void *data, int *error_flags)
+HRESULT handle_base(char *record, void *data, int *error_flags)
 {
     BaseList *list = (BaseList *)data;
     Base new_base;
@@ -84,6 +86,7 @@ HRESULT ext_basic_info(const char *record, Default_i *info, int *error_flags)
     if (!info)
         return S_OK;
 
+    // 0's out the the info memory area
     memset(info, 0, sizeof(*info));
 
     InputFlags flag = T_WHITESPACE;
@@ -220,24 +223,43 @@ HRESULT init_Ammo_t_List(Ammo_t_List **list)
     return S_OK;
 }
 
-Ammo_t_Node *add_Ammo_t(Ammo_t_List *list, Ammo_t *ammo) // ordered by id, if ther are multiple id def's then just push semi front (later, rn push front)
+// add's an ammo type to a list, in an id order, if there are multiple one's with the same id, the places the newest at front
+Ammo_t_Node *add_Ammo_t(Ammo_t_List *list, Ammo_t ammo)
 {
     if (!list)
         return NULL;
 
-    Ammo_t_Node *new = (Ammo_t_Node *)malloc(sizeof(Ammo_t_Node));
+    Ammo_t *new_ammo = (Ammo_t *)malloc(sizeof(Ammo_t));
+    new_ammo->blastRadius = ammo.blastRadius;
+    new_ammo->diameter = ammo.diameter;
+    new_ammo->id = ammo.id;
 
+    size_t len = strlen(ammo.name) + 1;
+    new_ammo->name = malloc(len);
+    if (!new_ammo->name)
+    {
+        free(new_ammo);
+        return NULL;
+    }
+    memcpy(new_ammo->name, ammo.name, len);
+
+    new_ammo->weight = ammo.weight;
+
+    // searches for the non NULL id order, and "moves" the target there
     Ammo_t_Node *target = list->head;
+    for (; (target->next != list->tail); target = target->next)
+        if ((target->ammoItem && new_ammo))
+            if (target->ammoItem->id < new_ammo->id)
+                break;
 
-    // ah yes, free will
-    for (; target->next != list->tail && ((target->ammoItem && ammo) ? target->ammoItem->id <= ammo->id : 1); target = target->next)
-        ;
+    // insterts the new item before the target
+    Ammo_t_Node *new = (Ammo_t_Node *)malloc(sizeof(Ammo_t_Node));
 
     new->next = target->next;
     new->prev = target;
     target->next = new;
     new->next->prev = new;
-    new->ammoItem = ammo;
+    new->ammoItem = new_ammo;
 
     return new;
 }
@@ -253,7 +275,9 @@ Ammo_t_Node pop_FrontAmmo_t(Ammo_t_List *list)
     list->head->next = target->next;
     target->next->prev = list->head;
     value = *target;
-    free(target);
+    free(target->ammoItem->name); // free the string
+    free(target->ammoItem);       // free the struct
+    free(target);                 // free the node
     return value;
 }
 
@@ -266,10 +290,24 @@ Ammo_t_Node pop_BackAmmo_t(Ammo_t_List *list)
     list->tail->prev = target->prev;
     target->prev->next = list->tail;
     value = *target;
+    free(target->ammoItem);
     free(target);
     return value;
 }
 
+void print_Ammo_t_List(Ammo_t_List *list)
+{
+    if (!list)
+        return;
+
+    Ammo_t_Node *target = list->head->next;
+
+    for (; target != list->tail; target = target->next)
+        if (target->ammoItem)
+            printf("id: %5u | label: %10s\n", target->ammoItem->id, target->ammoItem->name);
+        else
+            printf("NULL ammo parameter\n");
+}
 // lifo
 HRESULT free_Ammo_t_List(Ammo_t_List **list)
 {
