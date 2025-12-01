@@ -9,10 +9,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
 
 #include "debugmalloc.h"
 
-// seperate config from loading, beacuse it's messy asf
+// add the save to file option, if it's done, only the calculations left
 
 char *folder_path = NULL;
 
@@ -40,136 +41,6 @@ void free_folder_path(void)
     free(folder_path);
     folder_path = NULL;
 }
-
-/*
-Base *load_bases(const char *filename, unsigned *out_count)
-{
-    FILE *file = fopen(filename, "r"); // "r" open file in read only mode
-    if (!file)
-    {
-        perror("Failed to open file");
-        return NULL;
-    }
-
-    unsigned capacity = 5;
-    unsigned count = 0;
-    Base *bases = malloc(capacity * sizeof(Base));
-    if (!bases)
-    {
-        if (fclose(file) != 0)
-        {
-            // do proper error handling
-        }
-        return NULL;
-    }
-
-    while (1)
-    {
-        Base temp;
-        int read = fscanf(file, "%d %63s %lf %lf %lf", // limits the input string length to 63 characters
-                          &temp.info.id, &temp.info.label, &temp.info.position.latitude, &temp.info.position.longitude, &temp.info.position.altitude);
-        if (read == 5)
-        {
-            if (count >= capacity)
-            {
-                capacity *= 2;
-                Base *resized = realloc(bases, capacity * sizeof(Base));
-                if (!resized)
-                {
-                    perror("Memory allocation failed");
-                    free(bases);
-                    fclose(file);
-                    return NULL;
-                }
-                bases = resized;
-            }
-            bases[count++] = temp;
-        }
-        else if (read == EOF || read == 0)
-            break; // EOF or invalid line
-        else
-        {
-            // Skip malformed line
-            char buffer[256];
-            fgets(buffer, sizeof(buffer), file);
-        }
-    }
-
-    *out_count = count;
-    if (fclose(file) == 0)
-    {
-        // do proper error handling
-    }
-
-    return bases;
-}*/
-/*
-Target *load_targets(const char *filename, unsigned *out_count)
-{
-    FILE *file = fopen(filename, "r"); // "r" open file in read only mode
-    if (!file)
-    {
-        perror("Failed to open file");
-        return NULL;
-    }
-
-    unsigned capacity = 5;
-    unsigned count = 0;
-    Target *targets = malloc(capacity * sizeof(Target));
-    if (!targets)
-    {
-        if (fclose(file) != 0)
-        {
-            // do propper error handling
-        }
-        return NULL;
-    }
-
-    while (1)
-    {
-        Target temp;
-        int read = fscanf(file, "%d %63s %lf %lf %lf %lf", // limits the input string length to 63 characters
-                          &temp.info.id, &temp.info.label,
-                          &temp.info.position.latitude, &temp.info.position.longitude, &temp.info.position.altitude,
-                          &temp.area);
-        if (read == 6)
-        {
-            if (count >= capacity)
-            {
-                capacity *= 2;
-                Target *resized = realloc(targets, capacity * sizeof(Target));
-                if (!resized)
-                {
-                    perror("Memory allocation failed");
-                    free(targets);
-                    if (fclose(file) != 0)
-                    {
-                        // do proper error handling
-                    }
-                    return NULL;
-                }
-                targets = resized;
-            }
-            targets[count++] = temp;
-        }
-        else if (read == EOF || read == 0)
-            break; // EOF or invalid line
-        else
-        {
-            // Skip malformed line
-            char buffer[256];
-            fgets(buffer, sizeof(buffer), file);
-        }
-    }
-
-    *out_count = count;
-    if (fclose(file) != 0)
-    {
-        // do proper error handling
-    }
-
-    return targets;
-}*/
 
 /*file name to scan  |  handler function  |  external data for the handler  |  scan mode*/
 HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS mode)
@@ -388,6 +259,7 @@ HRESULT test_and_run_config(const char *config_file, PROCESS mode) // check if i
         }
         return hr;
     }
+    fclose(configfile);
 
     hr = read_config(config_file);
     if (SUCCEEDED(hr))
@@ -513,8 +385,6 @@ HRESULT handle_config(char *record, void *data, int *error_flags)
     return S_OK;
 }
 
-
-
 HRESULT handle_ammo_t(char *record, void *data, int *error_flags)
 {
     // record in the scan case is only on the stack, so I can modify the pointer without a problem
@@ -563,6 +433,24 @@ HRESULT handle_ammo_t(char *record, void *data, int *error_flags)
             record = strtoken(record, &end);
             record++;
             ammo.blastRadius = strtod(++record, &end);
+            record = strtoken(end, &end);
+        }
+
+        /*blast radius*/
+        if (norm_strncmp(record, "MV") == S_OK)
+        {
+            record = strtoken(record, &end);
+            record++;
+            ammo.muzzleVelocity = strtod(++record, &end);
+            record = strtoken(end, &end);
+        }
+
+        /*ballistic coefficent*/
+        if (norm_strncmp(record, "BC") == S_OK)
+        {
+            record = strtoken(record, &end);
+            record++;
+            ammo.ballistic_coefficient = strtod(++record, &end);
             record = strtoken(end, &end);
         }
     }
@@ -710,7 +598,7 @@ HRESULT handle_target(char *record, void *data, int *error_flags)
             target.coord.altitude = strtod(record, &end);
             record = strtoken(end, &end);
         }
-        // ammo list
+        // area
         if (norm_strncmp(record, "A") == S_OK)
         {
             record = strtoken(record, &end);
@@ -724,4 +612,157 @@ HRESULT handle_target(char *record, void *data, int *error_flags)
     free(target.label);
 
     return S_OK;
+}
+
+void LogResult(const Base *base, const Target *tgt, const Ammo_t *ammo, const BallisticResult *res)
+{
+    if (!base || !tgt || !ammo || !res)
+    {
+        printf("LogResult: invalid argument.\n");
+        return;
+    }
+
+    char folder_buffer[1024];
+    strcpy(folder_buffer, folder_path);
+    strcat(folder_buffer, "log.txt");
+    FILE *fp = fopen(folder_buffer, "a");
+    if (!fp)
+    {
+        printf("Failed to open log.txt for writing.\n");
+        return;
+    }
+
+    // get the time for log
+    time_t now = time(NULL);
+    char *ts = ctime(&now);
+    if (ts)
+        ts[strcspn(ts, "\n")] = 0; // strip newline
+
+    fprintf(fp,
+            "=== ENTRY @ %s ===\n"
+            "Base:\n"
+            "  ID: %u\n"
+            "  Label: %s\n"
+            "  Coord: latitude %.6f, longitude %.6f, altitude %.2f m\n"
+            "\n"
+            "Target:\n"
+            "  ID: %u\n"
+            "  Label: %s\n"
+            "  Coord: latitude %.6f, longitude %.6f, altitude %.2f m\n"
+            "\n"
+            "Ammo:\n"
+            "  ID: %u\n"
+            "  Name: %s\n"
+            "  Weight: %.3f kg\n"
+            "  Diameter: %.3f mm\n"
+            "  BlastRadius: %.3f m\n"
+            "  MuzzleVel: %.3f m/s\n"
+            "  BC(G7): %.5f\n"
+            "\n"
+            "Solution:\n"
+            "  Elevation: %.4f deg\n"
+            "  Azimuth:   %.4f deg\n"
+            "  TOF:       %.4f s\n"
+            "  ImpactVel: %.4f m/s\n"
+            "  Valid:     %s\n"
+            "-----------------------------\n\n",
+
+            ts,
+            base->id, base->label,
+            base->coord.latitude, base->coord.longitude, base->coord.altitude,
+
+            tgt->id, tgt->label,
+            tgt->coord.latitude, tgt->coord.longitude, tgt->coord.altitude,
+
+            ammo->id, ammo->name,
+            ammo->weight,
+            ammo->diameter,
+            ammo->blastRadius,
+            ammo->muzzleVelocity,
+            ammo->ballistic_coefficient,
+
+            res->elevation_deg,
+            res->azimuth_deg,
+            res->time_of_flight,
+            res->impact_velocity,
+            res->valid ? "YES" : "NO");
+
+    fclose(fp);
+}
+
+int HandleParameterSelection(void)
+{
+    unsigned baseID, targetID, ammoID;
+    char input[128] = {0};
+    printf("------------------------------\n");
+    printf("Enter parameters: <base_id> <target_id> <ammo_id>\n");
+    printf("Type [back] to return or to view/expand the available [list]!\n");
+    printf("------------------------------\n\n");
+
+    if (!fgets(input, sizeof(input), stdin))
+        return -1;
+
+    input[strcspn(input, "\r\n")] = 0; // remove newline
+
+    if (isalpha((unsigned char)input[0]))
+    {
+        Command_t cmd = ParseCommandFromBuffer(input, CMD_C_BACK, NULL);
+        if (cmd == CMD_BACK)
+            return -1;
+        if (cmd != CMD_INVALID)
+            return 0;
+    }
+
+    if (sscanf(input, "%u %u %u", &baseID, &targetID, &ammoID) != 3)
+    {
+        printf("Invalid input. Expected format: <base_id> <target_id> <ammo_id>\n");
+        return -1;
+    }
+
+    Base *base = FindBaseByID(base_list, baseID);
+    Target *tgt = FindTargetByID(target_list, targetID);
+    Ammo_t *ammo = FindAmmoByID(ammo_t_list, ammoID);
+
+    if (!tgt)
+    {
+        printf("Target ID %u does not exist.\n", targetID);
+        return 0;
+    }
+
+    // If base or ammo is invalid or cannot hit target, suggest automatically
+    if (!base || !ammo || !compute_fire_solution(base, tgt, ammo).valid)
+    {
+        printf("Finding best available base and ammo...\n");
+        printf("This may take a while...\n");
+        if (!SuggestBestBaseAndAmmo_RegionAware(base_list, tgt, &base, &ammo))
+        {
+            printf("No suitable base/ammo combination found.\n");
+            return 0;
+        }
+
+        printf("Suggested base and ammo:\n");
+        printf("  Base ID: %u  Label: %s  Coordinates: lat %.6f, lon %.6f, alt %.2f m\n",
+               base->id, base->label, base->coord.latitude, base->coord.longitude, base->coord.altitude);
+        printf("  Ammo ID: %u  Label: %s\n", ammo->id, ammo->name);
+
+        printf("Would you like to accept these changes? [yes/no]\n");
+        if (GetCommand(CMD_C_LOOP | CMD_C_YESNO, NULL) == CMD_YES)
+        {
+            goto Recalculate;
+        }
+
+        return 0;
+    }
+
+Recalculate:
+    BallisticResult b_result = compute_fire_solution(base, tgt, ammo);
+    if (!b_result.valid)
+    {
+        printf("Even the suggested base cannot reach the target.\n");
+        return 0;
+    }
+
+    LogResult(base, tgt, ammo, &b_result);
+    printf("Parameters accepted and logged.\n");
+    return 0;
 }

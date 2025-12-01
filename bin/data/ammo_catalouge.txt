@@ -1,6 +1,6 @@
 /*
 =====================================================
---------------Ammo ROM Parameters--------------------
+--------------Ammo Parameters------------------------
 =====================================================
 Use the following structure for the inputs:
 --------The defaults---------------------------------
@@ -19,78 +19,53 @@ Use the following structure for the inputs:
 =====================================================
 */
 
-/* ===================== LONG-RANGE ROCKETS ===================== */
-I0  W66.0 N122GRAD_HE      BR28.0      D122.0   ;  //122mm GRAD HE
-I1  N122GRAD_FRAG      W64.0    D122.0   BR35.0;  //122mm GRAD fragmentation
-I2  N122GRAD_SMK       W61.0    D122.0   BR0.0;   //122mm GRAD smoke
-I3  N122GRAD_INC       W63.0    D122.0   BR15.0;  //122mm GRAD incendiary
-I4  N122RM70_HE_EX     W74.0    D122.0   BR32.0;  //RM-70 extended HE
-I5  N122RM70_CARGO     W72.0    D122.0   BR25.0;  //RM-70 cargo/submunition
-I6  N122TORNADO_G_HE   W75.0    D122.0   BR40.0;  //Tornado-G high-explosive
-I7  N122TORNADO_G_TB   W78.0    D122.0   BR75.0;  //Tornado-G thermobaric
-I8  N122INC_S          W70.0    D122.0   BR20.0;  //122mm short incendiary
-I9  N122_9M521_HE      W66.5    D122.0   BR30.0;  //9M521 modern HE
-
-/* ===================== HEAVY ROCKET ARTILLERY ===================== */
-
-I10 N220URAGAN_HE      W280.0   D220.0   BR90.0;  //220mm Uragan HE
-I11 N220URAGAN_TB      W285.0   D220.0   BR150.0; //220mm Uragan thermobaric
-I12 N220URAGAN_CL      W270.0   D220.0   BR70.0;  //220mm Uragan cluster
-I13 N220URAGAN_SMK     W260.0   D220.0   BR0.0;   //220mm Uragan smoke
-
-I14 N227MLRS_M26_HE    W156.0   D227.0   BR40.0;  //MLRS M26 HE
-I15 N227MLRS_M30       W200.0   D227.0   BR30.0;  //MLRS M30 GMLRS
-I16 N227MLRS_M31       W208.0   D227.0   BR25.0;  //MLRS M31 Unitary
-I17 N227MLRS_SMK       W150.0   D227.0   BR0.0;   //MLRS smoke
-
-I18 N300SMERCH_HE      W815.0   D300.0   BR180.0; //300mm Smerch HE
-I19 N300SMERCH_TB      W820.0   D300.0   BR260.0; //300mm Smerch thermobaric
-I20 N300SMERCH_CL      W800.0   D300.0   BR120.0; //300mm Smerch cluster
-I21 N300SMERCH_SF      W790.0   D300.0   BR110.0; //300mm Smerch sensor-fused
-
-/* ===================== MORTARS ===================== */
-
-I22 N60M_HE            W1.8     D60.0    BR8.0;   //60mm mortar HE
-I23 N60M_SMK           W1.5     D60.0    BR0.0;   //60mm mortar smoke
-I24 N60M_ILLUM         W1.6     D60.0    BR0.0;   //60mm mortar illumination
-
-I25 N81M_HE            W4.1     D81.0    BR14.0;  //81mm mortar HE
-I26 N81M_SMK           W3.8     D81.0    BR0.0;   //81mm mortar smoke
-I27 N81M_ILLUM         W4.0     D81.0    BR0.0;   //81mm mortar illumination
-
-I28 N120M_HE           W14.5    D120.0   BR30.0;  //120mm mortar HE
-I29 N120M_HEFRAG       W15.0    D120.0   BR36.0;  //120mm mortar HE/frag
-I30 N120M_SMK          W13.5    D120.0   BR0.0;   //120mm mortar smoke
-I31 N120M_ILLUM        W14.0    D120.0   BR0.0;   //120mm mortar illumination
-I32 N120M_TB           W16.0    D120.0   BR55.0;  //120mm thermobaric
-I33 N120M_GUIDED       W17.0    D120.0   BR20.0;  //120mm guided round
-
-/* ===================== HEAVY / SIEGE MORTARS ===================== */
-
-I34 N160M_HE           W41.0    D160.0   BR50.0;  //160mm heavy mortar HE
-I35 N160M_HE_HV        W43.0    D160.0   BR60.0;  //160mm high-velocity HE
-
-I36 N240M_HE           W130.0   D240.0   BR90.0;  //240mm siege HE
-I37 N240M_TB           W138.0   D240.0   BR160.0; //240mm thermobaric
-I38 N240M_PEN          W150.0   D240.0   BR20.0;  //240mm penetration/solid
-
-/* ===================== EXTRA ROCKET TYPES TO HIT ~50 ===================== */
-
-I39 N122_HE_B          W70.0    D122.0   BR34.0;  //122mm Extended HE-B
-I40 N122_TB_B          W72.0    D122.0   BR80.0;  //122mm thermobaric B
-
-I41 N220_GUIDED        W300.0   D220.0   BR40.0;  //220mm guided rocket
-
-I42 N300_HE_HV         W900.0   D300.0   BR220.0; //300mm high-velocity HE
-I43 N300_LONGRANGE     W850.0   D300.0   BR180.0; //300mm long-range rocket
-
-I44 N400_HE            W1200.0  D400.0   BR320.0; //400mm super-heavy HE
-I45 N400_TB            W1250.0  D400.0   BR600.0; //400mm thermobaric
-
-I46 N600_TAC_HE        W2000.0  D600.0   BR500.0; //600mm tactical HE
-
-/* extra consistent fillers */
-
-I47 N81M_FRAG          W4.2     D81.0    BR18.0;  //81mm mortar fragmentation
-I48 N120M_AIRBURST     W15.2    D120.0   BR40.0;  //120mm airburst
-I49 N227MLRS_CLUSTER   W160.0   D227.0   BR50.0;  //227mm MLRS cluster
+I0   N122GRAD_HE   W66.000  D122.000   BR28.000   MV710.000   BC25.000;
+I1   N122GRAD_FRAG   W64.000  D122.000   BR35.000   MV720.000   BC24.000;
+I2   N122GRAD_SMK   W61.000  D122.000   BR0.000   MV705.000   BC18.000;
+I3   N122GRAD_INC   W63.000  D122.000   BR15.000   MV715.000   BC20.000;
+I4   N122RM70_HE_EX   W74.000  D122.000   BR32.000   MV740.000   BC28.000;
+I5   N122RM70_CARGO   W72.000  D122.000   BR25.000   MV735.000   BC26.000;
+I6   N122TORNADO_G_HE   W75.000  D122.000   BR40.000   MV760.000   BC32.000;
+I7   N122TORNADO_G_TB   W78.000  D122.000   BR75.000   MV755.000   BC27.000;
+I8   N122INC_S   W70.000  D122.000   BR20.000   MV700.000   BC19.000;
+I9   N122_9M521_HE   W66.500  D122.000   BR30.000   MV730.000   BC26.000;
+I10   N220URAGAN_HE   W280.000  D220.000   BR90.000   MV620.000   BC45.000;
+I11   N220URAGAN_TB   W285.000  D220.000   BR150.000   MV610.000   BC42.000;
+I12   N220URAGAN_CL   W270.000  D220.000   BR70.000   MV600.000   BC40.000;
+I13   N220URAGAN_SMK   W260.000  D220.000   BR0.000   MV590.000   BC32.000;
+I14   N227MLRS_M26_HE   W156.000  D227.000   BR40.000   MV850.000   BC48.000;
+I15   N227MLRS_M30   W200.000  D227.000   BR30.000   MV900.000   BC55.000;
+I16   N227MLRS_M31   W208.000  D227.000   BR25.000   MV880.000   BC52.000;
+I17   N227MLRS_SMK   W150.000  D227.000   BR0.000   MV820.000   BC38.000;
+I18   N300SMERCH_HE   W815.000  D300.000   BR180.000   MV1120.000   BC70.000;
+I19   N300SMERCH_TB   W820.000  D300.000   BR260.000   MV1100.000   BC62.000;
+I20   N300SMERCH_CL   W800.000  D300.000   BR120.000   MV1090.000   BC64.000;
+I21   N300SMERCH_SF   W790.000  D300.000   BR110.000   MV1150.000   BC72.000;
+I22   N60M_HE   W1.800  D60.000   BR8.000   MV220.000   BC12.000;
+I23   N60M_SMK   W1.500  D60.000   BR0.000   MV210.000   BC6.500;
+I24   N60M_ILLUM   W1.600  D60.000   BR0.000   MV200.000   BC7.000;
+I25   N81M_HE   W4.100  D81.000   BR14.000   MV260.000   BC14.000;
+I26   N81M_SMK   W3.800  D81.000   BR0.000   MV250.000   BC10.000;
+I27   N81M_ILLUM   W4.000  D81.000   BR0.000   MV245.000   BC11.000;
+I28   N120M_HE   W14.500  D120.000   BR30.000   MV310.000   BC18.000;
+I29   N120M_HEFRAG   W15.000  D120.000   BR36.000   MV315.000   BC19.000;
+I30   N120M_SMK   W13.500  D120.000   BR0.000   MV300.000   BC15.000;
+I31   N120M_ILLUM   W14.000  D120.000   BR0.000   MV290.000   BC17.000;
+I32   N120M_TB   W16.000  D120.000   BR55.000   MV320.000   BC14.000;
+I33   N120M_GUIDED   W17.000  D120.000   BR20.000   MV330.000   BC22.000;
+I34   N160M_HE   W41.000  D160.000   BR50.000   MV340.000   BC21.000;
+I35   N160M_HE_HV   W43.000  D160.000   BR60.000   MV360.000   BC24.000;
+I36   N240M_HE   W130.000  D240.000   BR90.000   MV420.000   BC28.000;
+I37   N240M_TB   W138.000  D240.000   BR160.000   MV410.000   BC26.000;
+I38   N240M_PEN   W150.000  D240.000   BR20.000   MV450.000   BC32.000;
+I39   N122_HE_B   W70.000  D122.000   BR34.000   MV740.000   BC27.000;
+I40   N122_TB_B   W72.000  D122.000   BR80.000   MV745.000   BC25.000;
+I41   N220_GUIDED   W300.000  D220.000   BR40.000   MV650.000   BC50.000;
+I42   N300_HE_HV   W900.000  D300.000   BR220.000   MV1180.000   BC82.000;
+I43   N300_LONGRANGE   W850.000  D300.000   BR180.000   MV1160.000   BC75.000;
+I44   N400_HE   W1200.000  D400.000   BR320.000   MV850.000   BC85.000;
+I45   N400_TB   W1250.000  D400.000   BR600.000   MV820.000   BC80.000;
+I46   N600_TAC_HE   W2000.000  D600.000   BR500.000   MV700.000   BC90.000;
+I47   N81M_FRAG   W4.200  D81.000   BR18.000   MV270.000   BC15.000;
+I48   N120M_AIRBURST   W15.200  D120.000   BR40.000   MV325.000   BC19.000;
+I49   N227MLRS_CLUSTER   W160.000  D227.000   BR50.000   MV830.000   BC46.000;

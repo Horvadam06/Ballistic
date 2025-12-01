@@ -12,24 +12,24 @@
 HRESULT run_pre_test(PROCESS process_state)
 {
     printf("Starting test...\n");
-    /*BaseList bases;
-    init_base_list(&bases);*/
 
     HRESULT hr = S_OK;
 
     char folder_buffer[1024];
     strcpy(folder_buffer, folder_path);
-    strcat(folder_buffer, "test.txt");
-    
-    //hr = scan(folder_buffer, handle_base, &bases, process_state);
+    strcat(folder_buffer, "ammo_catalouge.txt");
+    init_Ammo_t_List(&ammo_t_list);
+    hr = scan(folder_buffer, handle_ammo_t, ammo_t_list, process_state);
+
+    strcpy(folder_buffer, folder_path);
+    strcat(folder_buffer, "bases.txt");
+
+    init_Base_List(&base_list);
+    hr = scan(folder_buffer, handle_base, base_list, process_state);
     if (process_state == S_DEBUG)
     {
-        /*printf("capacity: %d, items: %d\n", bases.capacity, bases.count);
-        for (int i = 0; i < bases.count; i++)
-        {
-            printf("%d %s\n", bases.items[i].info.id, bases.items[i].info.label);
-        }
-        */
+        print_Base_List(base_list, process_state);
+        print_Ammo_t_List(ammo_t_list);
 
         if (print_colored(ANSI_COLOR_RED, "This text should be RED!\n", false) == S_FALSE)
         {
@@ -38,7 +38,8 @@ HRESULT run_pre_test(PROCESS process_state)
         else
             printf("if not, use the following command in the windows terminal, to enable ansi escape codes\n\"reg add HKCU\\Console /v VirtualTerminalLevel /t REG_DWORD /d 1 /f\"\n");
     }
-    //free_base_list(&bases);
+    free_Base_List(&base_list);
+    free_Ammo_t_List(&ammo_t_list);
 
     printf("----------------------------------\n");
     if (hr == S_OK)

@@ -34,19 +34,19 @@ PROCESS Setup()
     strcat(folder_buffer, "ammo_catalouge.txt");
     init_Ammo_t_List(&ammo_t_list);
     scan(folder_buffer, handle_ammo_t, ammo_t_list, S_RUNNING);
-    //print_Ammo_t_List(ammo_t_list);
+    // print_Ammo_t_List(ammo_t_list);
 
     strcpy(folder_buffer, folder_path);
     strcat(folder_buffer, "bases.txt");
     init_Base_List(&base_list);
     scan(folder_buffer, handle_base, base_list, S_RUNNING);
-    //print_Base_List(base_list, S_RUNNING);
+    // print_Base_List(base_list, S_RUNNING);
 
     strcpy(folder_buffer, folder_path);
     strcat(folder_buffer, "targets.txt");
     init_Target_List(&target_list);
     scan(folder_buffer, handle_target, target_list, S_RUNNING);
-    //print_Target_List(target_list);
+    // print_Target_List(target_list);
 
     if (get_color_mode())
     {
@@ -60,15 +60,47 @@ PROCESS Setup()
     printf("==================================\n");
     printf("\n");
     printf("Type [exit] to leave or type [help] for the commands!\n");
-
+    cmd_help(NULL, CMD_HELP, NULL);
     return S_RUNNING;
 }
 
 void CleanUp()
 {
-    free_Base_List(&base_list);
-    free_Target_List(&target_list);
-    free_Ammo_t_List(&ammo_t_list);
+    printf("Do you want to save before leaving? [YES/NO]\n");
+    if (GetCommand(CMD_C_YESNO | CMD_C_LOOP, NULL) == CMD_YES)
+    {
+        char folder_buffer[1024];
+        if (base_list)
+        {
+            strcpy(folder_buffer, folder_path);
+            strcat(folder_buffer, "bases.txt");
+            if (SUCCEEDED(Save_BaseList(base_list, folder_buffer)))
+                printf("Base list saved succesfully!\n");
+        }
+
+        if (target_list)
+        {
+            strcpy(folder_buffer, folder_path);
+            strcat(folder_buffer, "targets.txt");
+            if (SUCCEEDED(Save_TargetList(target_list, folder_buffer)))
+                printf("Target list saved succesfully!\n");
+        }
+
+        if (ammo_t_list)
+        {
+            strcpy(folder_buffer, folder_path);
+            strcat(folder_buffer, "ammo_catalouge.txt");
+            if (SUCCEEDED(Save_Ammo_t_List(ammo_t_list, folder_buffer)))
+                printf("Ammo Type list saved succesfully!\n");
+        }
+    }
+    if (base_list)
+        free_Base_List(&base_list);
+    if (target_list)
+        free_Target_List(&target_list);
+    if (ammo_t_list)
+        free_Ammo_t_List(&ammo_t_list);
+
     free_folder_path();
 }
 

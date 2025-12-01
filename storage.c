@@ -13,7 +13,6 @@ Ammo_t_List *ammo_t_list = NULL;
 Base_List *base_list = NULL;
 Target_List *target_list = NULL;
 
-
 // ammo list functions======================================================
 HRESULT init_Ammo_t_List(Ammo_t_List **list)
 {
@@ -41,7 +40,9 @@ Ammo_t_Node *add_Ammo_t(Ammo_t_List *list, Ammo_t ammo)
         return NULL;
 
     Ammo_t *new_ammo = (Ammo_t *)malloc(sizeof(Ammo_t));
+    new_ammo->ballistic_coefficient = ammo.ballistic_coefficient;
     new_ammo->blastRadius = ammo.blastRadius;
+    new_ammo->muzzleVelocity = ammo.muzzleVelocity;
     new_ammo->diameter = ammo.diameter;
     new_ammo->id = ammo.id;
 
@@ -173,8 +174,8 @@ void print_Ammo_t_List(Ammo_t_List *list)
 
     for (; target != list->tail; target = target->next)
         if (target->ammoItem)
-            printf("id: %5u | label: %20s | weight: %10.2f kg | caliber: %10.2f mm | blast radius %10.2f m\n",
-                   target->ammoItem->id, target->ammoItem->name, target->ammoItem->weight, target->ammoItem->diameter, target->ammoItem->blastRadius);
+            printf("id: %5u | label: %20s | weight: %10.2f kg | caliber: %10.2f mm | blast radius %10.2f m | muzzle velocity %10.3f m/s | ballistic coefficient %5.3f\n",
+                   target->ammoItem->id, target->ammoItem->name, target->ammoItem->weight, target->ammoItem->diameter, target->ammoItem->blastRadius, target->ammoItem->muzzleVelocity, target->ammoItem->ballistic_coefficient);
         else
             printf("NULL ammo parameter\n");
 }
@@ -190,11 +191,40 @@ HRESULT free_Ammo_t_List(Ammo_t_List **list)
     free((*list)->tail);
     free(*list);
 
+    *list = NULL;
+
     return S_OK;
 }
 
+Ammo_t *FindAmmoByID(Ammo_t_List *list, unsigned id)
+{
+    if (!list || (list->head->next == list->tail))
+        return NULL;
 
+    int dir = (abs(list->head->next->ammoItem->id - id) <= abs(list->tail->prev->ammoItem->id - id)) ? 0 : 1; // 0 up, 1 down
 
+    Ammo_t_Node *target = (dir) ? list->tail : list->head;
+
+    while (target != list->tail)
+        if (target->ammoItem && target->ammoItem->id == id)
+        {
+
+            return target->ammoItem;
+        }
+        else
+            target = target->next;
+
+    while (target != list->head)
+        if (target->ammoItem && target->ammoItem->id == id)
+        {
+
+            return target->ammoItem;
+        }
+        else
+            target = target->prev;
+
+    return NULL;
+}
 
 // base list functions======================================================
 HRESULT init_Base_List(Base_List **list)
@@ -359,8 +389,24 @@ HRESULT free_Base_List(Base_List **list)
     return S_OK;
 }
 
+Base *FindBaseByID(Base_List *list, unsigned id)
+{
+    if (!list || (list->head->next == list->tail))
+        return NULL;
 
+    Base_Node *target = list->head;
 
+    while (target != list->tail)
+        if (target->baseItem && target->baseItem->id == id)
+        {
+
+            return target->baseItem;
+        }
+        else
+            target = target->next;
+
+    return NULL;
+}
 
 // base ammo stock list functions======================================================
 HRESULT init_Ammo_Stock_List(Ammo_Stock_List **list)
@@ -524,13 +570,13 @@ HRESULT free_Ammo_Stock_List(Ammo_Stock_List **list)
     free((*list)->tail);
     free(*list);
 
+
     *list = NULL;
 
     return S_OK;
 }
 
-
-//target list functions============================================
+// target list functions============================================
 HRESULT init_Target_List(Target_List **list)
 {
     if (*list != NULL)
@@ -565,6 +611,7 @@ Target_Node *add_Target(Target_List *list, Target target)
         free(new_target);
         return NULL;
     }
+    new_target->area = target.area;
     memcpy(new_target->label, target.label, len);
 
     Target_Node *target_n = list->head;
@@ -649,8 +696,8 @@ void print_Target_List(Target_List *list)
     for (; target != list->tail; target = target->next)
         if (target->targetItem)
         {
-            printf("id: %5u | label: %20s | latitude: %10.3fdeg | longtitude: %10.3fdeg | altitude: %10.3fdeg\n",
-                   target->targetItem->id, target->targetItem->label, target->targetItem->coord.latitude, target->targetItem->coord.longitude, target->targetItem->coord.altitude);
+            printf("id: %5u | label: %20s | latitude: %10.3fdeg | longtitude: %10.3fdeg | altitude: %10.3fdeg | area: %10.3fkm^2\n",
+                   target->targetItem->id, target->targetItem->label, target->targetItem->coord.latitude, target->targetItem->coord.longitude, target->targetItem->coord.altitude, target->targetItem->area);
         }
         else
             printf("NULL ammo parameter\n");
@@ -670,4 +717,287 @@ HRESULT free_Target_List(Target_List **list)
     *list = NULL;
 
     return S_OK;
+}
+
+Target *FindTargetByID(Target_List *list, unsigned id)
+{
+    if (!list || (list->head->next == list->tail))
+        return NULL;
+
+    Target_Node *target = list->head;
+
+    while (target != list->tail)
+        if (target->targetItem && target->targetItem->id == id)
+        {
+
+            return target->targetItem;
+        }
+        else
+            target = target->next;
+
+    return NULL;
+}
+
+HRESULT Save_BaseList(Base_List *list, char *path)
+{
+    HRESULT hr = S_OK;
+    FILE *f = fopen(path, "w");
+    if (f)
+    {
+        Save_BaseList_file(f);
+    }
+    else
+        hr = E_FAIL;
+
+    fclose(f);
+    return hr;
+}
+
+HRESULT Save_TargetList(Target_List *list, char *path)
+{
+    HRESULT hr = S_OK;
+    FILE *f = fopen(path, "w");
+    if (f)
+    {
+        Save_TargetList_file(f);
+    }
+    else
+        hr = E_FAIL;
+
+    fclose(f);
+    return hr;
+}
+
+HRESULT Save_Ammo_t_List(Ammo_t_List *list, char *path)
+{
+    HRESULT hr = S_OK;
+    FILE *f = fopen(path, "w");
+    if (f)
+    {
+        Save_Ammo_t_List_file(f);
+    }
+    else
+        hr = E_FAIL;
+
+    fclose(f);
+    return hr;
+}
+
+unsigned GetAmmoID(const Ammo_t *a)
+{
+    return a ? a->id : 0;
+}
+
+void Save_BaseList_file(FILE *fp)
+{
+    if (!fp)
+    {
+        fprintf(stderr, "SaveBaseRomFile: NULL file pointer\n");
+        return;
+    }
+
+    fprintf(fp,
+            "/*\n"
+            "=====================================================\n"
+            "--------------Base Parameters--------------------\n"
+            "Use the following structure for inputs:\n"
+            "    [I]   : id of base\n"
+            "    [L]   : label (name)\n"
+            "    [CLA] : latitude (degrees)\n"
+            "    [CLO] : longitude (degrees)\n"
+            "    [CA]  : altitude (meters)\n"
+            "    [AMS] : ammo-stock map { ammo_id:count, ... }\n"
+            "\n"
+            "-End every line with ;\n"
+            "=====================================================\n"
+            "*/\n\n");
+
+    Base_Node *node = base_list->head;
+
+    RangeType lastRange = RANGE_NONE;
+
+    while (node)
+    {
+        Base *b = node->baseItem;
+        if (b)
+        {
+            RangeType r = GetRange(b->id);
+
+            if (r != lastRange)
+            {                            // <-- NEW RANGE DETECTED
+                PrintRangeHeader(fp, r); // <-- Print header ONCE
+                lastRange = r;
+            }
+
+            fprintf(fp,
+                    "I%u   L%s   CLA%.6f  CLO%.6f   CA%.1f  AMS:{",
+                    b->id,
+                    b->label,
+                    b->coord.latitude,
+                    b->coord.longitude,
+                    b->coord.altitude);
+
+            Ammo_Stock *as = b->ammoStock->head;
+            int first = 1;
+
+            while (as)
+            {
+                unsigned ammo_id = GetAmmoID(as->typePtr);
+                unsigned qty = as->quantity;
+
+                if (!first)
+                    fprintf(fp, ",");
+
+                fprintf(fp, "%u:%u", ammo_id, qty);
+                first = 0;
+
+                as = as->next;
+            }
+
+            fprintf(fp, "};\n");
+        }
+
+        node = node->next;
+    }
+}
+
+void Save_TargetList_file(FILE *fp)
+{
+    if (!fp)
+    {
+        fprintf(stderr, "TargetFile: NULL file pointer\n");
+        return;
+    }
+
+    fprintf(fp,
+            "/*\n"
+            "=====================================================\n"
+            "--------------Target Parameters--------------------\n"
+            "Use the following structure for inputs:\n"
+            "    [I]   : id of base\n"
+            "    [L]   : label (name)\n"
+            "    [CLA] : latitude (degrees)\n"
+            "    [CLO] : longitude (degrees)\n"
+            "    [CA]  : altitude (meters)\n"
+            "    [A]   : area (km^2)\n"
+            "\n"
+            "-End every line with ;\n"
+            "=====================================================\n"
+            "*/\n\n");
+
+    Target_Node *node = target_list->head;
+
+    RangeType lastRange = RANGE_NONE;
+
+    while (node)
+    {
+        Target *b = node->targetItem;
+        if (b)
+        {
+            RangeType r = GetRange(b->id);
+
+            if (r != lastRange)
+            {                            // <-- NEW RANGE DETECTED
+                PrintRangeHeader(fp, r); // <-- Print header ONCE
+                lastRange = r;
+            }
+
+            fprintf(fp,
+                    "I%u   L%s   CLA%.6f  CLO%.6f   CA%.1f  A%.3f;\n",
+                    b->id,
+                    b->label,
+                    b->coord.latitude,
+                    b->coord.longitude,
+                    b->coord.altitude,
+                    b->area);
+        }
+
+        node = node->next;
+    }
+}
+
+void Save_Ammo_t_List_file(FILE *fp)
+{
+    if (!fp)
+    {
+        fprintf(stderr, "Ammo_t_ListFile: NULL file pointer\n");
+        return;
+    }
+
+    fprintf(fp,
+            "/*\n"
+            "=====================================================\n"
+            "--------------Ammo Parameters------------------------\n"
+            "=====================================================\n"
+            "Use the following structure for the inputs:\n"
+            "--------The defaults---------------------------------\n"
+            "\t[I]  : the id of the ammo\n"
+            "\t[N]  : the name string\n"
+            "\t[W]  : the weight\n"
+            "\t[D]  : the diameter (caliber)\n"
+            "\t[BR] : the blast radius\n"
+            "\n"
+            "--------The parameters-------------------------------\n"
+            "(valami még lesz itt)\n"
+            "=====================================================\n"
+            "-The data structure has no order\n"
+            "-The id gets normalized\n"
+            "-End every line with ;\n"
+            "=====================================================\n"
+            "*/\n\n");
+
+    Ammo_t_Node *node = ammo_t_list->head;
+
+    while (node)
+    {
+        Ammo_t *b = node->ammoItem;
+        if (b)
+        {
+
+            fprintf(fp,
+                    "I%u   N%s   W%.3f  D%.3f   BR%.3f   MV%.3f   BC%.3f;\n",
+                    b->id,
+                    b->name,
+                    b->weight,
+                    b->diameter,
+                    b->blastRadius,
+                    b->muzzleVelocity,
+                    b->ballistic_coefficient);
+        }
+
+        node = node->next;
+    }
+}
+
+static void PrintRangeHeader(FILE *fp, RangeType r)
+{
+    switch (r)
+    {
+    case RANGE_EUROPE:
+        fprintf(fp, "\n// ===================== EUROPE (IDs 0–499) =====================\n");
+        break;
+
+    case RANGE_ASIA:
+        fprintf(fp, "\n// ===================== ASIA (IDs 500–999) =====================\n");
+        break;
+
+    case RANGE_AMERICAS:
+        fprintf(fp, "\n// ===================== AMERICAS (IDs 1000–1499) =====================\n");
+        break;
+
+    case RANGE_AFRICA:
+        fprintf(fp, "\n// ===================== AFRICA (IDs 1500–1999) =====================\n");
+        break;
+
+    case RANGE_OCEANIA:
+        fprintf(fp, "\n// ===================== AUSTRALIA / OCEANIA (IDs 2000–2499) =====================\n");
+        break;
+
+    case RANGE_ANTARCTICA:
+        fprintf(fp, "\n// ===================== ANTARCTICA (ID 2500) =====================\n");
+        break;
+
+    default:
+        break;
+    }
 }

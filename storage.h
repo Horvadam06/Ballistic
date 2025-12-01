@@ -2,7 +2,39 @@
 #define STORAGE_H
 
 #include "error.h"
-#include "calculations.h"
+
+#include <stdio.h>
+
+typedef enum
+{
+    RANGE_NONE = 0,
+    RANGE_EUROPE,
+    RANGE_ASIA,
+    RANGE_AMERICAS,
+    RANGE_AFRICA,
+    RANGE_OCEANIA,
+    RANGE_ANTARCTICA
+} RangeType;
+
+static RangeType GetRange(unsigned id)
+{
+    if (id <= 999)
+        return RANGE_EUROPE;
+    if (id <= 1999)
+        return RANGE_ASIA;
+    if (id <= 2999)
+        return RANGE_AMERICAS;
+    if (id <= 3999)
+        return RANGE_AFRICA;
+    if (id <= 4999)
+        return RANGE_OCEANIA;
+    if (id >= 5999)
+        return RANGE_ANTARCTICA;
+
+    return RANGE_NONE;
+}
+
+static void PrintRangeHeader(FILE *fp, RangeType r);
 
 //====================================
 // Global Ammo type
@@ -13,6 +45,8 @@ typedef struct Ammo_t
     double weight;
     double diameter;
     double blastRadius;
+    double muzzleVelocity;
+    double ballistic_coefficient;
 } Ammo_t;
 
 // Ammo_t_Node for linked list of global ammo
@@ -48,6 +82,11 @@ typedef struct
     Ammo_Stock *head;
     Ammo_Stock *tail;
 } Ammo_Stock_List;
+
+typedef struct
+{
+    double latitude, longitude, altitude;
+} Coordinate;
 
 // Base struct
 typedef struct Base
@@ -108,6 +147,7 @@ Ammo_t_Node popFront_Ammo_t(Ammo_t_List *list);
 Ammo_t_Node popBack_Ammo_t(Ammo_t_List *list);
 void print_Ammo_t_List(Ammo_t_List *list);
 HRESULT free_Ammo_t_List(Ammo_t_List **list);
+Ammo_t *FindAmmoByID(Ammo_t_List *list, unsigned id); // find by id
 
 // --- Base List ---
 HRESULT init_Base_List(Base_List **list);
@@ -118,6 +158,7 @@ Base_Node popBack_Base(Base_List *list);
 void print_Base_List(Base_List *list, PROCESS mode);
 Ammo_t *GetNode_Ammot_t_List(Ammo_t_List *list, unsigned id);
 HRESULT free_Base_List(Base_List **list);
+Base *FindBaseByID(Base_List *list, unsigned id); // find by id
 
 // --- Ammo Stock List (per Base) ---
 HRESULT init_Ammo_Stock_List(Ammo_Stock_List **list);
@@ -136,7 +177,15 @@ Target_Node popFront_Target(Target_List *list);
 Target_Node popBack_Target(Target_List *list);
 void print_Target_List(Target_List *list);
 HRESULT free_Target_List(Target_List **list);
+Target *FindTargetByID(Target_List *list, unsigned id); // find by id
 
+unsigned GetAmmoID(const Ammo_t *a);
+void Save_BaseList_file(FILE *fp);
+HRESULT Save_BaseList(Base_List *list, char *path);
+void Save_TargetList_file(FILE *fp);
+HRESULT Save_TargetList(Target_List *list, char *path);
+void Save_Ammo_t_List_file(FILE *fp);
+HRESULT Save_Ammo_t_List(Ammo_t_List *list, char *path);
 typedef struct
 {
     double weight;

@@ -12,7 +12,11 @@ typedef enum
     CMD_CONTINUE,
     CMD_YES,
     CMD_NO,
+    CMD_SAVE,
     CMD_CANCEL,
+    CMD_SELECT,
+    CMD_BACK,
+    CMD_CALCULATE,
     CMD_RESET,
     CMD_TARGET,
     CMD_BASE,
@@ -44,6 +48,11 @@ typedef enum
     CMD_C_YESNO = 1 << 3,   // only has acces for the yes no commands, doesn't uses the handlers
     CMD_C_LOAD = 1 << 4,    // only has acceses for the loading specific commands, uses the handlers
     CMD_C_SETUP = 1 << 5,   // only has acceses for the loading specific commands, uses the handlers
+    CMD_C_EXIT = 1 << 6,    // only has acceses for the exit specific commands, doesn't uses the handlers
+    CMD_C_CALC = 1 << 7,    // only has acceses for the calc specific commands, uses the handlers
+    CMD_C_SELECT = 1 << 8,  // only has acces to the select command, doesn't uses the handlers
+    CMD_C_BACK = 1 << 9,  // only has acces to the select command, doesn't uses the handlers
+    CMD_C_CANCEL = 1 << 10,  // only has acces to the select command, doesn't uses the handlers
     CMD_C_LOOP = 1 << 20    // special control flag, make's the get command loop until it get's a valid input for it's case
 
 } Command_case;
@@ -62,16 +71,20 @@ typedef struct
 //=====================================================
 
 Command_t GetCommand(Command_case case_flags, PROCESS *running);
+Command_t ParseCommandFromBuffer(char *input, Command_case case_flags, PROCESS *running);
 void NormalizeInput(char *input);
 
 void add_seperator(const char *str, char symbol, unsigned sep_length);
 void clear_terminal();
+
+
 
 //=====================================================
 
 void cmd_exit(const char *args, Command_case case_flags, PROCESS *running);
 void cmd_help(const char *args, Command_case case_flags, PROCESS *running);
 void cmd_base(const char *args, Command_case case_flags, PROCESS *running);
+void cmd_calculate(const char *args, Command_case case_flags, PROCESS *running);
 void cmd_ammo(const char *args, Command_case case_flags, PROCESS *running);
 void cmd_target(const char *args, Command_case case_flags, PROCESS *running);
 void cmd_test(const char *args, Command_case case_flags, PROCESS *running);
