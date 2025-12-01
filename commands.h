@@ -18,6 +18,9 @@ typedef enum
     CMD_BASE,
     CMD_AMMO,
     CMD_TEST,
+    CMD_LIST,
+    CMD_ADD,
+    CMD_DELETE,
     CMD_COLOUR,
     CMD_MONO,
     CMD_CLEAR_TERMINAL

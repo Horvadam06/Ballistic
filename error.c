@@ -1,4 +1,5 @@
 #include "error.h"
+#include "debugmalloc.h"
 
 int SUCCEEDED(HRESULT hr){
     return (hr >= 0) ? 1 : 0;

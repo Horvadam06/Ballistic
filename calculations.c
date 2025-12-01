@@ -7,13 +7,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "debugmalloc.h"
+
 #define sq(x) ((x) * (x))
 
-double DegToRad(double deg){
-    return deg*M_PI/180.0L;
+double DegToRad(double deg)
+{
+    return deg * M_PI / 180.0L;
 }
 
-//using Vincenty’s formula
+// using Vincenty’s formula
 int CalculateDistance(Coordinate coord1, Coordinate coord2, double *distance)
 {
     // WGS-84 constants
@@ -26,7 +29,7 @@ int CalculateDistance(Coordinate coord1, Coordinate coord2, double *distance)
     coord2.latitude = DegToRad(coord2.latitude);
     coord1.longitude = DegToRad(coord1.longitude);
     coord2.longitude = DegToRad(coord2.longitude);
-    
+
     double U1 = atan((1.0 - f) * tan(coord1.latitude));
     double U2 = atan((1.0 - f) * tan(coord2.latitude));
     double L = coord2.longitude - coord1.longitude;
@@ -36,11 +39,14 @@ int CalculateDistance(Coordinate coord1, Coordinate coord2, double *distance)
     double sinSigma, cosSigma, sigma, sinAlpha, cosSqAlpha, cos2Sigma_m;
 
     int iter = 0;
-    do {
+    do
+    {
         prev_lambda = lambda;
 
-        sinU1 = sin(U1); cosU1 = cos(U1);
-        sinU2 = sin(U2); cosU2 = cos(U2);
+        sinU1 = sin(U1);
+        cosU1 = cos(U1);
+        sinU2 = sin(U2);
+        cosU2 = cos(U2);
 
         double sinLambda = sin(lambda);
         double cosLambda = cos(lambda);
@@ -58,7 +64,7 @@ int CalculateDistance(Coordinate coord1, Coordinate coord2, double *distance)
         double C = (f / 16.0) * cosSqAlpha * (4.0 + f * (4.0 - 3.0 * cosSqAlpha));
 
         lambda = L + (1.0 - C) * f * sinAlpha *
-            (sigma + C * sinSigma * (cos2Sigma_m + C * cosSigma * (-1.0 + 2.0 * sq(cos2Sigma_m))));
+                         (sigma + C * sinSigma * (cos2Sigma_m + C * cosSigma * (-1.0 + 2.0 * sq(cos2Sigma_m))));
 
         iter++;
     } while (fabs(lambda - prev_lambda) > 1e-12 && iter < 100);
@@ -68,18 +74,13 @@ int CalculateDistance(Coordinate coord1, Coordinate coord2, double *distance)
     double A = 1.0 + (usq / 16384.0) * (4096.0 + usq * (-768.0 + usq * (320.0 - 175.0 * usq)));
     double B = (usq / 1024.0) * (256.0 + usq * (-128.0 + usq * (74.0 - 47.0 * usq)));
 
-    double deltaSigma = B * sinSigma * (
-        cos2Sigma_m + (B / 4.0) * (
-            cosSigma * (-1.0 + 2.0 * sq(cos2Sigma_m)) -
-            (B / 6.0) * cos2Sigma_m * (-3.0 + 4.0 * sq(sinSigma)) * (-3.0 + 4.0 * sq(cos2Sigma_m))
-        )
-    );
+    double deltaSigma = B * sinSigma * (cos2Sigma_m + (B / 4.0) * (cosSigma * (-1.0 + 2.0 * sq(cos2Sigma_m)) - (B / 6.0) * cos2Sigma_m * (-3.0 + 4.0 * sq(sinSigma)) * (-3.0 + 4.0 * sq(cos2Sigma_m))));
 
     double s = b * A * (sigma - deltaSigma);
     long km = (long)(s / 1000.0);
-    long m = (s- km * 1000.0);
+    long m = (s - km * 1000.0);
     long cm = (long)((s - floor(s)) * 100);
-    
+
     printf("Distance: %ld km, %ld m and %ld cm (iterations: %d)\n", km, m, cm, iter);
 
     *distance = s;
@@ -87,27 +88,27 @@ int CalculateDistance(Coordinate coord1, Coordinate coord2, double *distance)
     return 1;
 }
 
+int ListBases()
+{
+    /*unsigned count = 0;
+    Base *bases = load_bases("C:\\vscode\\ballistic\\bin\\bases.txt", &count);
+    if (!bases) return -1;
 
-int ListBases(){
-        unsigned count = 0;
-        Base *bases = load_bases("C:\\vscode\\ballistic\\bin\\bases.txt", &count);
-        if (!bases) return -1;
+    printf("Loaded %u points:\n", count);
+    for (unsigned i = 0; i < count; i++) {
+        printf("[%d] [%s] [%.5f', %.5f', %.5f]\n",
+            bases[i].info.id,
+            bases[i].info.label,
+            bases[i].info.position.latitude,
+            bases[i].info.position.longitude,
+            bases[i].info.position.altitude);
+    }
 
-        printf("Loaded %u points:\n", count);
-        for (unsigned i = 0; i < count; i++) {
-            printf("[%d] [%s] [%.5f', %.5f', %.5f]\n",
-                bases[i].info.id,
-                bases[i].info.label,
-                bases[i].info.position.latitude,
-                bases[i].info.position.longitude,
-                bases[i].info.position.altitude);
-        }
+    free(bases);
 
-        free(bases);
-
-        return 1;
+    return 1;*/
 }
-
+/*
 int ListTargets(){
         unsigned count = 0;
         Target *targets = load_targets("C:\\vscode\\ballistic\\bin\\targets.txt", &count);
@@ -127,4 +128,4 @@ int ListTargets(){
         free(targets);
 
         return 1;
-}
+}*/

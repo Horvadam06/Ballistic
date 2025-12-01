@@ -7,202 +7,14 @@
 #include <string.h>
 #include <ctype.h>
 
+#include "debugmalloc.h"
+
 Ammo_t_List *ammo_t_list = NULL;
+Base_List *base_list = NULL;
+Target_List *target_list = NULL;
 
-void init_base_list(BaseList *list)
-{
-    list->items = NULL;
-    list->count = 0;
-    list->capacity = 0;
-}
 
-void free_base_list(BaseList *list)
-{
-    if (!list)
-        return;
-    free(list->items);
-    list->items = NULL;
-    list->count = 0;
-    list->capacity = 0;
-    printf("Memory cleared succesfully!\n");
-}
-
-HRESULT add_base(BaseList *list, Base new_item, HRESULT hr)
-{
-    if (list->count >= list->capacity)
-    {
-        unsigned new_cap = (list->capacity == 0) ? 10 : list->capacity * 2;
-        Base *new_items = realloc(list->items, new_cap * sizeof(Base));
-        if (!new_items)
-        {
-            perror("Memory allocation failed");
-            return E_FAIL;
-        }
-        list->items = new_items;
-        list->capacity = new_cap;
-    }
-
-    list->items[list->count++] = new_item;
-    return hr;
-}
-
-HRESULT handle_base(char *record, void *data, int *error_flags)
-{
-    BaseList *list = (BaseList *)data;
-    Base new_base;
-
-    HRESULT hr = S_OK;
-
-    hr = ext_basic_info(record, &new_base.info, error_flags);
-
-    if (hr == S_FALSE)
-        return hr;
-
-    return add_base(list, new_base, hr);
-}
-
-HRESULT norm_strncmp(const char *record, const char *str2)
-{
-    size_t length = strlen(str2);
-    for (int i = 0; record[i] != '\0' && i < length; i++)
-    {
-        char str = record[i];
-        char str1 = str2[i];
-        NormalizeInput(&str);
-        NormalizeInput(&str1);
-
-        if (str != str1)
-            return S_FALSE;
-
-        if (length - i > 1 && record[i + 1] == '\0')
-            return S_FALSE;
-    }
-
-    return S_OK;
-}
-
-HRESULT ext_basic_info(const char *record, Default_i *info, int *error_flags)
-{
-    if (!info)
-        return S_OK;
-
-    // 0's out the the info memory area
-    memset(info, 0, sizeof(*info));
-
-    InputFlags flag = T_WHITESPACE;
-    HRESULT hr = S_OK;
-    int length = strlen(record);
-    int label_start = 0;
-    for (int i = 0; record[i] != '\0' && i < length; i++)
-    {
-        char c = record[i];
-        char next_c = (record[i + 1]) ? record[i + 1] : '\0';
-        char *end;
-        switch (flag)
-        {
-        case T_WHITESPACE:
-        {
-            c = tolower(c);
-
-            switch (c)
-            {
-            case 'i':
-                flag = T_ID;
-                break;
-            case 'l':
-                flag = T_LABEL;
-                label_start = i + 1;
-                break;
-            case 'c':
-                flag = T_DATA;
-                break;
-            default:
-                const char *p = strchr(&record[i], ' ');
-                if (p)
-                    i = p - record;
-                break;
-            }
-            break;
-        }
-        case T_ID:
-        {
-            if (isspace(c) || c == '\n' || c == '\0')
-            {
-                flag = T_WHITESPACE;
-                break;
-            }
-            info->id = (int)strtof(&record[i], &end);
-
-            error_flags[F_ID] = 1;
-            break;
-        }
-        case T_LABEL:
-        {
-            if (isspace(c) || c == '\n' || next_c == '\0')
-            {
-                flag = T_WHITESPACE;
-                int len = (next_c == '\0') ? i - label_start + 1 : i - label_start; // if the loop exit's with \0, there is going to be a missing charcter, so it's needed for compensation
-                if (len >= sizeof(info->label))
-                    len = sizeof(info->label) - 1;
-                if (len > 0)
-                {
-                    memcpy(info->label, &record[label_start], len);
-                    error_flags[F_LABEL] = 1;
-                    info->label[len] = '\0';
-                }
-
-                break;
-            }
-            break;
-        }
-        case T_DATA:
-        {
-            if (isspace(c) || c == '\n' || c == '\0')
-            {
-                flag = T_WHITESPACE;
-                break;
-            }
-            if (norm_strncmp(&record[i], "LA") == S_OK)
-            {
-                i += 2;
-                info->position.latitude = strtod(&record[i], &end);
-                error_flags[F_LATITUDE] = 1;
-                i = end - record;
-                flag = T_WHITESPACE;
-            }
-            else if (norm_strncmp(&record[i], "LO") == S_OK)
-            {
-                i += 2;
-                info->position.longitude = strtod(&record[i], &end);
-                error_flags[F_LONGITUDE] = 1;
-                i = end - record;
-                flag = T_WHITESPACE;
-            }
-            else if (norm_strncmp(&record[i], "A") == S_OK)
-            {
-                i += 2;
-                info->position.altitude = strtod(&record[i], &end);
-                error_flags[F_ALTITUDE] = 1;
-                i = end - record;
-                flag = T_WHITESPACE;
-            }
-            else
-                flag = T_WHITESPACE;
-
-            break;
-        }
-        default:
-            return E_FAIL; // could only happen, if something goes very wrong
-        }
-    }
-
-    for (int i = 0; i < 5; i++)
-        if (error_flags[i] != 1)
-            return S_PARTIAL;
-
-    return hr;
-}
-
+// ammo list functions======================================================
 HRESULT init_Ammo_t_List(Ammo_t_List **list)
 {
     if (*list != NULL)
@@ -222,7 +34,6 @@ HRESULT init_Ammo_t_List(Ammo_t_List **list)
     (*list)->tail = tail;
     return S_OK;
 }
-
 // add's an ammo type to a list, in an id order, if there are multiple one's with the same id, the places the newest at front
 Ammo_t_Node *add_Ammo_t(Ammo_t_List *list, Ammo_t ammo)
 {
@@ -235,7 +46,7 @@ Ammo_t_Node *add_Ammo_t(Ammo_t_List *list, Ammo_t ammo)
     new_ammo->id = ammo.id;
 
     size_t len = strlen(ammo.name) + 1;
-    new_ammo->name = malloc(len);
+    new_ammo->name = (char *)malloc(len * sizeof(char));
     if (!new_ammo->name)
     {
         free(new_ammo);
@@ -323,6 +134,36 @@ Ammo_t_Node pop_BackAmmo_t(Ammo_t_List *list)
     return value;
 }
 
+Ammo_t *GetNode_Ammot_t_List(Ammo_t_List *list, unsigned id)
+{
+    if (!list || (list->head->next == list->tail))
+        return NULL;
+
+    int dir = (abs(list->head->next->ammoItem->id - id) <= abs(list->tail->prev->ammoItem->id - id)) ? 0 : 1; // 0 up, 1 down
+
+    Ammo_t_Node *target = (dir) ? list->tail : list->head;
+
+    while (target != list->tail)
+        if (target->ammoItem && target->ammoItem->id == id)
+        {
+
+            return target->ammoItem;
+        }
+        else
+            target = target->next;
+
+    while (target != list->head)
+        if (target->ammoItem && target->ammoItem->id == id)
+        {
+
+            return target->ammoItem;
+        }
+        else
+            target = target->prev;
+
+    return NULL;
+}
+
 void print_Ammo_t_List(Ammo_t_List *list)
 {
     if (!list)
@@ -348,6 +189,485 @@ HRESULT free_Ammo_t_List(Ammo_t_List **list)
     free((*list)->head);
     free((*list)->tail);
     free(*list);
+
+    return S_OK;
+}
+
+
+
+
+// base list functions======================================================
+HRESULT init_Base_List(Base_List **list)
+{
+    if (*list != NULL)
+        return S_FALSE;
+    Base_Node *head = (Base_Node *)malloc(sizeof(Base_Node));
+    Base_Node *tail = (Base_Node *)malloc(sizeof(Base_Node));
+
+    head->baseItem = NULL;
+    head->next = tail;
+    tail->baseItem = NULL;
+    tail->next = NULL;
+
+    *list = (Base_List *)malloc(sizeof(Base_List));
+    (*list)->head = head;
+    (*list)->tail = tail;
+    return S_OK;
+}
+// add's an ammo type to a list, in an id order, if there are multiple one's with the same id, the places the newest at front
+Base_Node *add_Base(Base_List *list, Base base)
+{
+    if (!list)
+        return NULL;
+
+    Base *new_base = (Base *)malloc(sizeof(Base));
+    new_base->id = base.id;
+    new_base->coord = base.coord;
+
+    size_t len = strlen(base.label) + 1;
+    new_base->label = (char *)malloc(len * sizeof(char));
+    if (!new_base->label)
+    {
+        free(new_base);
+        return NULL;
+    }
+    memcpy(new_base->label, base.label, len);
+    new_base->ammoStock = base.ammoStock;
+
+    /*
+    // searches for the non NULL id order, and "moves" the target there
+    Base_Node *target = list->head->next;
+    for (; (target != list->tail); target = target->next)
+        if ((target->baseItem && new_base))
+            if (target->baseItem->id > new_base->id)
+                break;
+
+    // insterts the new item before the target
+    Base_Node *new = (Base_Node *)malloc(sizeof(Base_Node));
+
+    new->baseItem = new_base;
+    new->next = target->next;
+    target->next = new;
+    */
+
+    Base_Node *target = list->head;
+    for (; (target->next != list->tail); target = target->next)
+        if ((target->next->baseItem && new_base))
+            if (target->next->baseItem->id > new_base->id)
+                break;
+
+    // insterts the new item before the target
+    Base_Node *new = (Base_Node *)malloc(sizeof(Base_Node));
+    new->baseItem = new_base;
+    new->next = target->next;
+    target->next = new;
+
+    return new;
+}
+
+int delete_Base(Base_List *list, unsigned id)
+{
+    if (!list)
+        return -1;
+
+    Base_Node *target = list->head->next;
+    int no_id = 1;
+    while (target != list->tail)
+        if (target->next->baseItem && target->next->baseItem->id == id)
+        {
+            Base_Node *tmp = target->next;
+            target->next = target->next->next;
+
+            free_Ammo_Stock_List(&(tmp->baseItem->ammoStock));
+            free(tmp->baseItem->label); // free the string
+            free(tmp->baseItem);        // free the struct
+            free(tmp);
+
+            no_id = 0;
+        }
+        else
+            target = target->next;
+
+    return (no_id) ? -1 : id;
+}
+
+Base_Node popFront_Base(Base_List *list)
+{
+    Base_Node value = {NULL, NULL};
+    if (!list)
+        return value;
+    Base_Node *target = list->head->next;
+    list->head->next = target->next;
+    value = *target;
+    free_Ammo_Stock_List(&(target->baseItem->ammoStock));
+    free(target->baseItem->label); // free the string
+    free(target->baseItem);        // free the struct
+    free(target);                  // free the node
+    return value;
+}
+
+Base_Node popBack_Base(Base_List *list)
+{
+    Base_Node value = {NULL, NULL};
+    if (!list)
+        return value;
+    Base_Node *target = list->head->next;
+    for (; target->next->next != list->tail; target = target->next)
+        ;
+    Base_Node *tmp = target->next;
+    target->next = target->next->next;
+    value = *tmp;
+    free_Ammo_Stock_List(&(target->baseItem->ammoStock));
+    free(tmp->baseItem->label); // free the string
+    free(tmp->baseItem);        // free the struct
+    free(tmp);                  // free the node
+    return value;
+}
+
+void print_Base_List(Base_List *list, PROCESS mode)
+{
+    if (!list)
+        return;
+
+    Base_Node *target = list->head->next;
+
+    for (; target != list->tail; target = target->next)
+        if (target->baseItem)
+        {
+            printf("id: %5u | label: %20s | latitude: %10.3fdeg | longtitude: %10.3fdeg | altitude: %10.3fdeg\n",
+                   target->baseItem->id, target->baseItem->label, target->baseItem->coord.latitude, target->baseItem->coord.longitude, target->baseItem->coord.altitude);
+            if (mode == S_DEBUG)
+                print_Ammo_Stock_List(target->baseItem->ammoStock);
+        }
+        else
+            printf("NULL ammo parameter\n");
+}
+// lifo
+HRESULT free_Base_List(Base_List **list)
+{
+    if (!*list)
+        return S_FALSE;
+    while ((*list)->head->next != (*list)->tail)
+        popFront_Base(*list);
+
+    free((*list)->head);
+    free((*list)->tail);
+    free(*list);
+
+    *list = NULL;
+
+    return S_OK;
+}
+
+
+
+
+// base ammo stock list functions======================================================
+HRESULT init_Ammo_Stock_List(Ammo_Stock_List **list)
+{
+    if (*list != NULL)
+        return S_FALSE;
+
+    Ammo_Stock *head = (Ammo_Stock *)malloc(sizeof(Ammo_Stock));
+    Ammo_Stock *tail = (Ammo_Stock *)malloc(sizeof(Ammo_Stock));
+
+    head->typePtr = NULL;
+    head->quantity = 0;
+    head->next = tail;
+
+    tail->typePtr = NULL;
+    tail->quantity = 0;
+    tail->next = NULL;
+
+    *list = (Ammo_Stock_List *)malloc(sizeof(Ammo_Stock_List));
+    (*list)->head = head;
+    (*list)->tail = tail;
+
+    return S_OK;
+}
+// Ordered by ammoRef->id, duplicates → newest in front
+Ammo_Stock *add_Ammo_Stock(Ammo_Stock_List *list, Ammo_t *ammoRef, unsigned quantity)
+{
+    if (!list || !ammoRef)
+        return NULL;
+
+    // Remove existing entry to avoid duplicates (your style)
+    delete_Ammo_Stock(list, ammoRef);
+
+    // Find ordered insertion point
+    Ammo_Stock *target = list->head;
+    for (; target->next != list->tail; target = target->next)
+        if (target->next->typePtr && ammoRef->id < target->next->typePtr->id)
+            break;
+
+    // Create new node
+    Ammo_Stock *newNode = (Ammo_Stock *)malloc(sizeof(Ammo_Stock));
+    newNode->typePtr = ammoRef;
+    newNode->quantity = quantity;
+
+    // Insert before target->next
+    newNode->next = target->next;
+    target->next = newNode;
+
+    return newNode;
+}
+
+int delete_Ammo_Stock(Ammo_Stock_List *list, Ammo_t *ammoRef)
+{
+    if (!list || !ammoRef)
+        return -1;
+
+    Ammo_Stock *target = list->head;
+    int found = 0;
+
+    while (target->next != list->tail)
+    {
+        if (target->next->typePtr == ammoRef)
+        {
+            Ammo_Stock *tmp = target->next;
+            target->next = target->next->next;
+            free(tmp);
+            found = 1;
+            break; // only one possible
+        }
+        target = target->next;
+    }
+
+    return found ? (int)ammoRef->id : -1;
+}
+
+Ammo_Stock popFront_Ammo_Stock(Ammo_Stock_List *list)
+{
+    Ammo_Stock value = {NULL, 0, NULL};
+    if (!list)
+        return value;
+
+    Ammo_Stock *target = list->head->next;
+
+    // empty?
+    if (target == list->tail)
+        return value;
+
+    // unlink
+    list->head->next = target->next;
+
+    // copy the struct value
+    value = *target;
+
+    // free the node itself (NOT the Ammo_t, you don't own it)
+    free(target);
+
+    return value;
+}
+
+Ammo_Stock popBack_Ammo_Stock(Ammo_Stock_List *list)
+{
+    Ammo_Stock value = {NULL, 0, NULL};
+    if (!list)
+        return value;
+
+    Ammo_Stock *cur = list->head;
+
+    // empty?
+    if (cur->next == list->tail)
+        return value;
+
+    // walk until node BEFORE the last real node
+    while (cur->next->next != list->tail)
+        cur = cur->next;
+
+    Ammo_Stock *tmp = cur->next;
+
+    // unlink
+    cur->next = tmp->next;
+
+    // copy out the struct
+    value = *tmp;
+
+    // free only the node wrapper
+    free(tmp);
+
+    return value;
+}
+
+void print_Ammo_Stock_List(Ammo_Stock_List *list)
+{
+    if (!list)
+        return;
+
+    Ammo_Stock *target = list->head->next;
+
+    for (; target != list->tail; target = target->next)
+    {
+        if (target->typePtr)
+            printf("\tAmmo ID: %5u | Name: %-20s | Qty: %5u\n",
+                   target->typePtr->id,
+                   target->typePtr->name,
+                   target->quantity);
+        else
+            printf("NULL ammo stock entry\n");
+    }
+    printf("\n");
+}
+
+HRESULT free_Ammo_Stock_List(Ammo_Stock_List **list)
+{
+    if (!*list)
+        return S_FALSE;
+
+    while ((*list)->head->next != (*list)->tail)
+    {
+        popFront_Ammo_Stock(*list);
+    }
+
+    free((*list)->head);
+    free((*list)->tail);
+    free(*list);
+
+    *list = NULL;
+
+    return S_OK;
+}
+
+
+//target list functions============================================
+HRESULT init_Target_List(Target_List **list)
+{
+    if (*list != NULL)
+        return S_FALSE;
+    Target_Node *head = (Target_Node *)malloc(sizeof(Target_Node));
+    Target_Node *tail = (Target_Node *)malloc(sizeof(Target_Node));
+
+    head->targetItem = NULL;
+    head->next = tail;
+    tail->targetItem = NULL;
+    tail->next = NULL;
+
+    *list = (Target_List *)malloc(sizeof(Target_List));
+    (*list)->head = head;
+    (*list)->tail = tail;
+    return S_OK;
+}
+
+Target_Node *add_Target(Target_List *list, Target target)
+{
+    if (!list)
+        return NULL;
+
+    Target *new_target = (Target *)malloc(sizeof(Target));
+    new_target->id = target.id;
+    new_target->coord = target.coord;
+
+    size_t len = strlen(target.label) + 1;
+    new_target->label = (char *)malloc(len * sizeof(char));
+    if (!new_target->label)
+    {
+        free(new_target);
+        return NULL;
+    }
+    memcpy(new_target->label, target.label, len);
+
+    Target_Node *target_n = list->head;
+    for (; (target_n->next != list->tail); target_n = target_n->next)
+        if ((target_n->next->targetItem && new_target))
+            if (target_n->next->targetItem->id > new_target->id)
+                break;
+
+    // insterts the new item before the target
+    Target_Node *new = (Target_Node *)malloc(sizeof(Target_Node));
+    new->targetItem = new_target;
+    new->next = target_n->next;
+    target_n->next = new;
+
+    return new;
+}
+
+int delete_Target(Target_List *list, unsigned id)
+{
+    if (!list)
+        return -1;
+
+    Target_Node *target = list->head->next;
+    int no_id = 1;
+    while (target != list->tail)
+        if (target->next->targetItem && target->next->targetItem->id == id)
+        {
+            Target_Node *tmp = target->next;
+            target->next = target->next->next;
+
+            free(tmp->targetItem->label); // free the string
+            free(tmp->targetItem);        // free the struct
+            free(tmp);
+
+            no_id = 0;
+        }
+        else
+            target = target->next;
+
+    return (no_id) ? -1 : id;
+}
+
+Target_Node popFront_Target(Target_List *list)
+{
+    Target_Node value = {NULL, NULL};
+    if (!list)
+        return value;
+    Target_Node *target = list->head->next;
+    list->head->next = target->next;
+    value = *target;
+    free(target->targetItem->label); // free the string
+    free(target->targetItem);        // free the struct
+    free(target);                    // free the node
+    return value;
+}
+
+Target_Node popBack_Target(Target_List *list)
+{
+    Target_Node value = {NULL, NULL};
+    if (!list)
+        return value;
+    Target_Node *target = list->head->next;
+    for (; target->next->next != list->tail; target = target->next)
+        ;
+    Target_Node *tmp = target->next;
+    target->next = target->next->next;
+    value = *tmp;
+
+    free(tmp->targetItem->label); // free the string
+    free(tmp->targetItem);        // free the struct
+    free(tmp);                    // free the node
+    return value;
+}
+
+void print_Target_List(Target_List *list)
+{
+    if (!list)
+        return;
+
+    Target_Node *target = list->head->next;
+
+    for (; target != list->tail; target = target->next)
+        if (target->targetItem)
+        {
+            printf("id: %5u | label: %20s | latitude: %10.3fdeg | longtitude: %10.3fdeg | altitude: %10.3fdeg\n",
+                   target->targetItem->id, target->targetItem->label, target->targetItem->coord.latitude, target->targetItem->coord.longitude, target->targetItem->coord.altitude);
+        }
+        else
+            printf("NULL ammo parameter\n");
+}
+
+HRESULT free_Target_List(Target_List **list)
+{
+    if (!*list)
+        return S_FALSE;
+    while ((*list)->head->next != (*list)->tail)
+        popFront_Target(*list);
+
+    free((*list)->head);
+    free((*list)->tail);
+    free(*list);
+
+    *list = NULL;
 
     return S_OK;
 }

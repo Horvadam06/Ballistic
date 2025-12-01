@@ -9,19 +9,29 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "debugmalloc.h"
+
 Command commands[] = {
-    {"bases", CMD_BASE, cmd_base, "List bases", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_LOAD},
-    {"targets", CMD_TARGET, cmd_target, "List targets", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_LOAD},
-    {"ammo", CMD_AMMO, cmd_ammo, "List ammo", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_LOAD},
+    {"cancel", CMD_CANCEL, NULL, "Cancel event", CMD_C_LOAD},
+    {"list", CMD_LIST, NULL, "list values", CMD_C_LOAD},
+    {"add", CMD_ADD, NULL, "add value", CMD_C_LOAD},
+    {"delete", CMD_DELETE, NULL, "delete value", CMD_C_LOAD},
+
+    {"bases", CMD_BASE, cmd_base, "List bases", CMD_C_GENERIC | CMD_C_DEFAULT},
+    {"targets", CMD_TARGET, cmd_target, "List targets", CMD_C_GENERIC | CMD_C_DEFAULT},
+    {"ammo", CMD_AMMO, cmd_ammo, "List ammo", CMD_C_GENERIC | CMD_C_DEFAULT},
+
     {"test", CMD_TEST, cmd_test, "Do a manual self-test", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
     {"clear", CMD_CLEAR_TERMINAL, cmd_clr_ter, "Clears the terminal", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
     {"config", CMD_TEST, cmd_config, "Modify config", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
     {"exit", CMD_EXIT, cmd_exit, "Exit program", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
     {"help", CMD_HELP, cmd_help, "Show commands", CMD_C_ALL},
-    {"colour", CMD_COLOUR, cmd_colour, "coloured mode command", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SETUP},
-    {"mono", CMD_MONO, cmd_mono, "monochrome mode command", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SETUP},
-    {"yes", CMD_YES, NULL, "yes command", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_YESNO},
-    {"no", CMD_NO, NULL, "no command", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_YESNO}};
+
+    {"colour", CMD_COLOUR, cmd_colour, "coloured mode command", CMD_C_SETUP},
+    {"mono", CMD_MONO, cmd_mono, "monochrome mode command", CMD_C_SETUP},
+
+    {"yes", CMD_YES, NULL, "yes command", CMD_C_YESNO},
+    {"no", CMD_NO, NULL, "no command", CMD_C_YESNO}};
 
 /*calculates the number of commands, the division with the first value is needed,
 because we devide the whole size, with one entry's size, and by that we get the number of entry's*/
@@ -42,34 +52,91 @@ void cmd_exit(const char *args, Command_case case_flags, PROCESS *running)
 
 void cmd_help(const char *args, Command_case case_flags, PROCESS *running)
 {
-    clear_terminal();
+    // clear_terminal();
     add_seperator("command list", '-', 30);
 
     for (int i = 0; i < command_count; i++)
     {
         if (!(commands[i].case_mask & case_flags) || (commands[i].type == CMD_HELP))
             continue; // command not available in this mode
-        printf("    %-2s\t- %s\n", commands[i].name, commands[i].description);
+        printf("    %-4s\t- %s\n", commands[i].name, commands[i].description);
     }
     add_seperator(NULL, '-', 30);
 }
 
 void cmd_target(const char *args, Command_case case_flags, PROCESS *running)
 {
-    if (running)
-        *running = ListTargets();
+    printf("%-39s <[%s]>\n", "What would you like to do?", "cancel");
+    printf("\t- %-30s [%s]\n", "show target list", "list");
+    printf("\t- %-30s [%s]\n", "add target to list", "add");
+    printf("\t- %-30s [%s]\n", "remove target from list", "delete");
+
+    Command_t cmd = GetCommand(CMD_C_LOAD | CMD_C_LOOP, NULL);
+    switch (cmd)
+    {
+    case CMD_LIST:
+        print_Target_List(target_list);
+        break;
+    case CMD_ADD:
+        EMPTY_MESSAGE
+        break;
+    case CMD_DELETE:
+        EMPTY_MESSAGE
+        break;
+
+    default:
+        break;
+    }
 }
 
 void cmd_base(const char *args, Command_case case_flags, PROCESS *running)
 {
-    if (running)
-        *running = ListBases();
+    printf("%-39s <[%s]>\n", "What would you like to do?", "cancel");
+    printf("\t- %-30s [%s]\n", "show base list", "list");
+    printf("\t- %-30s [%s]\n", "add base to list", "add");
+    printf("\t- %-30s [%s]\n", "remove base from list", "delete");
+    Command_t cmd = GetCommand(CMD_C_LOAD | CMD_C_LOOP, NULL);
+        
+    switch (cmd)
+    {
+    case CMD_LIST:
+        print_Base_List(base_list, S_DEBUG);
+        break;
+    case CMD_ADD:
+        EMPTY_MESSAGE
+        break;
+    case CMD_DELETE:
+        EMPTY_MESSAGE
+        break;
+
+    default:
+        break;
+    }
 }
 
 void cmd_ammo(const char *args, Command_case case_flags, PROCESS *running)
 {
-    print_Ammo_t_List(ammo_t_list);
-    //EMPTY_MESSAGE
+    printf("%-39s <[%s]>\n", "What would you like to do?", "cancel");
+    printf("\t- %-30s [%s]\n", "show ammo type list", "list");
+    printf("\t- %-30s [%s]\n", "add ammo type to list", "add");
+    printf("\t- %-30s [%s]\n", "remove ammo type from list", "delete");
+
+    Command_t cmd = GetCommand(CMD_C_LOAD | CMD_C_LOOP, NULL);
+    switch (cmd)
+    {
+    case CMD_LIST:
+        print_Ammo_t_List(ammo_t_list);
+        break;
+    case CMD_ADD:
+        EMPTY_MESSAGE
+        break;
+    case CMD_DELETE:
+        EMPTY_MESSAGE
+        break;
+
+    default:
+        break;
+    }
 }
 
 void cmd_test(const char *args, Command_case case_flags, PROCESS *running)
@@ -156,13 +223,6 @@ Command_t GetCommand(Command_case case_flags, PROCESS *running)
         }
     }
     return command;
-}
-
-void NormalizeInput(char *input)
-{
-    for (int i = 0; i < sizeof(input); i++)
-        if (input[i] >= 'A' && input[i] <= 'Z')
-            input[i] += 'a' - 'A';
 }
 
 // later make it enum dependent

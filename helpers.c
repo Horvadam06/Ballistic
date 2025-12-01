@@ -3,6 +3,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "debugmalloc.h"
+
 char *ensure_trailing_backslash(char *str)
 {
     size_t len = strlen(str);
@@ -75,4 +77,32 @@ char *remove_quotes(char *str, char symbol)
         return str + 1; // skip the opening quote
 
     return str;
+}
+
+
+HRESULT norm_strncmp(const char *record, const char *str2)
+{
+    size_t length = strlen(str2);
+    for (int i = 0; record[i] != '\0' && i < length; i++)
+    {
+        char str = record[i];
+        char str1 = str2[i];
+        NormalizeInput(&str);
+        NormalizeInput(&str1);
+
+        if (str != str1)
+            return S_FALSE;
+
+        if (length - i > 1 && record[i + 1] == '\0')
+            return S_FALSE;
+    }
+
+    return S_OK;
+}
+
+void NormalizeInput(char *input)
+{
+    for (int i = 0; i < sizeof(input); i++)
+        if (input[i] >= 'A' && input[i] <= 'Z')
+            input[i] += 'a' - 'A';
 }

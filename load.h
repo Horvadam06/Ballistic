@@ -35,6 +35,8 @@ HRESULT handle_config(char *record, void *data, int *error_flags);
 HRESULT test_and_run_config(const char *config_file, PROCESS mode);
 
 HRESULT handle_ammo_t(char *record, void *data, int *error_flags);
+HRESULT handle_base(char *record, void *data, int *error_flags);
+HRESULT handle_target(char *record, void *data, int *error_flags);
 //create a helper file for them or smth. idk
 
 

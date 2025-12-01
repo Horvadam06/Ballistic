@@ -10,6 +10,8 @@
 #include <string.h>
 #include <ctype.h>
 
+#include "debugmalloc.h"
+
 // seperate config from loading, beacuse it's messy asf
 
 char *folder_path = NULL;
@@ -39,6 +41,7 @@ void free_folder_path(void)
     folder_path = NULL;
 }
 
+/*
 Base *load_bases(const char *filename, unsigned *out_count)
 {
     FILE *file = fopen(filename, "r"); // "r" open file in read only mode
@@ -99,8 +102,8 @@ Base *load_bases(const char *filename, unsigned *out_count)
     }
 
     return bases;
-}
-
+}*/
+/*
 Target *load_targets(const char *filename, unsigned *out_count)
 {
     FILE *file = fopen(filename, "r"); // "r" open file in read only mode
@@ -166,7 +169,7 @@ Target *load_targets(const char *filename, unsigned *out_count)
     }
 
     return targets;
-}
+}*/
 
 /*file name to scan  |  handler function  |  external data for the handler  |  scan mode*/
 HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS mode)
@@ -510,6 +513,8 @@ HRESULT handle_config(char *record, void *data, int *error_flags)
     return S_OK;
 }
 
+
+
 HRESULT handle_ammo_t(char *record, void *data, int *error_flags)
 {
     // record in the scan case is only on the stack, so I can modify the pointer without a problem
@@ -565,6 +570,158 @@ HRESULT handle_ammo_t(char *record, void *data, int *error_flags)
     add_Ammo_t(data, ammo);
 
     free(ammo.name);
+
+    return S_OK;
+}
+
+HRESULT handle_base(char *record, void *data, int *error_flags)
+{
+    // record in the scan case is only on the stack, so I can modify the pointer without a problem
+    Base base;
+
+    // hard cap, so if the user gives some invalid parameters, the program won't get stuck
+    for (int i = 0; i < 15 && strlen(record) > 0; i++)
+    {
+
+        char *end = NULL;
+        // id
+        if (norm_strncmp(record, "I") == S_OK)
+        {
+            record = strtoken(record, &end);
+            base.id = (unsigned)strtof(++record, &end);
+            record = strtoken(end, &end);
+        }
+        // name
+        if (norm_strncmp(record, "L") == S_OK)
+        {
+            record = strtoken(record, &end);
+            record++;
+            base.label = (char *)malloc(end - record + 1); // +1 for null terminator
+            strncpy(base.label, record, end - record);
+            base.label[end - record] = '\0';
+
+            record = strtoken(end, &end);
+        }
+        // latitude
+        if (norm_strncmp(record, "CLA") == S_OK)
+        {
+            record = strtoken(record, &end);
+            record += 3;
+            base.coord.latitude = strtod(record, &end);
+            record = strtoken(end, &end);
+        }
+        // longitude
+        if (norm_strncmp(record, "CLO") == S_OK)
+        {
+            record = strtoken(record, &end);
+            record += 3;
+            base.coord.longitude = strtod(record, &end);
+            record = strtoken(end, &end);
+        }
+        // altitude
+        if (norm_strncmp(record, "CA") == S_OK)
+        {
+            record = strtoken(record, &end);
+            record += 2;
+            base.coord.altitude = strtod(record, &end);
+            record = strtoken(end, &end);
+        }
+        // ammo list
+        if (norm_strncmp(record, "AMS") == S_OK)
+        {
+            record += 3;
+            record = strtoken(record, &end);
+            record = strtoken(++record, &end);
+
+            base.ammoStock = NULL;
+            init_Ammo_Stock_List(&base.ammoStock);
+
+            while (strlen(record) > 1)
+            {
+                // add ammo type, to combed list
+                unsigned id = (unsigned)strtof(record, &end);
+                record = strtoken(end, &end);
+
+                unsigned ammount = (unsigned)strtof(record, &end);
+                record = strtoken(end, &end);
+                record++;
+
+                add_Ammo_Stock(base.ammoStock, GetNode_Ammot_t_List(ammo_t_list, id), ammount);
+            }
+        }
+    }
+
+    add_Base(data, base);
+
+    free(base.label);
+
+    return S_OK;
+}
+
+HRESULT handle_target(char *record, void *data, int *error_flags)
+{
+    // record in the scan case is only on the stack, so I can modify the pointer without a problem
+    Target target;
+
+    // hard cap, so if the user gives some invalid parameters, the program won't get stuck
+    for (int i = 0; i < 15 && strlen(record) > 0; i++)
+    {
+
+        char *end = NULL;
+        // id
+        if (norm_strncmp(record, "I") == S_OK)
+        {
+            record = strtoken(record, &end);
+            target.id = (unsigned)strtof(++record, &end);
+            record = strtoken(end, &end);
+        }
+        // name
+        if (norm_strncmp(record, "L") == S_OK)
+        {
+            record = strtoken(record, &end);
+            record++;
+            target.label = (char *)malloc(end - record + 1); // +1 for null terminator
+            strncpy(target.label, record, end - record);
+            target.label[end - record] = '\0';
+
+            record = strtoken(end, &end);
+        }
+        // latitude
+        if (norm_strncmp(record, "CLA") == S_OK)
+        {
+            record = strtoken(record, &end);
+            record += 3;
+            target.coord.latitude = strtod(record, &end);
+            record = strtoken(end, &end);
+        }
+        // longitude
+        if (norm_strncmp(record, "CLO") == S_OK)
+        {
+            record = strtoken(record, &end);
+            record += 3;
+            target.coord.longitude = strtod(record, &end);
+            record = strtoken(end, &end);
+        }
+        // altitude
+        if (norm_strncmp(record, "CA") == S_OK)
+        {
+            record = strtoken(record, &end);
+            record += 2;
+            target.coord.altitude = strtod(record, &end);
+            record = strtoken(end, &end);
+        }
+        // ammo list
+        if (norm_strncmp(record, "A") == S_OK)
+        {
+            record = strtoken(record, &end);
+            target.area = strtod(++record, &end);
+            record = strtoken(end, &end);
+        }
+    }
+
+    add_Target(data, target);
+
+    free(target.label);
 
     return S_OK;
 }

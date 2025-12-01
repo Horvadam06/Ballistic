@@ -11,7 +11,7 @@ typedef struct {
 
 void SetupParameters();
 int CalculateDistance(Coordinate coord1, Coordinate coord2, double *distance);
-int ListBases();
-int ListTargets();
+//int ListBases();
+//int ListTargets();
 
 #endif

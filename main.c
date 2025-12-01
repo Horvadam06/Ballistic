@@ -10,6 +10,8 @@
 #include "storage.h"
 #include "color.h"
 
+#include "debugmalloc.h"
+
 //=========================================
 // Created by.:
 // Starting date: 2025.10.17
@@ -27,14 +29,24 @@ PROCESS Setup()
 
     printf("Setup finished!\n");
 
-    
-
     char folder_buffer[1024];
     strcpy(folder_buffer, folder_path);
     strcat(folder_buffer, "ammo_catalouge.txt");
     init_Ammo_t_List(&ammo_t_list);
-    scan(folder_buffer, handle_ammo_t, ammo_t_list, S_DEBUG);
-    print_Ammo_t_List(ammo_t_list);
+    scan(folder_buffer, handle_ammo_t, ammo_t_list, S_RUNNING);
+    //print_Ammo_t_List(ammo_t_list);
+
+    strcpy(folder_buffer, folder_path);
+    strcat(folder_buffer, "bases.txt");
+    init_Base_List(&base_list);
+    scan(folder_buffer, handle_base, base_list, S_RUNNING);
+    //print_Base_List(base_list, S_RUNNING);
+
+    strcpy(folder_buffer, folder_path);
+    strcat(folder_buffer, "targets.txt");
+    init_Target_List(&target_list);
+    scan(folder_buffer, handle_target, target_list, S_RUNNING);
+    //print_Target_List(target_list);
 
     if (get_color_mode())
     {
@@ -54,6 +66,8 @@ PROCESS Setup()
 
 void CleanUp()
 {
+    free_Base_List(&base_list);
+    free_Target_List(&target_list);
     free_Ammo_t_List(&ammo_t_list);
     free_folder_path();
 }
@@ -64,7 +78,7 @@ int main(void)
 
     while (state == S_RUNNING)
     {
-        GetCommand(CMD_C_LOAD | CMD_C_SYSTEM, &state);
+        GetCommand(CMD_C_GENERIC | CMD_C_SYSTEM, &state);
     }
 
     CleanUp();
