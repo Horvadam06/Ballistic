@@ -1,0 +1,179 @@
+/** 
+@page data_structures Data Structures Reference
+@tableofcontents
+
+@section overview Overview
+
+The Ballistic Trajectory Calculator uses a hierarchical system of linked lists
+to store all entities. The system employs sentinel nodes (head/tail) to simplify
+boundary conditions and ensure memory safety.
+
+@section core_structures Core Structures
+
+@subsection coordinate Coordinate
+The fundamental geographic position structure used by all entities.
+
+@dot
+digraph coordinate {
+    node [shape=record];
+    Coordinate [label="Coordinate|latitude : double\llongitude : double\laltitude : double"];
+}
+@enddot
+
+**Fields:**
+- `latitude`: Degrees north/south of equator (-90 to +90)
+- `longitude`: Degrees east/west of prime meridian (-180 to +180)
+- `altitude`: Height above WGS84 ellipsoid in meters
+
+@subsection ammo_t Ammo_t (Ammunition Type)
+Global ammunition definition with physical and ballistic properties.
+
+@dot
+digraph ammo_t {
+    node [shape=record];
+    Ammo_t [label="Ammo_t|id : unsigned\lname* : char\lweight : double\ldiameter : double\lblastRadius : double\lmuzzleVelocity : double\lballistic_coefficient : double"];
+}
+@enddot
+
+**Key Properties:**
+- `ballistic_coefficient`: G7 BC for drag calculations (kg/m²)
+- `muzzleVelocity`: Initial velocity for trajectory simulation (m/s)
+- `blastRadius`: Used for effectiveness assessment (meters)
+
+@subsection base Base
+Military firing position with location and ammunition inventory.
+
+@dot
+digraph base {
+    node [shape=record];
+    Base [label="Base|id : unsigned\llabel* : char\lcoord : Coordinate\lammoStock* : Ammo_Stock_List"];
+}
+@enddot
+
+**Relationships:**
+- Has one `Coordinate` for location
+- Has one `Ammo_Stock_List` for inventory
+- Stored in `Base_List` (sorted by ID)
+
+@subsection target Target
+Designated impact location with area for damage assessment.
+
+@dot
+digraph target {
+    node [shape=record];
+    Target [label="Target|id : unsigned\llabel* : char\lcoord : Coordinate\larea : double"];
+}
+@enddot
+
+**Usage:**
+- Used as input for ballistic calculations
+- Area field used for ammunition effectiveness analysis
+- Stored in `Target_List` (sorted by ID)
+
+@section list_structures List Structures
+
+@subsection list_design List Design Pattern
+All lists follow the same sentinel-linked pattern:
+
+@dot
+digraph list_pattern {
+    node [shape=box];
+    rankdir=LR;
+    
+    Head [label="HEAD\n(sentinel)", style=filled, fillcolor=lightgray];
+    Elem1 [label="Element 1"];
+    Elem2 [label="Element 2"];
+    Tail [label="TAIL\n(sentinel)", style=filled, fillcolor=lightgray];
+    
+    Head -> Elem1 -> Elem2 -> Tail [arrowhead=vee];
+    Tail -> Elem2 -> Elem1 -> Head [style=invis];
+}
+@enddot
+
+**Advantages:**
+- No special cases for empty list
+- No NULL checks during traversal
+- Consistent insertion/deletion logic
+- Memory safety with explicit sentinels
+
+@subsection ammo_list Ammo_t_List
+Global ammunition type database.
+
+**Operations:**
+- `init_Ammo_t_List()`: Create empty list with sentinels
+- `add_Ammo_t()`: Insert sorted by ID
+- `FindAmmoByID()`: Optimized bidirectional search
+- `free_Ammo_t_List()`: Clean destruction
+
+@subsection base_list Base_List
+All military bases in the system.
+
+**Features:**
+- Sorted by base ID
+- Each base has its own ammunition stock
+- Used for distance-based base selection
+- Regional awareness via ID blocks
+
+@subsection target_list Target_List
+All designated targets.
+
+**Features:**
+- Sorted by target ID  
+- Used as input for firing calculations
+- Area field for damage assessment
+- Regional grouping via ID blocks
+
+@section relationships Complete Relationship Diagram
+
+@dot
+digraph complete_structure {
+    rankdir=LR;
+    node [shape=record, fontsize=10];
+    
+    // Global lists
+    GlobalAmmoList [label="Ammo_t_List\n(Global Database)", style=filled, fillcolor=lightblue];
+    BaseList [label="Base_List", style=filled, fillcolor=lightgreen];
+    TargetList [label="Target_List", style=filled, fillcolor=lightcoral];
+    
+    // Ammo nodes
+    AmmoNode1 [label="Ammo_t_Node\nid=0"];
+    AmmoNode2 [label="Ammo_t_Node\nid=1"];
+    AmmoType1 [label="Ammo_t\nHE_155mm"];
+    AmmoType2 [label="Ammo_t\nAP_120mm"];
+    
+    // Base nodes
+    BaseNode1 [label="Base_Node\nid=100"];
+    Base1 [label="Base\nFort Alpha"];
+    BaseCoord1 [label="Coordinate\nlat:47.47 lon:19.05"];
+    BaseStock1 [label="Ammo_Stock_List"];
+    StockEntry1 [label="Ammo_Stock\nHE_155mm:100"];
+    StockEntry2 [label="Ammo_Stock\nAP_120mm:50"];
+    
+    // Target nodes
+    TargetNode1 [label="Target_Node\nid=500"];
+    Target1 [label="Target\nEnemy Base"];
+    TargetCoord1 [label="Coordinate\nlat:47.50 lon:19.10"];
+    
+    // Relationships
+    GlobalAmmoList -> AmmoNode1 -> AmmoType1;
+    AmmoNode1 -> AmmoNode2 [style=invis];
+    AmmoNode2 -> AmmoType2;
+    
+    BaseList -> BaseNode1 -> Base1;
+    Base1 -> BaseCoord1;
+    Base1 -> BaseStock1 -> StockEntry1 -> AmmoType1 [label="references"];
+    StockEntry1 -> StockEntry2 [style=invis];
+    StockEntry2 -> AmmoType2 [label="references"];
+    
+    TargetList -> TargetNode1 -> Target1;
+    Target1 -> TargetCoord1;
+    
+    // Layout
+    {rank=same; GlobalAmmoList; BaseList; TargetList}
+    {rank=same; AmmoType1; AmmoType2; Base1; Target1}
+}
+@enddot
+
+@section file_formats File Formats
+
+@subsection ammo_format Ammunition Catalog Format

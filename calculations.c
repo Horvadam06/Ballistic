@@ -1,3 +1,19 @@
+/**
+ * @file calculations.c
+ * @brief Implementation of ballistic calculation functions
+ *
+ * This file contains the implementation of functions for calculating ballistic trajectories,
+ * coordinate transformations, and optimal base/ammunition selection.
+ *
+ * @note Uses WGS84 ellipsoid model for Earth geometry and G7 drag coefficient model
+ * @note Implements 4th-order Runge-Kutta integration for trajectory simulation
+ * @note Distance tolerance: 1 meter, elevation search step: 0.1 degrees
+ * @todo Add caching for frequently computed firing solutions
+ * @todo Implement binary search for elevation angle optimization
+ * @todo Add Coriolis effect for long-range trajectories
+ * @todo Add wind effect modeling
+ */
+
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <stdlib.h>
@@ -9,21 +25,42 @@
 
 #include "debugmalloc.h"
 
-#define DEG2RAD (M_PI / 180.0)
-#define RAD2DEG (180.0 / M_PI)
+#define DEG2RAD (M_PI / 180.0) ///< Conversion factor from degrees to radians
+#define RAD2DEG (180.0 / M_PI) ///< Conversion factor from radians to degrees
 
+/**
+ * @brief Square a value (macro for performance)
+ *
+ * @param x Value to square
+ * @return Square of the input value
+ */
 #define sq(x) ((x) * (x))
 
 // WGS84 parameters
-static const double WGS84_A = 6378137.0;         // major axis
-static const double WGS84_E2 = 6.69437999014e-3; // eccentricity^2
+static const double WGS84_A = 6378137.0;         ///< WGS84 semi-major axis (equatorial radius) in meters
+static const double WGS84_E2 = 6.69437999014e-3; ///< WGS84 eccentricity squared
 
+/**
+ * @brief 3D vector structure for coordinate calculations
+ */
 typedef struct
 {
-    double x, y, z;
+    double x; ///< X coordinate (meters)
+    double y; ///< Y coordinate (meters)
+    double z; ///< Z coordinate (meters)
 } Vec3;
 
-// WGS84 to Earth Centered, Earth Fixed
+/**
+ * @brief Convert WGS84 coordinates to Earth-Centered, Earth-Fixed (ECEF) coordinates
+ *
+ * Transforms geographic coordinates (latitude, longitude, altitude) to Cartesian
+ * coordinates in the ECEF reference frame.
+ *
+ * @param lat_deg Latitude in degrees
+ * @param lon_deg Longitude in degrees
+ * @param h Altitude above ellipsoid in meters
+ * @return Vec3 containing ECEF coordinates (x, y, z) in meters
+ */
 static Vec3 wgs84_to_ecef(double lat_deg, double lon_deg, double h)
 {
     double lat = lat_deg * DEG2RAD;
@@ -43,7 +80,17 @@ static Vec3 wgs84_to_ecef(double lat_deg, double lon_deg, double h)
     return r;
 }
 
-// Convert ECEF to ENU with origin at (lat0, lon0)
+/**
+ * @brief Convert ECEF coordinates to East-North-Up (ENU) coordinates
+ *
+ * Transforms from ECEF to local ENU coordinates with origin at specified location.
+ *
+ * @param p Point to transform (ECEF coordinates)
+ * @param origin Origin point for ENU system (ECEF coordinates)
+ * @param lat0_deg Origin latitude in degrees
+ * @param lon0_deg Origin longitude in degrees
+ * @return Vec3 containing ENU coordinates (x=east, y=north, z=up) in meters
+ */
 static Vec3 ecef_to_enu(Vec3 p, Vec3 origin, double lat0_deg, double lon0_deg)
 {
     double lat0 = lat0_deg * DEG2RAD;
@@ -65,10 +112,19 @@ static Vec3 ecef_to_enu(Vec3 p, Vec3 origin, double lat0_deg, double lon0_deg)
     return enu;
 }
 
+/**
+ * @brief Calculate G7 drag coefficient based on velocity
+ *
+ * Approximates the G7 standard drag coefficient curve as a piecewise function
+ * of Mach number. G7 is a common standard for long-range bullets.
+ *
+ * @param v Velocity in meters per second
+ * @return Drag coefficient (dimensionless)
+ */
 static double g7_drag_coefficient(double v)
 {
     // v is in m/s
-    double mach = v / 343.0;
+    double mach = v / 343.0; // Speed of sound at sea level (approx)
 
     if (mach < 0.9)
         return 0.5;
@@ -81,15 +137,28 @@ static double g7_drag_coefficient(double v)
     return 0.2;
 }
 
-#define G 9.80665
-#define AIR_DENSITY 1.225
+#define G 9.80665         ///< Gravitational acceleration (m/s²)
+#define AIR_DENSITY 1.225 ///< Air density at sea level (kg/m³)
 
+/**
+ * @brief State vector for ballistic trajectory simulation
+ */
 typedef struct
 {
-    double x, y, z;    // position (meters)
-    double vx, vy, vz; // velocity (m/s)
+    double x, y, z;    ///< Position coordinates (meters)
+    double vx, vy, vz; ///< Velocity components (m/s)
 } State;
 
+/**
+ * @brief Calculate derivatives for ballistic motion equations
+ *
+ * Computes the rate of change of position and velocity based on
+ * gravity and aerodynamic drag using the G7 drag model.
+ *
+ * @param s Current state vector
+ * @param d Output derivatives (dx/dt, dy/dt, etc.)
+ * @param BC Ballistic coefficient (kg/m²)
+ */
 static void derivatives(const State *s, State *d, double BC)
 {
     double v = sqrt(sq(s->vx) + sq(s->vy) + sq(s->vz));
@@ -107,6 +176,15 @@ static void derivatives(const State *s, State *d, double BC)
     d->vz = -G - drag * s->vz / v;
 }
 
+/**
+ * @brief Perform one step of 4th-order Runge-Kutta integration
+ *
+ * Advances the state vector by time dt using RK4 integration method.
+ *
+ * @param s State vector to update (input/output)
+ * @param dt Time step (seconds)
+ * @param BC Ballistic coefficient (kg/m²)
+ */
 static void rk4(State *s, double dt, double BC)
 {
     State k1, k2, k3, k4, tmp;
@@ -149,6 +227,21 @@ static void rk4(State *s, double dt, double BC)
     s->vz += (dt / 6.0) * (k1.vz + 2 * k2.vz + 2 * k3.vz + k4.vz);
 }
 
+/**
+ * @brief Solve ballistic trajectory for given target and parameters
+ *
+ * Iteratively searches for the optimal elevation angle to hit a target
+ * using numerical simulation of the projectile trajectory.
+ *
+ * @param targetENU Target position in ENU coordinates relative to shooter
+ * @param muzzleVel Muzzle velocity (m/s)
+ * @param BC Ballistic coefficient (kg/m²)
+ * @return BallisticResult containing firing solution parameters
+ *
+ * @note Searches elevation angles from 5 to 80 degrees with 0.1 degree steps
+ * @note Uses 1 meter tolerance for altitude matching
+ * @todo Replace linear search with binary search for better performance
+ */
 static BallisticResult solve_ballistic(Vec3 targetENU, double muzzleVel, double BC)
 {
     BallisticResult r = {0};
@@ -160,6 +253,7 @@ static BallisticResult solve_ballistic(Vec3 targetENU, double muzzleVel, double 
 
     double best_error = DBL_MAX;
 
+    // Search through elevation angles from 5 to 80 degrees
     for (double elev_deg = 5.0; elev_deg <= 80.0; elev_deg += 0.1)
     {
         double elev = elev_deg * DEG2RAD;
@@ -171,8 +265,9 @@ static BallisticResult solve_ballistic(Vec3 targetENU, double muzzleVel, double 
         s.vz = muzzleVel * sin(elev);
 
         double t = 0.0;
-        double dt = 0.02;
+        double dt = 0.02; // 20ms time step
 
+        // Simulate trajectory
         for (;;)
         {
             rk4(&s, dt, BC);
@@ -181,7 +276,9 @@ static BallisticResult solve_ballistic(Vec3 targetENU, double muzzleVel, double 
             if (s.z < DZ - 50.0)
                 break; // too low too early (miss)
             if (t > 200.0)
-                break; // safety breaker
+                break; // safety breaker (max 200 seconds flight time)
+
+            // Check if projectile is near target altitude (1 meter tolerance)
             if (s.z < DZ && s.z > DZ - 1.0)
             {
                 double dist = sqrt(s.x * s.x + s.y * s.y);
@@ -203,6 +300,21 @@ static BallisticResult solve_ballistic(Vec3 targetENU, double muzzleVel, double 
     return r;
 }
 
+/**
+ * @brief Computes a firing solution for a given base, target, and ammunition
+ *
+ * Main function that orchestrates coordinate transformations and trajectory
+ * calculations to determine firing parameters.
+ *
+ * @param b Pointer to the firing base structure
+ * @param t Pointer to the target structure
+ * @param ammo Pointer to the ammunition type structure
+ * @return BallisticResult structure containing all calculated firing parameters
+ *
+ * @see BallisticResult
+ * @note Firing solution is invalid if no elevation angle produces a hit within tolerance
+ * @todo Cache results for frequently used base-target-ammo combinations
+ */
 BallisticResult compute_fire_solution(Base *b, Target *t, Ammo_t *ammo)
 {
     Vec3 shooterECEF = wgs84_to_ecef(b->coord.latitude, b->coord.longitude, b->coord.altitude);
@@ -217,8 +329,20 @@ BallisticResult compute_fire_solution(Base *b, Target *t, Ammo_t *ammo)
     return solve_ballistic(enu_target, ammo->muzzleVelocity, ammo->ballistic_coefficient);
 }
 
-// For the base suggestion================================
-//  Helper: Haversine 2D distance
+// ============================================================
+// Helper functions for base suggestion algorithms
+// ============================================================
+
+/**
+ * @brief Calculate 2D great-circle distance between two coordinates
+ *
+ * Uses Haversine formula to compute distance along Earth's surface,
+ * ignoring altitude differences.
+ *
+ * @param a First coordinate
+ * @param b Second coordinate
+ * @return Distance in meters
+ */
 static double GeoDistance2D(const Coordinate *a, const Coordinate *b)
 {
     if (!a || !b)
@@ -237,7 +361,16 @@ static double GeoDistance2D(const Coordinate *a, const Coordinate *b)
     return WGS84_A * c; // meters (approx mean Earth radius via WGS84 a)
 }
 
-// Helper: 3D geo distance (meters)
+/**
+ * @brief Calculate 3D Euclidean distance between two coordinates
+ *
+ * Combines 2D surface distance with altitude difference to get
+ * straight-line 3D distance.
+ *
+ * @param a First coordinate
+ * @param b Second coordinate
+ * @return 3D distance in meters
+ */
 static double GeoDistance3D(const Coordinate *a, const Coordinate *b)
 {
     double d2d = GeoDistance2D(a, b);
@@ -245,7 +378,13 @@ static double GeoDistance3D(const Coordinate *a, const Coordinate *b)
     return sqrt(d2d * d2d + dz * dz);
 }
 
-// Helper: check if base has ammo (quantity > 0)
+/**
+ * @brief Check if a base has available ammunition of a specific type
+ *
+ * @param b Base to check
+ * @param ammo_id Ammunition type ID to look for
+ * @return 1 if base has the ammunition with quantity > 0, 0 otherwise
+ */
 static int BaseHasAmmo(Base *b, unsigned ammo_id)
 {
     if (!b || !b->ammoStock)
@@ -261,7 +400,26 @@ static int BaseHasAmmo(Base *b, unsigned ammo_id)
     return 0;
 }
 
-// SuggestBestBase
+/**
+ * @brief Suggests the best base and ammunition combination for a target
+ *
+ * Evaluates all bases and their available ammunition to find the optimal
+ * combination based on:
+ * 1. Closest distance to target (primary criterion)
+ * 2. Ammunition quantity (tie-breaker)
+ *
+ * @param list Pointer to the list of available bases
+ * @param tgt Pointer to the target structure
+ * @param outBase Double pointer to return the selected base (output parameter)
+ * @param outAmmo Double pointer to return the selected ammunition (output parameter)
+ * @return 1 if a valid combination was found, 0 otherwise
+ *
+ * @note Only considers ammunition with valid firing solutions
+ * @note Uses 1 meter tolerance for distance comparisons
+ * @note O(n*m) complexity where n = number of bases, m = ammunition types per base
+ * @todo Implement early exit when distance is significantly worse than current best
+ * @todo Add weight factors for different ammunition types (lethality, cost, etc.)
+ */
 int SuggestBestBaseAndAmmo(Base_List *list, Target *tgt, Base **outBase, Ammo_t **outAmmo)
 {
     if (!list || !tgt || !outBase || !outAmmo)
@@ -283,8 +441,8 @@ int SuggestBestBaseAndAmmo(Base_List *list, Target *tgt, Base **outBase, Ammo_t 
 
         double dist3d = GeoDistance3D(&b->coord, &tgt->coord);
 
-        // hard reject if already farther than a confirmed better candidate
-        if (dist3d > bestDist + 0.0001)
+        // Early rejection: if already farther than best candidate + 1 meter tolerance, skip
+        if (dist3d > bestDist + 1.0)
             continue;
 
         Ammo_Stock *stock = b->ammoStock->head;
@@ -299,14 +457,14 @@ int SuggestBestBaseAndAmmo(Base_List *list, Target *tgt, Base **outBase, Ammo_t 
                 {
                     int better = 0;
 
-                    if (dist3d < bestDist - 0.0001)
+                    if (dist3d < bestDist - 1.0)
                     {
-                        // strictly closer is always better
+                        // Strictly closer (by more than 1 meter) is always better
                         better = 1;
                     }
-                    else if (fabs(dist3d - bestDist) <= 0.0001)
+                    else if (fabs(dist3d - bestDist) <= 1.0)
                     {
-                        // if same distance, then ammo quantity decides
+                        // If same distance within 1 meter tolerance, ammunition quantity decides
                         if (stock->quantity > bestQty)
                             better = 1;
                     }
@@ -332,6 +490,27 @@ int SuggestBestBaseAndAmmo(Base_List *list, Target *tgt, Base **outBase, Ammo_t 
     return 1;
 }
 
+/**
+ * @brief Suggests the best base and ammunition combination with regional awareness
+ *
+ * Similar to SuggestBestBaseAndAmmo but prioritizes bases in the same region
+ * as the target. Region is determined by ID ranges (1000-based blocks).
+ *
+ * Algorithm:
+ * 1. First pass: only consider bases in same region as target
+ * 2. If no solution found in same region, second pass: consider all bases
+ *
+ * @param list Pointer to the list of available bases
+ * @param tgt Pointer to the target structure
+ * @param outBase Double pointer to return the selected base (output parameter)
+ * @param outAmmo Double pointer to return the selected ammunition (output parameter)
+ * @return 1 if a valid combination was found, 0 otherwise
+ *
+ * @note Region is determined by ID: target.id/1000 defines region block
+ * @note Uses 1 meter tolerance for distance comparisons
+ * @todo Make region calculation configurable (not hardcoded to 1000-based blocks)
+ * @todo Add region weighting factor (e.g., prefer same region but allow cross-region if much better)
+ */
 int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outBase, Ammo_t **outAmmo)
 {
     if (!list || !tgt || !outBase || !outAmmo)
@@ -367,7 +546,7 @@ int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outB
 
             double dist3d = GeoDistance3D(&b->coord, &tgt->coord);
 
-            if (dist3d > bestDist + 0.0001)
+            if (dist3d > bestDist + 1.0)
                 continue;
 
             Ammo_Stock *stock = b->ammoStock->head;
@@ -382,9 +561,9 @@ int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outB
                     {
                         int better = 0;
 
-                        if (dist3d < bestDist - 0.0001)
+                        if (dist3d < bestDist - 1.0)
                             better = 1;
-                        else if (fabs(dist3d - bestDist) <= 0.0001)
+                        else if (fabs(dist3d - bestDist) <= 1.0)
                         {
                             if (stock->quantity > bestQty)
                                 better = 1;
@@ -404,7 +583,7 @@ int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outB
             }
         }
 
-        // If pass 1 found something, stop here.
+        // If pass 1 found something, stop here (prefer regional solutions)
         if (bestBase)
             break;
     }
