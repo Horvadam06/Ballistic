@@ -28,6 +28,8 @@
 #define DEG2RAD (M_PI / 180.0) ///< Conversion factor from degrees to radians
 #define RAD2DEG (180.0 / M_PI) ///< Conversion factor from radians to degrees
 
+#define target_tolerance 100.0 // the distance, where the location becomes a target, and not a base
+
 /**
  * @brief Square a value (macro for performance)
  *
@@ -385,7 +387,7 @@ static double GeoDistance3D(const Coordinate *a, const Coordinate *b)
  * @param ammo_id Ammunition type ID to look for
  * @return 1 if base has the ammunition with quantity > 0, 0 otherwise
  */
-static int BaseHasAmmo(Base *b, unsigned ammo_id)
+int BaseHasAmmo(Base *b, unsigned ammo_id)
 {
     if (!b || !b->ammoStock)
         return 0;
@@ -442,7 +444,7 @@ int SuggestBestBaseAndAmmo(Base_List *list, Target *tgt, Base **outBase, Ammo_t 
         double dist3d = GeoDistance3D(&b->coord, &tgt->coord);
 
         // Early rejection: if already farther than best candidate + 1 meter tolerance, skip
-        if (dist3d > bestDist + 1.0)
+        if (dist3d > bestDist + 1.0 || dist3d < target_tolerance)
             continue;
 
         Ammo_Stock *stock = b->ammoStock->head;
@@ -511,6 +513,12 @@ int SuggestBestBaseAndAmmo(Base_List *list, Target *tgt, Base **outBase, Ammo_t 
  * @todo Make region calculation configurable (not hardcoded to 1000-based blocks)
  * @todo Add region weighting factor (e.g., prefer same region but allow cross-region if much better)
  */
+
+// later update it, so it precalculates every ammo region with a tolerance
+// and then only check the options in the calcuated area, making it faster and cheaper, also there is a chance
+// that it skips a valid option, because of height difference etc.
+// so the best option would be a fast processing, and slow processing, where at fast it only compares values, and does one or so calculations
+// and slow sort checks all the options like the current version
 int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outBase, Ammo_t **outAmmo)
 {
     if (!list || !tgt || !outBase || !outAmmo)
@@ -524,6 +532,8 @@ int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outB
     double bestDist = DBL_MAX;
     unsigned bestQty = 0;
 
+    printf("Testing base...:\n");
+
     int pass;
     for (pass = 1; pass <= 2; pass++)
     {
@@ -534,7 +544,7 @@ int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outB
             Base *b = bn->baseItem;
             bn = bn->next;
 
-            if (!b || !b->ammoStock || !b->ammoStock->head)
+            if (!b || !b->ammoStock || !b->ammoStock->head) // test b->id
                 continue;
 
             int inRegion = (b->id >= regionStart && b->id <= regionEnd);
@@ -546,8 +556,21 @@ int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outB
 
             double dist3d = GeoDistance3D(&b->coord, &tgt->coord);
 
+            // if the base distnace is better, then before continue the search
             if (dist3d > bestDist + 1.0)
+            {
                 continue;
+            }
+
+            printf("\tid: %5u | label: %20s | ",
+                   b->id, b->label);
+
+            // if the distance is smaller, than 100m so it's probably the same geo location, then continue
+            if (dist3d < target_tolerance)
+            {
+                printf("[Too close to the target!]\n");
+                continue;
+            }
 
             Ammo_Stock *stock = b->ammoStock->head;
             while (stock)
@@ -581,12 +604,15 @@ int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outB
 
                 stock = stock->next;
             }
+            printf("[Searching...]\n");
         }
 
         // If pass 1 found something, stop here (prefer regional solutions)
         if (bestBase)
             break;
     }
+
+    printf("Finished!\n\n");
 
     if (!bestBase)
         return 0;

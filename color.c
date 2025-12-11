@@ -1,13 +1,16 @@
 #include "color.h"
 #include "stdio.h"
 
-static ColorMode current_mode = CM_MONO; // static to make it "private" to this file
+// static to make it "private" to this file
+static ColorMode current_mode = CM_MONO; 
 
+// returns the colour mode choosen at config
 ColorMode get_color_mode(void)
 {
     return current_mode;
 }
 
+//set's the colour mode
 void set_color_mode(ColorMode mode)
 {
     switch (mode)
@@ -21,6 +24,8 @@ void set_color_mode(ColorMode mode)
     }
 }
 
+//if the colour mode is coloured, print's out the text coloured, 
+//else if the always_p flag is set, print's out the text normally
 HRESULT print_colored(const char *color, const char *string, bool always_p)
 {
     if (current_mode == CM_COLOUR)

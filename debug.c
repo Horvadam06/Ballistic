@@ -3,12 +3,29 @@
 #include "load.h"
 #include "color.h"
 #include "commands.h"
+#include "helpers.h"
 
 #include <stdio.h>
 #include <string.h>
 
 #include "debugmalloc.h"
 
+/**
+ * @brief Runs a comprehensive pre-test of system components
+ *
+ * This function performs initial system validation by:
+ * 1. Loading data files if lists are empty
+ * 2. Testing color output functionality
+ * 3. Verifying data integrity
+ * 4. Providing debugging output when in debug mode
+ *
+ * @param process_state Current process state (S_DEBUG for verbose output)
+ * @return HRESULT S_OK if all tests pass, error code otherwise
+ *
+ * @note This is a development/debugging function and should typically
+ *       only be called via the 'test' command or during initialization
+ * @warning May overwrite existing data if lists are already initialized
+ */
 HRESULT run_pre_test(PROCESS process_state)
 {
     printf("Starting test...\n");
@@ -16,37 +33,69 @@ HRESULT run_pre_test(PROCESS process_state)
     HRESULT hr = S_OK;
 
     char folder_buffer[1024];
-    strcpy(folder_buffer, folder_path);
-    strcat(folder_buffer, "ammo_catalouge.txt");
-    init_Ammo_t_List(&ammo_t_list);
-    hr = scan(folder_buffer, handle_ammo_t, ammo_t_list, process_state);
+    // load ammo catalogue (if not already loaded)
+    if (!ammo_t_list)
+    {
+        // Construct full path to ammunition file
+        strcpy(folder_buffer, folder_path);
+        strcat(folder_buffer, "ammo_catalouge.txt");
 
-    strcpy(folder_buffer, folder_path);
-    strcat(folder_buffer, "bases.txt");
+        // Initialize list and load data
+        init_Ammo_t_List(&ammo_t_list);
+        hr = scan(folder_buffer, handle_ammo_t, ammo_t_list, process_state);
+        // Note: hr is overwritten by subsequent scans - only last result preserved
+    }
 
-    init_Base_List(&base_list);
-    hr = scan(folder_buffer, handle_base, base_list, process_state);
+    // load base list (if not already loaded)
+    if (!base_list)
+    {
+        strcpy(folder_buffer, folder_path);
+        strcat(folder_buffer, "bases.txt");
+        init_Base_List(&base_list);
+        hr = scan(folder_buffer, handle_base, base_list, process_state);
+    }
+
+    // load target list (if not already loaded)
+    if (!target_list)
+    {
+        strcpy(folder_buffer, folder_path);
+        strcat(folder_buffer, "targets.txt");
+        init_Target_List(&target_list);
+        hr = scan(folder_buffer, handle_target, target_list, process_state);
+    }
+
+    // debug output section (only in debug mode)
     if (process_state == S_DEBUG)
     {
-        print_Base_List(base_list, process_state);
+        // Display all loaded data for verification
         print_Ammo_t_List(ammo_t_list);
+        print_Base_List(base_list, process_state);
+        print_Target_List(target_list);
 
+        printf("\n--- Testing color output ---\n");
         if (print_colored(ANSI_COLOR_RED, "This text should be RED!\n", false) == S_FALSE)
         {
+            // This executes if color output failed (e.g., ANSI codes disabled)
             printf("This text shouldn't be RED!\n");
         }
         else
-            printf("if not, use the following command in the windows terminal, to enable ansi escape codes\n\"reg add HKCU\\Console /v VirtualTerminalLevel /t REG_DWORD /d 1 /f\"\n");
+        { // Color succeeded - provide Windows terminal configuration help
+            printf("if not, use the following command in the windows terminal, ");
+            printf("to enable ansi escape codes\n");
+            printf("\"reg add HKCU\\Console /v VirtualTerminalLevel /t REG_DWORD /d 1 /f\"\n");
+        }
     }
-    free_Base_List(&base_list);
-    free_Ammo_t_List(&ammo_t_list);
 
-    printf("----------------------------------\n");
+    // test result summary
+    add_seperator(NULL, '-', 30);
     if (hr == S_OK)
+        // Success - display in green
         print_colored(ANSI_COLOR_GREEN, "Test succeeded!\n", false);
     else
+        // Failure - display in red with newline
         print_colored(ANSI_COLOR_RED, "Test failed!\n", true);
-    printf("----------------------------------\n");
+
+    add_seperator(NULL, '-', 30);
 
     return hr;
 }

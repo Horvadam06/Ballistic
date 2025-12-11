@@ -7,8 +7,11 @@ Use the following structure for inputs:
     [CLA] : latitude (degrees)
     [CLO] : longitude (degrees)
     [CA]  : altitude (meters)
+--------The parameters-------------------------------
     [A]   : area (km^2)
-
+=====================================================
+-The data structure has no order
+-The id gets normalized
 -End every line with ;
 =====================================================
 */

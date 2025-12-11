@@ -6,12 +6,10 @@ Use the following structure for the inputs:
 --------The defaults---------------------------------
 	[I]  : the id of the ammo
 	[N]  : the name string
+--------The parameters-------------------------------
 	[W]  : the weight
 	[D]  : the diameter (caliber)
 	[BR] : the blast radius
-
---------The parameters-------------------------------
-(valami még lesz itt)
 =====================================================
 -The data structure has no order
 -The id gets normalized

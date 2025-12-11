@@ -1,113 +1,84 @@
-=== ENTRY @ Mon Dec 01 22:18:08 2025 ===
+=== ENTRY @ Wed Dec 03 01:02:40 2025 ===
 Base:
-  ID: 2
-  Label: Madrid
-  Coord: lat 40.416800, lon -3.703800, alt 667.00 m
+  ID: 1
+  Label: Paris
+  Coord: latitude 48.856600, longitude 2.352200, altitude 35.00 m
 
 Target:
-  ID: 2
-  Label: Madrid
-  Coord: lat 40.416800, lon -3.703800, alt 667.00 m
+  ID: 1
+  Label: Paris
+  Coord: latitude 48.856600, longitude 2.352200, altitude 35.00 m
 
 Ammo:
-  ID: 13
-  Name: 220URAGAN_SMK
-  Weight: 260.000 kg
-  Diameter: 220.000 m
+  ID: 27
+  Name: 81M_ILLUM
+  Weight: 4.000 kg
+  Diameter: 81.000 mm
   BlastRadius: 0.000 m
-  MuzzleVel: 590.000 m/s
-  BC(G7): 32.00000
+  MuzzleVel: 245.000 m/s
+  BC(G7): 11.00000
 
 Solution:
   Elevation: 80.0000 deg
   Azimuth:   0.0000 deg
-  TOF:       16.1200 s
-  ImpactVel: 31.9428 m/s
+  TOF:       8.9800 s
+  ImpactVel: 18.7048 m/s
   Valid:     YES
 -----------------------------
 
-=== ENTRY @ Mon Dec 01 22:19:23 2025 ===
+=== ENTRY @ Wed Dec 03 01:03:43 2025 ===
 Base:
-  ID: 10
-  Label: Lisbon
-  Coord: lat 38.722300, lon -9.139300, alt 114.00 m
+  ID: 1
+  Label: Paris
+  Coord: latitude 48.856600, longitude 2.352200, altitude 35.00 m
 
 Target:
-  ID: 10
-  Label: Lisbon
-  Coord: lat 38.722300, lon -9.139300, alt 114.00 m
+  ID: 1
+  Label: Paris
+  Coord: latitude 48.856600, longitude 2.352200, altitude 35.00 m
 
 Ammo:
-  ID: 7
-  Name: 122TORNADO_G_TB
-  Weight: 78.000 kg
-  Diameter: 122.000 m
-  BlastRadius: 75.000 m
-  MuzzleVel: 755.000 m/s
-  BC(G7): 27.00000
-
-Solution:
-  Elevation: 80.0000 deg
-  Azimuth:   0.0000 deg
-  TOF:       16.0000 s
-  ImpactVel: 29.3743 m/s
-  Valid:     YES
------------------------------
-
-=== ENTRY @ Mon Dec 01 22:23:14 2025 ===
-Base:
-  ID: 500
-  Label: Tokyo
-  Coord: lat 35.689500, lon 139.691700, alt 40.00 m
-
-Target:
-  ID: 500
-  Label: Tokyo
-  Coord: lat 35.689500, lon 139.691700, alt 40.00 m
-
-Ammo:
-  ID: 7
-  Name: 122TORNADO_G_TB
-  Weight: 78.000 kg
-  Diameter: 122.000 m
-  BlastRadius: 75.000 m
-  MuzzleVel: 755.000 m/s
-  BC(G7): 27.00000
-
-Solution:
-  Elevation: 80.0000 deg
-  Azimuth:   -0.0000 deg
-  TOF:       16.0000 s
-  ImpactVel: 29.3743 m/s
-  Valid:     YES
------------------------------
-
-=== ENTRY @ Mon Dec 01 22:52:09 2025 ===
-Base:
-  ID: 510
-  Label: Riyadh
-  Coord: lat 24.713600, lon 46.675300, alt 600.00 m
-
-Target:
-  ID: 510
-  Label: Riyadh
-  Coord: lat 24.713600, lon 46.675300, alt 600.00 m
-
-Ammo:
-  ID: 26
-  Name: 81M_SMK
-  Weight: 3.800 kg
-  Diameter: 81.000 m
+  ID: 27
+  Name: 81M_ILLUM
+  Weight: 4.000 kg
+  Diameter: 81.000 mm
   BlastRadius: 0.000 m
-  MuzzleVel: 250.000 m/s
-  BC(G7): 10.00000
+  MuzzleVel: 245.000 m/s
+  BC(G7): 11.00000
 
 Solution:
   Elevation: 80.0000 deg
   Azimuth:   0.0000 deg
-  TOF:       8.7000 s
-  ImpactVel: 17.8422 m/s
+  TOF:       8.9800 s
+  ImpactVel: 18.7048 m/s
   Valid:     YES
 -----------------------------
 
+=== ENTRY @ Wed Dec 03 01:06:25 2025 ===
+Base:
+  ID: 1
+  Label: Paris
+  Coord: latitude 48.856600, longitude 2.352200, altitude 35.00 m
+
+Target:
+  ID: 1
+  Label: Paris
+  Coord: latitude 48.856600, longitude 2.352200, altitude 35.00 m
+
+Ammo:
+  ID: 27
+  Name: 81M_ILLUM
+  Weight: 4.000 kg
+  Diameter: 81.000 mm
+  BlastRadius: 0.000 m
+  MuzzleVel: 245.000 m/s
+  BC(G7): 11.00000
+
+Solution:
+  Elevation: 80.0000 deg
+  Azimuth:   0.0000 deg
+  TOF:       8.9800 s
+  ImpactVel: 18.7048 m/s
+  Valid:     YES
+-----------------------------
 

@@ -177,3 +177,144 @@ digraph complete_structure {
 @section file_formats File Formats
 
 @subsection ammo_format Ammunition Catalog Format
+
+I<id> N<name> W<weight> D<diameter> BR<blastRadius> MV<muzzleVelocity> BC<ballistic_coefficient>;
+
+**Example:**
+
+I0 NHE_155mm W43.5 D155.0 BR50.0 MV827.0 BC0.42;
+I1 NAP_120mm W25.0 D120.0 BR15.0 MV950.0 BC0.38;
+
+@subsection base_format Base File Format
+
+I<id> L<label> CLA<latitude> CLO<longitude> CA<altitude> AMS:{<ammo_id>:<quantity>,...};
+
+**Example:**
+
+I100 LFort_Alpha CLA47.472928 CLO19.053142 CA120.0 AMS:{0:100,1:50};
+I101 LFort_Bravo CLA47.500000 CLO19.100000 CA150.0 AMS:{0:75};
+
+@subsection target_format Target File Format  
+
+I<id> L<label> CLA<latitude> CLO<longitude> CA<altitude> A<area>;
+
+
+**Example:**
+
+I500 LEnemy_Command CLA47.520000 CLO19.150000 CA80.0 A2.5;
+I501 LSupply_Depot CLA47.530000 CLO19.160000 CA90.0 A1.8;
+
+
+@section memory_management Memory Management
+
+### Allocation Strategy
+1. **Strings**: Dynamically allocated with `malloc()` + `strcpy()`
+2. **Structures**: Individual allocation for each entity
+3. **Nodes**: Separate allocation for list nodes
+4. **Sentinels**: Pre-allocated head/tail nodes
+
+### Cleanup Guarantees
+- `free_*_List()` functions handle complete cleanup
+- Strings are freed automatically
+- All pointers set to NULL after freeing
+- No memory leaks when used correctly
+
+### Ownership Rules
+1. **Global ammo types**: Owned by `Ammo_t_List`
+2. **Base ammunition references**: Non-owning pointers
+3. **Coordinate data**: Inline, no allocation
+4. **List nodes**: Owned by their respective lists
+
+@section examples Usage Examples
+
+@subsection creating_entities Creating New Entities
+
+```c
+// Create ammunition type
+Ammo_t shell = {
+    .id = 10,
+    .name = "HE_203mm",
+    .weight = 90.0,
+    .diameter = 203.0,
+    .blastRadius = 75.0,
+    .muzzleVelocity = 720.0,
+    .ballistic_coefficient = 0.45
+};
+
+// Create base
+Base base = {
+    .id = 200,
+    .label = "Artillery_Battery_5",
+    .coord = {.latitude = 47.480000, .longitude = 19.080000, .altitude = 110.0},
+    .ammoStock = NULL  // Will be initialized separately
+};
+
+// Create target  
+Target target = {
+    .id = 600,
+    .label = "Bridge_Crossing",
+    .coord = {.latitude = 47.510000, .longitude = 19.120000, .altitude = 85.0},
+    .area = 0.8
+};
+
+@subsection list_operations List Operations
+
+// Initialize lists
+init_Ammo_t_List(&ammo_list);
+init_Base_List(&base_list);
+init_Target_List(&target_list);
+
+// Add entities
+add_Ammo_t(ammo_list, shell);
+add_Base(base_list, base);
+add_Target(target_list, target);
+
+// Find entities
+Ammo_t *found_ammo = FindAmmoByID(ammo_list, 10);
+Base *found_base = FindBaseByID(base_list, 200);
+Target *found_target = FindTargetByID(target_list, 600);
+
+// Cleanup (automatic string freeing)
+free_Ammo_t_List(&ammo_list);
+free_Base_List(&base_list);
+free_Target_List(&target_list);
+
+@subsection file_operations File Operations
+
+// Save all data to files
+Save_Ammo_t_List("ammo_catalouge.txt");
+Save_BaseList("bases.txt");
+Save_TargetList("targets.txt");
+
+// Load from files (via scan() function)
+scan("ammo_catalouge.txt", handle_ammo_t, ammo_list, S_RUNNING);
+scan("bases.txt", handle_base, base_list, S_RUNNING);
+scan("targets.txt", handle_target, target_list, S_RUNNING);
+
+@section troubleshooting Common Issues
+
+Duplicate IDs
+IDs are normalized during insertion
+
+Newer entries with duplicate IDs replace older ones
+
+Use unique IDs to prevent unexpected replacements
+
+Memory Leaks
+Always use free_*_List() functions for cleanup
+
+Don't manually free strings stored in structures
+
+Check with debugmalloc for leaks
+
+File Parsing Errors
+Ensure records end with ';'
+
+Comment syntax: // for line, /* */ for block
+
+Field order doesn't matter, but spelling does
+
+@see Storage
+@see load.h
+@see calculations.h
+*/
