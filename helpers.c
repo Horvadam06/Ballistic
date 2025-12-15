@@ -2,9 +2,8 @@
 #include "color.h"
 
 #include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
-
-#include "debugmalloc.h"
 
 /**
  * @brief Ensures a string ends with a backslash
@@ -198,8 +197,8 @@ void NormalizeInput(char *input)
  * @param symbol Character to repeat for the separator line
  * @param sep_length Total length of the separator line
  *
- * @example add_seperator("Menu", '-', 30) prints: "------------ Menu ------------"
- * @example add_seperator(NULL, '=', 40) prints: "========================================"
+ * @example add_seperator("Menu", '-', NORMAL_SEPERATOR_SIZE) prints: "------------ Menu ------------"
+ * @example add_seperator(NULL, '=', NORMAL_SEPERATOR_SIZE) prints: "========================================"
  */
 void add_seperator(const char *str, char symbol, unsigned sep_length)
 {
@@ -215,7 +214,8 @@ void add_seperator(const char *str, char symbol, unsigned sep_length)
 
     // Print centered text (if any)
     if (str)
-        printf("%s", str);
+        print_colored(ANSI_COLOR_YELLOW, str, 1);
+        
 
     // Print trailing symbols to fill remaining length
     for (cnt += str_length; cnt < sep_length; cnt++)

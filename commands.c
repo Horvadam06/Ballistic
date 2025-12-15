@@ -10,8 +10,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "debugmalloc.h"
-
 //========================================================================
 // GLOBAL COMMAND TABLE
 //========================================================================
@@ -35,7 +33,7 @@ Command commands[] = {
     {"calc", CMD_CALCULATE, cmd_calculate, "calculate trajectory", CMD_C_GENERIC | CMD_C_DEFAULT},
 
     // clear's the list, so it gives you a fresh start
-    {"test", CMD_TEST, cmd_test, "Do a manual self-test, ONLY do when debugging", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
+    {"test", CMD_TEST, cmd_test, "Do a manual self-test", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
     {"clear", CMD_CLEAR_TERMINAL, cmd_clr_ter, "Clears the terminal", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
     {"config", CMD_TEST, cmd_config, "Modify config", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
     {"save", CMD_SAVE, cmd_save, "save changes", CMD_C_EXIT | CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
@@ -105,14 +103,21 @@ void cmd_help(const char *args, Command_case case_flags, PROCESS *running)
     (void)running;
 
     // formated list
-    add_seperator("command list", '-', 30);
+    add_seperator("command list", '-', NORMAL_SEPERATOR_SIZE);
     for (int i = 0; i < command_count; i++) // goes trough the commands list, and print's out the aviable one
     {
         if (!(commands[i].case_mask & case_flags) || (commands[i].type == CMD_HELP))
             continue; // command not available in this mode
-        printf("    %-4s\t- %s\n", commands[i].name, commands[i].description);
+
+        change_colour(ANSI_COLOR_GREEN);
+        printf("    %-4s", commands[i].name);
+
+        change_colour(ANSI_COLOR_MAGENTA);
+        printf("\t- %s\n", commands[i].description);
+
+        change_colour(ANSI_COLOR_RESET);
     }
-    add_seperator(NULL, '-', 30);
+    add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
 }
 /**
  * @brief Target management command handler
@@ -137,12 +142,12 @@ void cmd_target(const char *args, Command_case case_flags, PROCESS *running)
     cmd_clr_ter(NULL, CMD_C_ALL, NULL);
     if (!(case_flags & CMD_C_NOCOMMENT))
     {
-        add_seperator("targets", '-', 30);
+        add_seperator("targets", '-', NORMAL_SEPERATOR_SIZE);
         printf("%-39s <[%s]>\n", "What would you like to do?", "back");
         printf("\t- %-30s [%s]\n", "show target list", "list");
         printf("\t- %-30s [%s]\n", "add target to list", "add");
         printf("\t- %-30s [%s]\n", "remove target from list", "delete");
-        add_seperator(NULL, '-', 30);
+        add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
     }
 
     Command_t cmd;
@@ -184,12 +189,12 @@ void cmd_base(const char *args, Command_case case_flags, PROCESS *running)
     cmd_clr_ter(NULL, CMD_C_ALL, NULL);
     if (!(case_flags & CMD_C_NOCOMMENT))
     {
-        add_seperator("bases", '-', 30);
+        add_seperator("bases", '-', NORMAL_SEPERATOR_SIZE);
         printf("%-39s <[%s]>\n", "What would you like to do?", "back");
         printf("\t- %-30s [%s]\n", "show base list", "list");
         printf("\t- %-30s [%s]\n", "add base to list", "add");
         printf("\t- %-30s [%s]\n", "remove base from list", "delete");
-        add_seperator(NULL, '-', 30);
+        add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
     }
 
     // waits for a valid command
@@ -230,12 +235,12 @@ void cmd_ammo(const char *args, Command_case case_flags, PROCESS *running)
     cmd_clr_ter(NULL, CMD_C_ALL, NULL);
     if (!(case_flags & CMD_C_NOCOMMENT))
     {
-        add_seperator("ammo", '-', 30);
+        add_seperator("ammo", '-', NORMAL_SEPERATOR_SIZE);
         printf("%-39s <[%s]>\n", "What would you like to do?", "back");
         printf("\t- %-30s [%s]\n", "show ammo type list", "list");
         printf("\t- %-30s [%s]\n", "add ammo type to list", "add");
         printf("\t- %-30s [%s]\n", "remove ammo type from list", "delete");
-        add_seperator(NULL, '-', 30);
+        add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
     }
 
     Command_t cmd;
@@ -286,7 +291,7 @@ void cmd_colour(const char *args, Command_case case_flags, PROCESS *running)
     (void)args;
     (void)case_flags;
     (void)running;
-    set_color_mode(CM_COLOUR);    
+    set_color_mode(CM_COLOUR);
 }
 /**
  * @brief Color mode command handler (Monochrome)
@@ -343,13 +348,13 @@ EntryPoint:
     Command_t cmd;
     if (!(case_flags & CMD_C_NOCOMMENT))
     {
-        add_seperator("calculate", '-', 30);
+        add_seperator("calculate", '-', NORMAL_SEPERATOR_SIZE);
         printf("%-39s <[%s]>\n", "What would you like to do?", "back");
         printf("\t- %-30s [%s]\n", "select parameters", "select");
         printf("\t- %-30s [%s]\n", "work with bases", "bases");
         printf("\t- %-30s [%s]\n", "work with target", "target");
         printf("\t- %-30s [%s]\n", "work with ammo", "ammo");
-        add_seperator(NULL, '-', 30);
+        add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
     }
     // waits for a valid command
     // on list, it exit's. In other cases it just returns, making it easier to make multiple calculations

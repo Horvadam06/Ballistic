@@ -7,6 +7,7 @@
 
 #define HIDE_CURSOR() printf("\x1b[?25l")
 #define SHOW_CURSOR() printf("\x1b[?25h")
+#define NORMAL_SEPERATOR_SIZE 60
 
 #include <ctype.h>
 #include "debug.h"

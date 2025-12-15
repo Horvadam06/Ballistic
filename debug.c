@@ -8,8 +8,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "debugmalloc.h"
-
 /**
  * @brief Runs a comprehensive pre-test of system components
  *
@@ -87,7 +85,7 @@ P_HRESULT run_pre_test(PROCESS process_state)
     }
 
     // test result summary
-    add_seperator(NULL, '-', 30);
+    add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
     if (hr == P_S_OK)
         // Success - display in green
         print_colored(ANSI_COLOR_GREEN, "Test succeeded!\n", false);
@@ -95,7 +93,7 @@ P_HRESULT run_pre_test(PROCESS process_state)
         // Failure - display in red with newline
         print_colored(ANSI_COLOR_RED, "Test failed!\n", true);
 
-    add_seperator(NULL, '-', 30);
+    add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
 
     return hr;
 }

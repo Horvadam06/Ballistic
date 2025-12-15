@@ -21,5 +21,6 @@ ColorMode get_color_mode(void);
 void set_color_mode(ColorMode mode);
 
 P_HRESULT print_colored(const char *color, const char *string, bool always_p);
+void change_colour(const char *color);
 
 #endif

@@ -2,7 +2,7 @@
 #include "stdio.h"
 
 // static to make it "private" to this file
-static ColorMode current_mode = CM_MONO; 
+static ColorMode current_mode = CM_MONO;
 
 // returns the colour mode choosen at config
 ColorMode get_color_mode(void)
@@ -10,7 +10,7 @@ ColorMode get_color_mode(void)
     return current_mode;
 }
 
-//set's the colour mode
+// set's the colour mode
 void set_color_mode(ColorMode mode)
 {
     switch (mode)
@@ -24,8 +24,8 @@ void set_color_mode(ColorMode mode)
     }
 }
 
-//if the colour mode is coloured, print's out the text coloured, 
-//else if the always_p flag is set, print's out the text normally
+// if the colour mode is coloured, print's out the text coloured,
+// else if the always_p flag is set, print's out the text normally
 P_HRESULT print_colored(const char *color, const char *string, bool always_p)
 {
     if (current_mode == CM_COLOUR)
@@ -38,4 +38,10 @@ P_HRESULT print_colored(const char *color, const char *string, bool always_p)
         printf("%s", string);
     }
     return P_S_FALSE;
+}
+
+void change_colour(const char *color)
+{
+    if (get_color_mode() == CM_COLOUR)
+        printf(color);
 }

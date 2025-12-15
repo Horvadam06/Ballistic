@@ -13,8 +13,6 @@
 
 #include <stdatomic.h>
 
-#include "debugmalloc.h"
-
 #include "worker_platform.h"
 #include "input_poll.h"
 
@@ -358,9 +356,9 @@ P_HRESULT test_and_run_config(const char *config_file, PROCESS mode)
     {
         if (mode == S_DEBUG)
             printf("Working directory have been set to: [%s]\n", folder_path);
-        add_seperator(NULL, '-', 30);
+        add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
         printf("Config loaded succesfully!\n");
-        add_seperator(NULL, '-', 30);
+        add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
         printf("\n");
     }
     return hr;
@@ -390,9 +388,9 @@ P_HRESULT recreate_config(const char *config_file, PROCESS mode)
     {
         if (mode == S_DEBUG)
             printf("Working directory have been set to: [%s]\n", folder_path);
-        add_seperator(NULL, '-', 30);
+        add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
         printf("Config updated successfully!\n");
-        add_seperator(NULL, '-', 30);
+        add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
         printf("\n");
     }
     return hr;
@@ -941,10 +939,10 @@ int HandleParameterSelection(void)
 {
     unsigned baseID, targetID, ammoID;
     char input[128] = {0};
-    add_seperator(NULL, '-', 30);
+    add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
     printf("Enter parameters: <base_id> <target_id> <ammo_id>\n");
     printf("Type [back] to return or to view/expand the available [list]!\n");
-    add_seperator(NULL, '-', 30);
+    add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
     printf("\n");
 
     printf("> ");
@@ -983,7 +981,9 @@ int HandleParameterSelection(void)
     // If base or ammo is invalid or cannot hit target, suggest automatically
     if (!base || !ammo || !compute_fire_solution(base, tgt, ammo, NULL).valid)
     {
-        printf("Finding best available base and ammo...\n");
+        clear_terminal();
+        printf("Invalid input. Target is out of reach!\n");
+        printf("Finding best available base and ammo for [id: %3d | label: %10s]\n", tgt->id, tgt->label);
         printf("This may take a while...\n");
         printf("Press [q] or [Esc] to terminate the calculation!\n");
 
@@ -994,12 +994,12 @@ int HandleParameterSelection(void)
             printf("No suitable base/ammo combination found.\n");
             return 0;
         }
-        add_seperator(NULL, '-', 30);
+        add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
         printf("Suggested base and ammo for [%u | %s]:\n", tgt->id, tgt->label);
         printf("  Base ID: %u  Label: %s  Coordinates: lat %.6f, lon %.6f, alt %.2f m\n",
                base->id, base->label, base->coord.latitude, base->coord.longitude, base->coord.altitude);
         printf("  Ammo ID: %u  Label: %s\n", ammo->id, ammo->name);
-        add_seperator(NULL, '-', 30);
+        add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
         printf("\n");
 
         printf("Would you like to accept these changes? [yes/no]\n");

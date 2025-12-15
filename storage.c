@@ -7,8 +7,6 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "debugmalloc.h"
-
 // Global linked list instances for the three main data types
 Ammo_t_List *ammo_t_list = NULL;
 Base_List *base_list = NULL;

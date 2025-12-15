@@ -28,7 +28,7 @@
 #include "color.h"
 #include "helpers.h"
 
-#include "debugmalloc.h"
+//#include "debugmalloc.h"
 
 //=========================================
 // Created by.: Horvath Adam Jozsef
@@ -103,10 +103,10 @@ PROCESS Setup()
 
     // Step 7: Display introduction banner
     printf("\n");
-    printf("==================================\n");
-    printf("Ballistic trajectory calculator\n");
-    printf("Created by.: Adam Jozsef Horvath\n");
-    printf("==================================\n");
+    add_seperator(NULL, '=', NORMAL_SEPERATOR_SIZE);
+    print_colored(ANSI_COLOR_CYAN, "Ballistic trajectory calculator\n", 1);
+    print_colored(ANSI_COLOR_CYAN, "Created by.: Adam Jozsef Horvath\n", 1);
+    add_seperator(NULL, '=', NORMAL_SEPERATOR_SIZE);
     printf("\n");
     printf("Type [exit] to leave or type [help] for the commands!\n");
 
