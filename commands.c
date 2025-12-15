@@ -286,7 +286,7 @@ void cmd_colour(const char *args, Command_case case_flags, PROCESS *running)
     (void)args;
     (void)case_flags;
     (void)running;
-    set_color_mode(CM_COLOUR);
+    set_color_mode(CM_COLOUR);    
 }
 /**
  * @brief Color mode command handler (Monochrome)

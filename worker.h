@@ -4,7 +4,8 @@
 #include <stdatomic.h>
 #include "load.h"
 
-typedef enum {
+typedef enum
+{
     WORKER_IDLE,
     WORKER_RUNNING,
     WORKER_DONE,
@@ -12,12 +13,22 @@ typedef enum {
     WORKER_FAILED
 } WorkerState;
 
-typedef struct WorkerContext {
+typedef struct WorkerContext
+{
     Base_List *list;
     Target *target;
+
     Base *result_base;
     Ammo_t *result_ammo;
+
     atomic_int state;
+
+    atomic_uint work_done;
+    atomic_uint work_total;
+
+    atomic_int phase;
+    atomic_uint current_base_id;
+    atomic_uint current_ammo_id;
 } WorkerContext;
 
 int worker_entry(void *arg);

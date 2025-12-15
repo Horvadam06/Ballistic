@@ -25,6 +25,7 @@
 #include "worker_platform.h"
 #include "input_poll.h"
 #include "worker.h"
+#include "helpers.h"
 
 #include "debugmalloc.h"
 
@@ -431,7 +432,7 @@ int BaseHasAmmo(Base *b, unsigned ammo_id)
  * @todo Implement early exit when distance is significantly worse than current best
  * @todo Add weight factors for different ammunition types (lethality, cost, etc.)
  */
-int SuggestBestBaseAndAmmo(Base_List *list, Target *tgt, Base **outBase, Ammo_t **outAmmo, const WorkerContext *ctx)
+/*int SuggestBestBaseAndAmmo(Base_List *list, Target *tgt, Base **outBase, Ammo_t **outAmmo, const WorkerContext *ctx)
 {
     if (!list || !tgt || !outBase || !outAmmo)
         return 0;
@@ -506,7 +507,7 @@ int SuggestBestBaseAndAmmo(Base_List *list, Target *tgt, Base **outBase, Ammo_t 
     *outAmmo = bestAmmo;
     return 1;
 }
-
+*/
 /**
  * @brief Suggests the best base and ammunition combination with regional awareness
  *
@@ -534,7 +535,7 @@ int SuggestBestBaseAndAmmo(Base_List *list, Target *tgt, Base **outBase, Ammo_t 
 // that it skips a valid option, because of height difference etc.
 // so the best option would be a fast processing, and slow processing, where at fast it only compares values, and does one or so calculations
 // and slow sort checks all the options like the current version
-int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outBase, Ammo_t **outAmmo, const WorkerContext *ctx)
+int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outBase, Ammo_t **outAmmo, WorkerContext *ctx)
 {
     // TODO
     // remove any comments, and move them to the caller, no stdout in the worker
@@ -583,6 +584,7 @@ int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outB
                 continue;
             }
 
+            atomic_store(&ctx->current_base_id, b->id);
             /*printf("\tid: %5u | label: %20s | ",
                    b->id, b->label);*/
 
@@ -592,6 +594,9 @@ int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outB
                 // printf("[Too close to the target!]\n");
                 continue;
             }
+
+            atomic_store(&ctx->work_total, get_base_ammo_t_count(b));
+            atomic_store(&ctx->work_done, 0);
 
             Ammo_Stock *stock = b->ammoStock->head;
             while (stock)
@@ -603,6 +608,7 @@ int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outB
 
                 if (a && stock->quantity > 0)
                 {
+                    atomic_store(&ctx->current_ammo_id, a->id);
                     BallisticResult sol = compute_fire_solution(b, tgt, a, ctx);
                     if (sol.valid)
                     {
@@ -625,6 +631,7 @@ int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outB
                         }
                     }
                 }
+                atomic_fetch_add(&ctx->work_done, 1);
 
                 stock = stock->next;
             }
@@ -646,27 +653,57 @@ int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outB
     return 1;
 }
 
+static void hook_status_before(void *arg)
+{
+    if (!arg)
+        return;
+    WorkerContext *ctx = (WorkerContext *)arg;
+    add_seperator(NULL, '_', 51);
+    printf("\n");
+    printf(" - base id: %5u | ammo id: %5u \n - progress: ", ctx->current_base_id, ctx->current_ammo_id);
+}
+
+static void hook_status_after(void *arg)
+{
+
+    printf("\n");
+    add_seperator(NULL, '_', 51);
+}
+
 int SuggestBestBaseAndAmmo_Parallel(Base_List *list, Target *tgt, Base **outBase, Ammo_t **outAmmo)
 {
     WorkerContext ctx = {0};
     ctx.list = list;
     ctx.target = tgt;
 
+    atomic_store(&ctx.work_total, 0);
+    atomic_store(&ctx.work_done, 0);
     atomic_store(&ctx.state, WORKER_IDLE);
 
     // start the worker thread
     thread_t t = start_worker(&ctx);
 
-    // input polling loop
+    input_init();
+    HIDE_CURSOR();
+
     while (1)
     {
+        render_progress_bar(
+            progress_percent(atomic_load(&ctx.work_done), atomic_load(&ctx.work_total)),
+            hook_status_before,
+            hook_status_after, &ctx, NULL);
+
+        printf("\033[%dA", 5);
+
         if (input_available())
         {
-            int c = getchar();
-            if (c == 'q' || c == 27)
+            
+            int c = tolower(input_getchar());
+            if (c == 'q' || c == '\e')
             {
                 // signal cancellation
                 atomic_store(&ctx.state, WORKER_CANCELLED);
+                printf("\033[%dB", 5);
             }
         }
 
@@ -674,8 +711,11 @@ int SuggestBestBaseAndAmmo_Parallel(Base_List *list, Target *tgt, Base **outBase
         if (s == WORKER_DONE || s == WORKER_FAILED || s == WORKER_CANCELLED)
             break;
 
-        Sleep(10); // don't busy-wait
+        Sleep(20); // don't busy-wait
     }
+    input_shutdown();
+    SHOW_CURSOR();
+    printf("\n");
 
     // wait for thread to exit cleanly
     join_worker(t);

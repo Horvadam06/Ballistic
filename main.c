@@ -54,6 +54,7 @@
 PROCESS Setup()
 {
     printf("Starting setup...\n");
+    enable_ansi_colors();
 
     // Step 1: Load or create configuration
     if (P_FAILED(test_and_run_config("config.txt", S_RUNNING)))

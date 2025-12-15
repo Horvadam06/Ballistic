@@ -22,18 +22,18 @@
 // Should be initialized via config file and used for all file operations
 char *folder_path = NULL;
 
-//sets an upper limit for the number of parameters, 
-//so if the user gives an unfinished definiton, after 15 iterations the loop exits
+// sets an upper limit for the number of parameters,
+// so if the user gives an unfinished definiton, after 15 iterations the loop exits
 #define Param_Check_Limit 15
 
 /**
  * @brief Sets the working directory path for data files
- * 
+ *
  * Allocates memory and copies the provided path, freeing any previously
  * allocated path. Ensures proper memory management when changing paths.
- * 
+ *
  * @param new_path The new directory path to set (will be copied)
- * 
+ *
  * @note The path should end with a directory separator
  * @warning Does not validate if the path exists or is accessible
  */
@@ -58,7 +58,7 @@ void set_folder_path(const char *new_path)
 
 /**
  * @brief Frees the folder_path memory and resets the pointer
- * 
+ *
  * Safely deallocates the global folder_path variable and sets it to NULL
  */
 void free_folder_path(void)
@@ -68,23 +68,23 @@ void free_folder_path(void)
 }
 
 /*The scan function is a legacy function, it was one of the first
-input handling function that I wrote for this program. 
+input handling function that I wrote for this program.
 I know that it could be better, and my newer praser functions are much cleaner.
 The only reason it's was left in the program, to show my development*/
 
 /**
  * @brief Scans and parses a data file with comment support
- * 
+ *
  * Parses files containing records separated by semicolons, with support for
  * both line comments (//) and block comments. Each complete record
  * is passed to a handler function for processing.
- * 
+ *
  * @param filename Path to the file to scan
  * @param handler Function pointer to process each parsed record
  * @param data User data passed to the handler (typically a linked list)
  * @param mode Process mode (S_DEBUG for verbose output, S_RUNNING for normal)
  * @return P_HRESULT S_OK on success, error code on failure
- * 
+ *
  * @note Records must end with semicolon (;)
  * @note Supports nested comments and error reporting for partial records
  * @see ParseState enum for parsing states
@@ -215,13 +215,13 @@ P_HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS 
 
 /**
  * @brief Peeks at the next character in a file without consuming it
- * 
+ *
  * Reads the next character from the file stream, then pushes it back
  * so it can be read again by the next fgetc() call.
- * 
+ *
  * @param file FILE pointer to peek into
  * @return The next character, or EOF if at end of file
- * 
+ *
  * @note Uses ungetc() which is guaranteed to work for at least one character
  */
 int peek(FILE *file)
@@ -234,14 +234,14 @@ int peek(FILE *file)
 
 /**
  * @brief Formats missing parameter error messages from error flags
- * 
+ *
  * Converts an array of error flags into a human-readable string indicating
  * which parameters are missing from a record.
- * 
+ *
  * @param error_buffer Output buffer for the error message
  * @param error_flags Array of 5 flags indicating missing parameters
  * @return P_HRESULT S_OK on success, S_FALSE on buffer overflow
- * 
+ *
  * @note Error flags correspond to: F_ID, F_LABEL, F_LATITUDE, F_LONGITUDE, F_ALTITUDE
  * @warning error_buffer must be large enough (128 bytes recommended)
  */
@@ -254,8 +254,8 @@ P_HRESULT format_basic_error_string(char *error_buffer, int *error_flags)
         if (error_flags[i] != 1)
         {
             er_cnt++;
-            //the i represent the flag array, which holds their value
-            //after that, it's just basic string phrasing
+            // the i represent the flag array, which holds their value
+            // after that, it's just basic string phrasing
             switch (i)
             {
             case F_ID:
@@ -302,7 +302,7 @@ P_HRESULT format_basic_error_string(char *error_buffer, int *error_flags)
             return S_FALSE;
         }
     }
-    //the error_buffer string is finsihed up, with a null terminator, just to be sure
+    // the error_buffer string is finsihed up, with a null terminator, just to be sure
     strncat(error_buffer, "\0", sizeof(error_buffer) - strlen(error_buffer));
     return S_OK;
 }
@@ -313,14 +313,14 @@ P_HRESULT format_basic_error_string(char *error_buffer, int *error_flags)
 
 /**
  * @brief Initializes configuration or creates new one if missing
- * 
+ *
  * Checks for existing config file, loads it if found, or interactively
  * creates a new one if missing. This is typically called at program startup.
- * 
+ *
  * @param config_file Name of the configuration file
  * @param mode Process mode (S_DEBUG for verbose output)
  * @return P_HRESULT S_OK on success, error code on failure
- * 
+ *
  * @note Prompts user to create config if file doesn't exist
  * @note Sets global folder_path and color_mode based on config
  */
@@ -351,8 +351,8 @@ P_HRESULT test_and_run_config(const char *config_file, PROCESS mode)
         return hr;
     }
     fclose(configfile);
-    
-    //if everything succeded, then it reads and loads the config
+
+    // if everything succeded, then it reads and loads the config
     hr = read_config(config_file);
     if (SUCCEEDED(hr))
     {
@@ -368,14 +368,14 @@ P_HRESULT test_and_run_config(const char *config_file, PROCESS mode)
 
 /**
  * @brief Recreates configuration file with new settings
- * 
+ *
  * Interactive function to regenerate the configuration file with new
  * working directory and display mode settings.
- * 
+ *
  * @param config_file Path to the configuration file to recreate
  * @param mode Process mode (S_DEBUG for verbose output)
  * @return P_HRESULT S_OK on success, S_FALSE on failure
- * 
+ *
  * @note Uses generate_config() to create new file, then reads it back
  */
 P_HRESULT recreate_config(const char *config_file, PROCESS mode)
@@ -400,14 +400,14 @@ P_HRESULT recreate_config(const char *config_file, PROCESS mode)
 
 /**
  * @brief Interactive configuration file generator
- * 
+ *
  * Guides user through creating a new configuration file by prompting for
  * working directory path and color display mode preferences.
- * 
+ *
  * @param configfile FILE pointer (unused parameter, could be removed)
  * @param config_file Path where config file should be created
  * @return P_HRESULT S_OK on success, error code on failure
- * 
+ *
  * @note Creates file with comments explaining format and parameters
  * @note Prompts for color mode (CM_COLOUR or CM_MONO)
  */
@@ -476,13 +476,13 @@ Entry:
 
 /**
  * Reads and parses existing configuration file
- * 
+ *
  * Opens and scans a configuration file, using handle_config() to process
  * each configuration directive.
- * 
+ *
  * @param config_file Path to the configuration file
  * @return P_HRESULT S_OK on success, error code on failure
- * 
+ *
  * @note Uses the generic scan() function with handle_config() handler
  * @note Sets global folder_path and color_mode based on parsed values
  */
@@ -505,15 +505,15 @@ P_HRESULT read_config(const char *config_file)
 
 /**
  * Configuration file record handler
- * 
+ *
  * Processes individual configuration directives from the config file.
  * Recognizes DIR (working directory) and COLOUR_M (color mode) directives.
- * 
+ *
  * @param record The configuration record string to parse
  * @param data Unused parameter (required by RecordHandler signature)
  * @param error_flags Unused parameter (required by RecordHandler signature)
  * @return P_HRESULT S_OK on successful parsing
- * 
+ *
  * @note Uses strtoken() and norm_strncmp() for parsing
  * @note Sets global variables: folder_path and color_mode
  */
@@ -522,7 +522,7 @@ P_HRESULT handle_config(char *record, void *data, int *error_flags)
     (void)data;
     (void)error_flags;
     char *end = NULL;
-    
+
     /*searches for the normlaized DIR token, then if it is, searches for the value after the ':' charcter*/
     if (norm_strncmp(strtoken(record, &end), "DIR") == S_OK && (record = strchr(end, ':')) != NULL)
     {
@@ -545,15 +545,15 @@ P_HRESULT handle_config(char *record, void *data, int *error_flags)
 
 /**
  * @brief Ammunition type record handler
- * 
+ *
  * Parses ammunition type records from data files. Each record contains
  * ammunition specifications like weight, diameter, muzzle velocity, etc.
- * 
+ *
  * @param record The record string to parse (format: I:id N:name W:weight etc.)
  * @param data Pointer to ammunition type linked list
  * @param error_flags Unused parameter (required by RecordHandler signature)
  * @return P_HRESULT S_OK on successful parsing
- * 
+ *
  * @note Parameters: I=ID, N=Name, W=Weight, D=Diameter, BR=BlastRadius,
  *       MV=MuzzleVelocity, BC=BallisticCoefficient
  * @note Allocates memory for name field which is freed after adding to list
@@ -570,7 +570,7 @@ P_HRESULT handle_ammo_t(char *record, void *data, int *error_flags)
     for (int i = 0; i < Param_Check_Limit && strlen(record) > 0; i++)
     {
         char *end = NULL;
-        
+
         /*id*/
         if (norm_strncmp(record, "I") == S_OK)
         {
@@ -640,15 +640,15 @@ P_HRESULT handle_ammo_t(char *record, void *data, int *error_flags)
 
 /**
  * @brief Base record handler
- * 
+ *
  * Parses base records from data files. Each record contains base information
  * including coordinates and ammunition stock inventory.
- * 
+ *
  * @param record The record string to parse (format: I:id L:label CLA:lat etc.)
  * @param data Pointer to base linked list
  * @param error_flags Unused parameter (required by RecordHandler signature)
  * @return P_HRESULT S_OK on successful parsing
- * 
+ *
  * @note Parameters: I=ID, L=Label, CLA=Latitude, CLO=Longitude, CA=Altitude,
  *       AMS=Ammunition Stock (list of ammo ID:amount pairs)
  * @note AMS format: AMS: (id amount) (id amount) ... ;
@@ -667,7 +667,7 @@ P_HRESULT handle_base(char *record, void *data, int *error_flags)
     for (int i = 0; i < Param_Check_Limit && strlen(record) > 0; i++)
     {
         char *end = NULL;
-        
+
         // id
         if (norm_strncmp(record, "I") == S_OK)
         {
@@ -745,15 +745,15 @@ P_HRESULT handle_base(char *record, void *data, int *error_flags)
 
 /**
  * @brief Target record handler
- * 
+ *
  * Parses target records from data files. Each record contains target information
  * including coordinates and target area size.
- * 
+ *
  * @param record The record string to parse (format: I:id L:label CLA:lat etc.)
  * @param data Pointer to target linked list
  * @param error_flags Unused parameter (required by RecordHandler signature)
  * @return P_HRESULT S_OK on successful parsing
- * 
+ *
  * @note Parameters: I=ID, L=Label, CLA=Latitude, CLO=Longitude, CA=Altitude, A=Area
  * @note Allocates memory for label field which is freed after adding to list
  * @warning Has hard-coded limit of 15 parameter checks per record
@@ -770,7 +770,7 @@ P_HRESULT handle_target(char *record, void *data, int *error_flags)
     for (int i = 0; i < Param_Check_Limit && strlen(record) > 0; i++)
     {
         char *end = NULL;
-        
+
         // id
         if (norm_strncmp(record, "I") == S_OK)
         {
@@ -835,15 +835,15 @@ P_HRESULT handle_target(char *record, void *data, int *error_flags)
 
 /**
  * @brief Logs calculation results to file
- * 
+ *
  * Appends a detailed log entry to log.txt in the working directory,
  * containing all parameters and results of a trajectory calculation.
- * 
+ *
  * @param base Pointer to base used in calculation
  * @param tgt Pointer to target used in calculation
  * @param ammo Pointer to ammunition type used in calculation
  * @param res Pointer to ballistic calculation results
- * 
+ *
  * @note Includes timestamp, all parameters, and calculation results
  * @note Log file is appended to, not overwritten
  * @warning All pointers must be valid (non-NULL)
@@ -926,13 +926,13 @@ void LogResult(const Base *base, const Target *tgt, const Ammo_t *ammo, const Ba
 
 /**
  * @brief Interactive parameter selection for calculations
- * 
+ *
  * Guides user through selecting base, target, and ammunition for trajectory
  * calculations. Automatically suggests alternatives if selected combination
  * is invalid or unavailable.
- * 
+ *
  * @return int 0 on successful selection, -1 to return to previous menu
- * 
+ *
  * @note Validates IDs and checks if base can hit target with selected ammo
  * @note Uses SuggestBestBaseAndAmmo_RegionAware() to find alternatives
  * @note Logs successful selections to file via LogResult()
@@ -985,10 +985,10 @@ int HandleParameterSelection(void)
     {
         printf("Finding best available base and ammo...\n");
         printf("This may take a while...\n");
+        printf("Press [q] or [Esc] to terminate the calculation!\n");
 
         // the entry for the calculation model loop for multi threading
-        
-        
+
         if (!SuggestBestBaseAndAmmo_Parallel(base_list, tgt, &base, &ammo))
         {
             printf("No suitable base/ammo combination found.\n");
@@ -1022,4 +1022,19 @@ Recalculate:
     LogResult(base, tgt, ammo, &b_result);
     printf("Parameters accepted and logged.\n");
     return 0;
+}
+
+unsigned get_base_ammo_t_count(const Base *base)
+{
+    if (!base || !base->ammoStock)
+        return 0;
+    unsigned total = 0;
+
+    for (Ammo_Stock *s = base->ammoStock->head; s; s = s->next)
+    {
+        if (s->typePtr && s->quantity > 0)
+            total++;
+    }
+
+    return total;
 }

@@ -225,5 +225,6 @@ int HandleParameterSelection(void);
  */
 void LogResult(const Base *base, const Target *tgt, const Ammo_t *ammo, const BallisticResult *res);
 
+unsigned get_base_ammo_t_count(const Base *base);
 
 #endif /* LOAD_H */

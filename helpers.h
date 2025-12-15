@@ -5,6 +5,9 @@
 #ifndef HELPERS_H
 #define HELPERS_H
 
+#define HIDE_CURSOR() printf("\x1b[?25l")
+#define SHOW_CURSOR() printf("\x1b[?25h")
+
 #include <ctype.h>
 #include "debug.h"
 
@@ -39,5 +42,11 @@ void add_seperator(const char *str, char symbol, unsigned sep_length);
 /*Clears terminal using ANSI codes if color mode enabled */
 
 void clear_terminal();
+
+unsigned progress_percent(unsigned current, unsigned total);
+
+typedef void (*progress_hook_fn)(void *arg);
+
+void render_progress_bar(unsigned percent, progress_hook_fn before, progress_hook_fn after, void *arg_b, void *arg_a);
 
 #endif

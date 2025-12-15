@@ -72,17 +72,16 @@ char *Normalize_path(char *path)
     return path;
 }
 
-
 /**
  * @brief Custom string tokenizer
- * 
+ *
  * Extracts tokens separated by space, tab, newline, or colon characters.
  * Similar to strtok but without static state.
- * 
+ *
  * @param str String to tokenize (will be modified if delimiters are replaced)
  * @param endptr Pointer to store the position after the token (can be NULL)
  * @return Pointer to the beginning of the token
- * 
+ *
  * @note Delimiters are: space, tab, newline, colon
  */
 char *strtoken(char *str, char **endptr)
@@ -105,14 +104,14 @@ char *strtoken(char *str, char **endptr)
 
 /**
  * @brief Removes matching quote characters from the beginning and end of a string
- * 
+ *
  * Removes the specified quote character if it appears at both ends of the string.
  * Useful for processing quoted strings from configuration files or user input.
- * 
+ *
  * @param str String to unquote
  * @param symbol Quote character to remove (typically '"' or '\'')
  * @return Pointer to the unquoted string (may be offset if opening quote removed)
- * 
+ *
  * @note Only removes quotes if they appear at BOTH ends
  * @note If string starts with quote but doesn't end with one, only opening quote is removed
  * @note Modifies the original string in-place
@@ -136,14 +135,14 @@ char *remove_quotes(char *str, char symbol)
 
 /**
  * @brief Normalized string comparison with length checking
- * 
+ *
  * Compares two strings case-insensitively and ensures they match completely
  * (not just as a prefix). Both strings are normalized to lowercase during comparison.
- * 
+ *
  * @param record First string to compare
  * @param str2 Second string to compare
  * @return P_HRESULT S_OK if strings match exactly, S_FALSE otherwise
- * 
+ *
  * @note Comparison is case-insensitive (A == a)
  * @note Returns S_FALSE if str2 is longer than record (not just a prefix match)
  * @note Example: "hello" vs "hell" returns S_FALSE
@@ -171,12 +170,12 @@ P_HRESULT norm_strncmp(const char *record, const char *str2)
 
 /**
  * @brief Converts a string to lowercase in-place
- * 
+ *
  * Modifies ASCII characters 'A'-'Z' to their lowercase equivalents.
  * Leaves other characters unchanged.
- * 
+ *
  * @param input String to normalize (modified in-place)
- * 
+ *
  * @bug Uses sizeof(input) instead of strlen(input) - will only process
  *      first sizeof(pointer) bytes (typically 4 or 8)
  * @bug Should be: for (unsigned i = 0; input[i] != '\0'; i++)
@@ -191,21 +190,21 @@ void NormalizeInput(char *input)
 
 /**
  * @brief Prints a formatted separator line with optional centered text
- * 
+ *
  * Creates a visual separator using repeated characters, with
  * centered text. Useful for creating menu borders and section dividers.
- * 
+ *
  * @param str Text to center within the separator (NULL for no text)
  * @param symbol Character to repeat for the separator line
  * @param sep_length Total length of the separator line
- * 
+ *
  * @example add_seperator("Menu", '-', 30) prints: "------------ Menu ------------"
  * @example add_seperator(NULL, '=', 40) prints: "========================================"
  */
 void add_seperator(const char *str, char symbol, unsigned sep_length)
 {
     size_t str_length = (str) ? strlen(str) : 0;
-    unsigned start = (sep_length - str_length) / 2;  // Center position
+    unsigned start = (sep_length - str_length) / 2; // Center position
     unsigned cnt = 0;
 
     // Print leading symbols
@@ -213,26 +212,26 @@ void add_seperator(const char *str, char symbol, unsigned sep_length)
     {
         printf("%c", symbol);
     };
-    
+
     // Print centered text (if any)
     if (str)
         printf("%s", str);
-    
+
     // Print trailing symbols to fill remaining length
     for (cnt += str_length; cnt < sep_length; cnt++)
     {
         printf("%c", symbol);
     };
-    
+
     printf("\n");
 }
 
 /**
  * @brief Clears the terminal screen using ANSI escape codes
- * 
+ *
  * Only works when color mode is enabled (CM_COLOUR). In monochrome mode,
  * this function does nothing. Uses standard ANSI escape sequences.
- * 
+ *
  * @note \033[2J clears the entire screen
  * @note \033[H moves cursor to home position (1,1)
  * @note Will not work on terminals without ANSI support
@@ -242,3 +241,40 @@ void clear_terminal()
     if (get_color_mode() == CM_COLOUR)
         printf("\033[2J\033[H");
 };
+
+unsigned progress_percent(unsigned current, unsigned total)
+{
+    if (total == 0)
+        return 100;
+
+    if (current >= total)
+        return 100;
+
+    return (current * 100u) / total;
+}
+
+void render_progress_bar(unsigned percent, progress_hook_fn before, progress_hook_fn after, void *arg_b, void *arg_a)
+{
+    const unsigned bar_width = 30;
+
+    if (percent > 100)
+        percent = 100;
+
+    unsigned filled = (percent * bar_width) / 100;
+    if (before)
+    {
+        printf("\r");
+        before(arg_b);
+        printf("[");
+    }
+    else
+        printf("\r[");
+
+    for (unsigned i = 0; i < bar_width; ++i)
+        putchar(i < filled ? '#' : '-');
+
+    printf("] %3u%%", percent);
+    if (after)
+        after(arg_a);
+    fflush(stdout);
+}

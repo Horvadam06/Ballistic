@@ -99,3 +99,26 @@ P_HRESULT run_pre_test(PROCESS process_state)
 
     return hr;
 }
+
+
+#ifdef _WIN32
+#include <windows.h>
+void enable_ansi_colors()
+{
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hOut == INVALID_HANDLE_VALUE)
+        return;
+
+    DWORD dwMode = 0;
+    if (!GetConsoleMode(hOut, &dwMode))
+        return;
+
+    dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    SetConsoleMode(hOut, dwMode);
+}
+#else
+void enable_ansi_colors()
+{
+    // Nothing needed for Linux/macOS terminals
+}
+#endif

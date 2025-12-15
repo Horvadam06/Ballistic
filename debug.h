@@ -5,6 +5,8 @@
 
 #define EMPTY_MESSAGE printf("Nothing to see here! (yet)\n");
 
+void enable_ansi_colors();
+
 typedef enum
 {
     false,

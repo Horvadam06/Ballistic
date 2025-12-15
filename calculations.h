@@ -73,7 +73,7 @@ BallisticResult compute_fire_solution(Base *b, Target *t, Ammo_t *ammo, const Wo
  *
  * @ingroup Calculations
  */
-int SuggestBestBaseAndAmmo(Base_List *list, Target *tgt, Base **outBase, Ammo_t **outAmmo, const WorkerContext *ctx);
+//int SuggestBestBaseAndAmmo(Base_List *list, Target *tgt, Base **outBase, Ammo_t **outAmmo, const WorkerContext *ctx);
 
 /**
  * @brief Suggest optimal base and ammunition with regional preference
@@ -96,7 +96,7 @@ int SuggestBestBaseAndAmmo(Base_List *list, Target *tgt, Base **outBase, Ammo_t 
  *
  * @ingroup Calculations
  */
-int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outBase, Ammo_t **outAmmo, const WorkerContext *ctx);
+int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outBase, Ammo_t **outAmmo, WorkerContext *ctx);
 
 int SuggestBestBaseAndAmmo_Parallel(Base_List *list, Target *tgt, Base **outBase, Ammo_t **outAmmo);
 
