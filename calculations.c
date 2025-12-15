@@ -22,6 +22,9 @@
 
 #include "calculations.h"
 #include "load.h"
+#include "worker_platform.h"
+#include "input_poll.h"
+#include "worker.h"
 
 #include "debugmalloc.h"
 
@@ -244,7 +247,7 @@ static void rk4(State *s, double dt, double BC)
  * @note Uses 1 meter tolerance for altitude matching
  * @todo Replace linear search with binary search for better performance
  */
-static BallisticResult solve_ballistic(Vec3 targetENU, double muzzleVel, double BC)
+static BallisticResult solve_ballistic(Vec3 targetENU, double muzzleVel, double BC, const WorkerContext *ctx)
 {
     BallisticResult r = {0};
     double azimuth = atan2(targetENU.x, targetENU.y); // east-north convention
@@ -258,6 +261,9 @@ static BallisticResult solve_ballistic(Vec3 targetENU, double muzzleVel, double 
     // Search through elevation angles from 5 to 80 degrees
     for (double elev_deg = 5.0; elev_deg <= 80.0; elev_deg += 0.1)
     {
+        if (ctx && atomic_load(&ctx->state) == WORKER_CANCELLED)
+            return (BallisticResult){.valid = -1};
+
         double elev = elev_deg * DEG2RAD;
 
         State s = {0};
@@ -272,6 +278,9 @@ static BallisticResult solve_ballistic(Vec3 targetENU, double muzzleVel, double 
         // Simulate trajectory
         for (;;)
         {
+            if (ctx && atomic_load(&ctx->state) == WORKER_CANCELLED)
+                return (BallisticResult){.valid = -1};
+
             rk4(&s, dt, BC);
             t += dt;
 
@@ -317,7 +326,7 @@ static BallisticResult solve_ballistic(Vec3 targetENU, double muzzleVel, double 
  * @note Firing solution is invalid if no elevation angle produces a hit within tolerance
  * @todo Cache results for frequently used base-target-ammo combinations
  */
-BallisticResult compute_fire_solution(Base *b, Target *t, Ammo_t *ammo)
+BallisticResult compute_fire_solution(Base *b, Target *t, Ammo_t *ammo, const WorkerContext *ctx)
 {
     Vec3 shooterECEF = wgs84_to_ecef(b->coord.latitude, b->coord.longitude, b->coord.altitude);
     Vec3 targetECEF = wgs84_to_ecef(t->coord.latitude, t->coord.longitude, t->coord.altitude);
@@ -328,7 +337,7 @@ BallisticResult compute_fire_solution(Base *b, Target *t, Ammo_t *ammo)
         b->coord.latitude,
         b->coord.longitude);
 
-    return solve_ballistic(enu_target, ammo->muzzleVelocity, ammo->ballistic_coefficient);
+    return solve_ballistic(enu_target, ammo->muzzleVelocity, ammo->ballistic_coefficient, ctx);
 }
 
 // ============================================================
@@ -422,7 +431,7 @@ int BaseHasAmmo(Base *b, unsigned ammo_id)
  * @todo Implement early exit when distance is significantly worse than current best
  * @todo Add weight factors for different ammunition types (lethality, cost, etc.)
  */
-int SuggestBestBaseAndAmmo(Base_List *list, Target *tgt, Base **outBase, Ammo_t **outAmmo)
+int SuggestBestBaseAndAmmo(Base_List *list, Target *tgt, Base **outBase, Ammo_t **outAmmo, const WorkerContext *ctx)
 {
     if (!list || !tgt || !outBase || !outAmmo)
         return 0;
@@ -435,6 +444,9 @@ int SuggestBestBaseAndAmmo(Base_List *list, Target *tgt, Base **outBase, Ammo_t 
     Base_Node *bn = list->head;
     while (bn)
     {
+        if (ctx && atomic_load(&ctx->state) == WORKER_CANCELLED)
+            return -1;
+
         Base *b = bn->baseItem;
         bn = bn->next;
 
@@ -450,11 +462,14 @@ int SuggestBestBaseAndAmmo(Base_List *list, Target *tgt, Base **outBase, Ammo_t 
         Ammo_Stock *stock = b->ammoStock->head;
         while (stock)
         {
+            if (ctx && atomic_load(&ctx->state) == WORKER_CANCELLED)
+                return -1;
+
             Ammo_t *a = stock->typePtr;
 
             if (a && stock->quantity > 0)
             {
-                BallisticResult sol = compute_fire_solution(b, tgt, a);
+                BallisticResult sol = compute_fire_solution(b, tgt, a, ctx);
                 if (sol.valid)
                 {
                     int better = 0;
@@ -519,8 +534,11 @@ int SuggestBestBaseAndAmmo(Base_List *list, Target *tgt, Base **outBase, Ammo_t 
 // that it skips a valid option, because of height difference etc.
 // so the best option would be a fast processing, and slow processing, where at fast it only compares values, and does one or so calculations
 // and slow sort checks all the options like the current version
-int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outBase, Ammo_t **outAmmo)
+int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outBase, Ammo_t **outAmmo, const WorkerContext *ctx)
 {
+    // TODO
+    // remove any comments, and move them to the caller, no stdout in the worker
+
     if (!list || !tgt || !outBase || !outAmmo)
         return 0;
 
@@ -532,7 +550,7 @@ int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outB
     double bestDist = DBL_MAX;
     unsigned bestQty = 0;
 
-    printf("Testing base...:\n");
+    // printf("Testing base...:\n");
 
     int pass;
     for (pass = 1; pass <= 2; pass++)
@@ -541,6 +559,9 @@ int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outB
 
         while (bn)
         {
+            if (ctx && atomic_load(&ctx->state) == WORKER_CANCELLED)
+                return -1;
+
             Base *b = bn->baseItem;
             bn = bn->next;
 
@@ -562,24 +583,27 @@ int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outB
                 continue;
             }
 
-            printf("\tid: %5u | label: %20s | ",
-                   b->id, b->label);
+            /*printf("\tid: %5u | label: %20s | ",
+                   b->id, b->label);*/
 
             // if the distance is smaller, than 100m so it's probably the same geo location, then continue
             if (dist3d < target_tolerance)
             {
-                printf("[Too close to the target!]\n");
+                // printf("[Too close to the target!]\n");
                 continue;
             }
 
             Ammo_Stock *stock = b->ammoStock->head;
             while (stock)
             {
+                if (ctx && atomic_load(&ctx->state) == WORKER_CANCELLED)
+                    return -1;
+
                 Ammo_t *a = stock->typePtr;
 
                 if (a && stock->quantity > 0)
                 {
-                    BallisticResult sol = compute_fire_solution(b, tgt, a);
+                    BallisticResult sol = compute_fire_solution(b, tgt, a, ctx);
                     if (sol.valid)
                     {
                         int better = 0;
@@ -604,7 +628,7 @@ int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outB
 
                 stock = stock->next;
             }
-            printf("[Searching...]\n");
+            // printf("[Searching...]\n");
         }
 
         // If pass 1 found something, stop here (prefer regional solutions)
@@ -612,7 +636,7 @@ int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outB
             break;
     }
 
-    printf("Finished!\n\n");
+    // printf("Finished!\n\n");
 
     if (!bestBase)
         return 0;
@@ -620,4 +644,59 @@ int SuggestBestBaseAndAmmo_RegionAware(Base_List *list, Target *tgt, Base **outB
     *outBase = bestBase;
     *outAmmo = bestAmmo;
     return 1;
+}
+
+int SuggestBestBaseAndAmmo_Parallel(Base_List *list, Target *tgt, Base **outBase, Ammo_t **outAmmo)
+{
+    WorkerContext ctx = {0};
+    ctx.list = list;
+    ctx.target = tgt;
+
+    atomic_store(&ctx.state, WORKER_IDLE);
+
+    // start the worker thread
+    thread_t t = start_worker(&ctx);
+
+    // input polling loop
+    while (1)
+    {
+        if (input_available())
+        {
+            int c = getchar();
+            if (c == 'q' || c == 27)
+            {
+                // signal cancellation
+                atomic_store(&ctx.state, WORKER_CANCELLED);
+            }
+        }
+
+        WorkerState s = atomic_load(&ctx.state);
+        if (s == WORKER_DONE || s == WORKER_FAILED || s == WORKER_CANCELLED)
+            break;
+
+        Sleep(10); // don't busy-wait
+    }
+
+    // wait for thread to exit cleanly
+    join_worker(t);
+
+    // handle result
+    WorkerState final_state = atomic_load(&ctx.state);
+    if (final_state == WORKER_DONE)
+    {
+        *outBase = ctx.result_base; // assuming you filled ctx.base in worker
+        *outAmmo = ctx.result_ammo;
+
+        return 1; // success
+    }
+    else if (final_state == WORKER_CANCELLED)
+    {
+        printf("Cancelled by user.\n");
+        return 0;
+    }
+    else
+    {
+        printf("Worker failed.\n");
+        return 0;
+    }
 }

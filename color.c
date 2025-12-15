@@ -26,16 +26,16 @@ void set_color_mode(ColorMode mode)
 
 //if the colour mode is coloured, print's out the text coloured, 
 //else if the always_p flag is set, print's out the text normally
-HRESULT print_colored(const char *color, const char *string, bool always_p)
+P_HRESULT print_colored(const char *color, const char *string, bool always_p)
 {
     if (current_mode == CM_COLOUR)
     {
         printf("%s%s%s", color, string, ANSI_COLOR_RESET);
-        return S_OK;
+        return P_S_OK;
     }
     else if (always_p)
     {
         printf("%s", string);
     }
-    return S_FALSE;
+    return P_S_FALSE;
 }

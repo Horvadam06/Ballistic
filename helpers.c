@@ -142,13 +142,13 @@ char *remove_quotes(char *str, char symbol)
  * 
  * @param record First string to compare
  * @param str2 Second string to compare
- * @return HRESULT S_OK if strings match exactly, S_FALSE otherwise
+ * @return P_HRESULT S_OK if strings match exactly, S_FALSE otherwise
  * 
  * @note Comparison is case-insensitive (A == a)
  * @note Returns S_FALSE if str2 is longer than record (not just a prefix match)
  * @note Example: "hello" vs "hell" returns S_FALSE
  */
-HRESULT norm_strncmp(const char *record, const char *str2)
+P_HRESULT norm_strncmp(const char *record, const char *str2)
 {
     int length = strlen(str2);
     for (int i = 0; record[i] != '\0' && i < length; i++)
@@ -159,14 +159,14 @@ HRESULT norm_strncmp(const char *record, const char *str2)
         NormalizeInput(&str1);
 
         if (str != str1)
-            return S_FALSE;
+            return P_S_FALSE;
 
         // Check if we've reached end of 'record' but 'str2' continues
         if (length - i > 1 && record[i + 1] == '\0')
-            return S_FALSE;
+            return P_S_FALSE;
     }
 
-    return S_OK;
+    return P_S_OK;
 }
 
 /**

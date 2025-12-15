@@ -24,16 +24,16 @@ Target_List *target_list = NULL;
  * Creates a sentinel-based doubly-linked list with head and tail sentinel nodes.
  *
  * @param list Pointer to the list pointer (will be allocated and initialized)
- * @return HRESULT S_OK on success, S_FALSE if list already exists
+ * @return P_HRESULT S_OK on success, S_FALSE if list already exists
  *
  * @note Head and tail sentinels always exist and contain NULL data
  * @note List structure: head <-> [data nodes] <-> tail
  * @warning Assumes *list is NULL or invalid pointer
  */
-HRESULT init_Ammo_t_List(Ammo_t_List **list)
+P_HRESULT init_Ammo_t_List(Ammo_t_List **list)
 {
     if (*list)
-        return S_FALSE;
+        return P_S_FALSE;
 
     Ammo_t_Node *head = (Ammo_t_Node *)malloc(sizeof(Ammo_t_Node));
     Ammo_t_Node *tail = (Ammo_t_Node *)malloc(sizeof(Ammo_t_Node));
@@ -48,7 +48,7 @@ HRESULT init_Ammo_t_List(Ammo_t_List **list)
     *list = (Ammo_t_List *)malloc(sizeof(Ammo_t_List));
     (*list)->head = head;
     (*list)->tail = tail;
-    return S_OK;
+    return P_S_OK;
 }
 
 /**
@@ -291,14 +291,14 @@ void print_Ammo_t_List(Ammo_t_List *list)
  * Sets the list pointer to NULL to prevent use-after-free.
  *
  * @param list Pointer to the list pointer (will be set to NULL)
- * @return HRESULT S_OK on success, S_FALSE if list was already NULL
+ * @return P_HRESULT S_OK on success, S_FALSE if list was already NULL
  *
  * @note Uses pop_BackAmmo_t() which frees node contents
  */
-HRESULT free_Ammo_t_List(Ammo_t_List **list)
+P_HRESULT free_Ammo_t_List(Ammo_t_List **list)
 {
     if (!*list)
-        return S_FALSE;
+        return P_S_FALSE;
 
     // Remove all data nodes from back to front
     while ((*list)->head->next != (*list)->tail)
@@ -311,7 +311,7 @@ HRESULT free_Ammo_t_List(Ammo_t_List **list)
 
     *list = NULL;
 
-    return S_OK;
+    return P_S_OK;
 }
 
 /**
@@ -365,15 +365,15 @@ Ammo_t *FindAmmoByID(Ammo_t_List *list, unsigned id)
  * Uses head and tail sentinel nodes to simplify operations.
  *
  * @param list Pointer to the list pointer (will be allocated and initialized)
- * @return HRESULT S_OK on success, S_FALSE if list already exists
+ * @return P_HRESULT S_OK on success, S_FALSE if list already exists
  *
  * @note Singly-linked (no prev pointers) unlike ammunition list
  * @note Structure: head -> [data nodes] -> tail -> NULL
  */
-HRESULT init_Base_List(Base_List **list)
+P_HRESULT init_Base_List(Base_List **list)
 {
     if (*list != NULL)
-        return S_FALSE;
+        return P_S_FALSE;
 
     Base_Node *head = (Base_Node *)malloc(sizeof(Base_Node));
     Base_Node *tail = (Base_Node *)malloc(sizeof(Base_Node));
@@ -386,7 +386,7 @@ HRESULT init_Base_List(Base_List **list)
     *list = (Base_List *)malloc(sizeof(Base_List));
     (*list)->head = head;
     (*list)->tail = tail;
-    return S_OK;
+    return P_S_OK;
 }
 
 /**
@@ -585,14 +585,14 @@ void print_Base_List(Base_List *list, PROCESS mode)
  * Also frees all ammunition stock lists associated with each base.
  *
  * @param list Pointer to the list pointer (will be set to NULL)
- * @return HRESULT S_OK on success, S_FALSE if list was already NULL
+ * @return P_HRESULT S_OK on success, S_FALSE if list was already NULL
  *
  * @warning Invalidates all pointers to this list and its contents
  */
-HRESULT free_Base_List(Base_List **list)
+P_HRESULT free_Base_List(Base_List **list)
 {
     if (!*list)
-        return S_FALSE;
+        return P_S_FALSE;
 
     // Remove all data nodes from front to back
     while ((*list)->head->next != (*list)->tail)
@@ -605,7 +605,7 @@ HRESULT free_Base_List(Base_List **list)
 
     *list = NULL;
 
-    return S_OK;
+    return P_S_OK;
 }
 
 /**
@@ -648,15 +648,15 @@ Base *FindBaseByID(Base_List *list, unsigned id)
  * quantities at a base. Each node references an ammunition type and quantity.
  *
  * @param list Pointer to the stock list pointer
- * @return HRESULT S_OK on success, S_FALSE if list already exists
+ * @return P_HRESULT S_OK on success, S_FALSE if list already exists
  *
  * @note Nodes reference ammunition types (don't own them)
  * @note Structure: head -> [stock nodes] -> tail -> NULL
  */
-HRESULT init_Ammo_Stock_List(Ammo_Stock_List **list)
+P_HRESULT init_Ammo_Stock_List(Ammo_Stock_List **list)
 {
     if (*list != NULL)
-        return S_FALSE;
+        return P_S_FALSE;
 
     Ammo_Stock *head = (Ammo_Stock *)malloc(sizeof(Ammo_Stock));
     Ammo_Stock *tail = (Ammo_Stock *)malloc(sizeof(Ammo_Stock));
@@ -673,7 +673,7 @@ HRESULT init_Ammo_Stock_List(Ammo_Stock_List **list)
     (*list)->head = head;
     (*list)->tail = tail;
 
-    return S_OK;
+    return P_S_OK;
 }
 
 /**
@@ -863,12 +863,12 @@ void print_Ammo_Stock_List(Ammo_Stock_List *list)
  * Does NOT free the ammunition type pointers (owned by global list).
  *
  * @param list Pointer to the list pointer (will be set to NULL)
- * @return HRESULT S_OK on success, S_FALSE if list was already NULL
+ * @return P_HRESULT S_OK on success, S_FALSE if list was already NULL
  */
-HRESULT free_Ammo_Stock_List(Ammo_Stock_List **list)
+P_HRESULT free_Ammo_Stock_List(Ammo_Stock_List **list)
 {
     if (!*list)
-        return S_FALSE;
+        return P_S_FALSE;
 
     // Remove all data nodes from front to back
     while ((*list)->head->next != (*list)->tail)
@@ -881,7 +881,7 @@ HRESULT free_Ammo_Stock_List(Ammo_Stock_List **list)
 
     *list = NULL;
 
-    return S_OK;
+    return P_S_OK;
 }
 
 // ===========================================================================
@@ -895,14 +895,14 @@ HRESULT free_Ammo_Stock_List(Ammo_Stock_List **list)
  * Similar structure to base list but for target data.
  *
  * @param list Pointer to the list pointer (will be allocated and initialized)
- * @return HRESULT S_OK on success, S_FALSE if list already exists
+ * @return P_HRESULT S_OK on success, S_FALSE if list already exists
  *
  * @note Singly-linked with head and tail sentinel nodes
  */
-HRESULT init_Target_List(Target_List **list)
+P_HRESULT init_Target_List(Target_List **list)
 {
     if (*list != NULL)
-        return S_FALSE;
+        return P_S_FALSE;
 
     Target_Node *head = (Target_Node *)malloc(sizeof(Target_Node));
     Target_Node *tail = (Target_Node *)malloc(sizeof(Target_Node));
@@ -915,7 +915,7 @@ HRESULT init_Target_List(Target_List **list)
     *list = (Target_List *)malloc(sizeof(Target_List));
     (*list)->head = head;
     (*list)->tail = tail;
-    return S_OK;
+    return P_S_OK;
 }
 
 /**
@@ -1098,12 +1098,12 @@ void print_Target_List(Target_List *list)
  * Sets the list pointer to NULL to prevent use-after-free.
  *
  * @param list Pointer to the list pointer (will be set to NULL)
- * @return HRESULT S_OK on success, S_FALSE if list was already NULL
+ * @return P_HRESULT S_OK on success, S_FALSE if list was already NULL
  */
-HRESULT free_Target_List(Target_List **list)
+P_HRESULT free_Target_List(Target_List **list)
 {
     if (!*list)
-        return S_FALSE;
+        return P_S_FALSE;
 
     // Remove all data nodes from front to back
     while ((*list)->head->next != (*list)->tail)
@@ -1116,7 +1116,7 @@ HRESULT free_Target_List(Target_List **list)
 
     *list = NULL;
 
-    return S_OK;
+    return P_S_OK;
 }
 
 /**
@@ -1158,21 +1158,21 @@ Target *FindTargetByID(Target_List *list, unsigned id)
  * application's custom data format with comments and regional headers.
  *
  * @param path File path to save to
- * @return HRESULT S_OK on success, E_FAIL on file open error
+ * @return P_HRESULT S_OK on success, E_FAIL on file open error
  *
  * @note Uses Save_BaseList_file() for actual writing
  * @note File is overwritten if it exists
  */
-HRESULT Save_BaseList(char *path)
+P_HRESULT Save_BaseList(char *path)
 {
-    HRESULT hr = S_OK;
+    P_HRESULT hr = P_S_OK;
     FILE *f = fopen(path, "w");
     if (f)
     {
         Save_BaseList_file(f);
     }
     else
-        hr = E_FAIL;
+        hr = P_E_FAIL;
 
     fclose(f);
     return hr;
@@ -1185,18 +1185,18 @@ HRESULT Save_BaseList(char *path)
  * application's custom data format with comments and regional headers.
  *
  * @param path File path to save to
- * @return HRESULT S_OK on success, E_FAIL on file open error
+ * @return P_HRESULT S_OK on success, E_FAIL on file open error
  */
-HRESULT Save_TargetList(char *path)
+P_HRESULT Save_TargetList(char *path)
 {
-    HRESULT hr = S_OK;
+    P_HRESULT hr = P_S_OK;
     FILE *f = fopen(path, "w");
     if (f)
     {
         Save_TargetList_file(f);
     }
     else
-        hr = E_FAIL;
+        hr = P_E_FAIL;
 
     fclose(f);
     return hr;
@@ -1209,18 +1209,18 @@ HRESULT Save_TargetList(char *path)
  * in the application's custom data format with comments.
  *
  * @param path File path to save to
- * @return HRESULT S_OK on success, E_FAIL on file open error
+ * @return P_HRESULT S_OK on success, E_FAIL on file open error
  */
-HRESULT Save_Ammo_t_List(char *path)
+P_HRESULT Save_Ammo_t_List(char *path)
 {
-    HRESULT hr = S_OK;
+    P_HRESULT hr = P_S_OK;
     FILE *f = fopen(path, "w");
     if (f)
     {
         Save_Ammo_t_List_file(f);
     }
     else
-        hr = E_FAIL;
+        hr = P_E_FAIL;
 
     fclose(f);
     return hr;
@@ -1552,15 +1552,15 @@ void PrintRangeHeader(FILE *fp, RangeType r)
  * to their respective files in the configured working directory.
  * Reports success/failure for each save operation.
  *
- * @return HRESULT S_OK if all saves succeeded, S_FALSE if any failed
+ * @return P_HRESULT S_OK if all saves succeeded, S_FALSE if any failed
  *
  * @note Saves to: bases.txt, targets.txt, ammo_catalouge.txt
  * @note Uses global folder_path for directory location
  * @note Continues saving even if one file fails
  */
-HRESULT handle_save()
+P_HRESULT handle_save()
 {
-    HRESULT hr = S_OK;
+    P_HRESULT hr = P_S_OK;
     char folder_buffer[1024];
 
     // Save base list
@@ -1568,10 +1568,10 @@ HRESULT handle_save()
     {
         strcpy(folder_buffer, folder_path);
         strcat(folder_buffer, "bases.txt");
-        if (SUCCEEDED(Save_BaseList(folder_buffer)))
+        if (P_SUCCEEDED(Save_BaseList(folder_buffer)))
             printf("Base list saved succesfully!\n");
         else
-            hr = S_FALSE;
+            hr = P_S_FALSE;
     }
 
     // Save target list
@@ -1579,10 +1579,10 @@ HRESULT handle_save()
     {
         strcpy(folder_buffer, folder_path);
         strcat(folder_buffer, "targets.txt");
-        if (SUCCEEDED(Save_TargetList(folder_buffer)))
+        if (P_SUCCEEDED(Save_TargetList(folder_buffer)))
             printf("Target list saved succesfully!\n");
         else
-            hr = S_FALSE;
+            hr = P_S_FALSE;
     }
 
     // Save ammunition type list
@@ -1590,10 +1590,10 @@ HRESULT handle_save()
     {
         strcpy(folder_buffer, folder_path);
         strcat(folder_buffer, "ammo_catalouge.txt");
-        if (SUCCEEDED(Save_Ammo_t_List(folder_buffer)))
+        if (P_SUCCEEDED(Save_Ammo_t_List(folder_buffer)))
             printf("Ammo Type list saved succesfully!\n");
         else
-            hr = S_FALSE;
+            hr = P_S_FALSE;
     }
     printf("\n");
 

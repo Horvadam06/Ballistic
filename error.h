@@ -15,16 +15,16 @@
 #define ERROR_H
 
 /**
- * @brief Result codes (similar to Windows HRESULT)
+ * @brief Result codes (similar to Windows P_HRESULT)
  * @ingroup Utilities
  */
 typedef enum
 {
-    S_OK = 0,     ///< Operation successful
-    S_FALSE = 1,  ///< Operation completed but with non-fatal issue
-    S_PARTIAL = 2, ///< Operation partially completed (missing parameters)
-    E_FAIL = -1   ///< Fatal error occurred
-} HRESULT;
+    P_S_OK = 0,     ///< Operation successful
+    P_S_FALSE = 1,  ///< Operation completed but with non-fatal issue
+    P_S_PARTIAL = 2, ///< Operation partially completed (missing parameters)
+    P_E_FAIL = -1   ///< Fatal error occurred
+} P_HRESULT;      //aka private hresult
 
 /**
  * @brief Program process states
@@ -44,7 +44,7 @@ typedef enum
  * @return 1 if success (hr >= 0), 0 otherwise
  * @ingroup Utilities
  */
-int SUCCEEDED(HRESULT hr);
+int P_SUCCEEDED(P_HRESULT hr);
 
 /**
  * @brief Check if result indicates failure
@@ -52,6 +52,6 @@ int SUCCEEDED(HRESULT hr);
  * @return 1 if failure (hr < 0), 0 otherwise
  * @ingroup Utilities
  */
-int FAILED(HRESULT hr);
+int P_FAILED(P_HRESULT hr);
 
 #endif /* ERROR_H */

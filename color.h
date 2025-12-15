@@ -20,6 +20,6 @@ typedef enum
 ColorMode get_color_mode(void);
 void set_color_mode(ColorMode mode);
 
-HRESULT print_colored(const char *color, const char *string, bool always_p);
+P_HRESULT print_colored(const char *color, const char *string, bool always_p);
 
 #endif

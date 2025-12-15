@@ -26,7 +26,7 @@ char *remove_quotes(char *str, char symbol);
 
 /*Case-insensitive string comparison with exact length check */
 
-HRESULT norm_strncmp(const char *record, const char *str2);
+P_HRESULT norm_strncmp(const char *record, const char *str2);
 
 /*Converts string to lowercase (ASCII only) - WARNING: has bug in implementation */
 

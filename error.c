@@ -1,10 +1,10 @@
 #include "error.h"
 #include "debugmalloc.h"
 
-int SUCCEEDED(HRESULT hr){
+int P_SUCCEEDED(P_HRESULT hr){
     return (hr >= 0) ? 1 : 0;
 }
 
-int FAILED(HRESULT hr){
+int P_FAILED(P_HRESULT hr){
     return (hr < 0) ? 1 : 0;
 }

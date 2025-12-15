@@ -11,7 +11,12 @@
 #include <ctype.h>
 #include <time.h>
 
+#include <stdatomic.h>
+
 #include "debugmalloc.h"
+
+#include "worker_platform.h"
+#include "input_poll.h"
 
 // Global variable storing the working directory path for all data files
 // Should be initialized via config file and used for all file operations
@@ -78,13 +83,13 @@ The only reason it's was left in the program, to show my development*/
  * @param handler Function pointer to process each parsed record
  * @param data User data passed to the handler (typically a linked list)
  * @param mode Process mode (S_DEBUG for verbose output, S_RUNNING for normal)
- * @return HRESULT S_OK on success, error code on failure
+ * @return P_HRESULT S_OK on success, error code on failure
  * 
  * @note Records must end with semicolon (;)
  * @note Supports nested comments and error reporting for partial records
  * @see ParseState enum for parsing states
  */
-HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS mode)
+P_HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS mode)
 {
     FILE *file = fopen(filename, "r"); // "r" open file in read only mode
     if (!file)
@@ -97,7 +102,7 @@ HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS mo
     ParseState state = NORMAL;
     char buffer[512];
     int index = 0;
-    HRESULT hr = S_OK; // handle to a result
+    P_HRESULT hr = S_OK; // handle to a result
 
     // Process file character by character with state machine
     while ((c = fgetc(file)) != EOF && SUCCEEDED(hr))
@@ -176,7 +181,7 @@ HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS mo
                 }
 
                 // Handle partial records (missing required parameters)
-                if (hr == S_PARTIAL)
+                if (hr == P_S_PARTIAL)
                 {
                     char error[128] = {0};
                     if (format_basic_error_string(error, error_flags) == S_FALSE)
@@ -235,12 +240,12 @@ int peek(FILE *file)
  * 
  * @param error_buffer Output buffer for the error message
  * @param error_flags Array of 5 flags indicating missing parameters
- * @return HRESULT S_OK on success, S_FALSE on buffer overflow
+ * @return P_HRESULT S_OK on success, S_FALSE on buffer overflow
  * 
  * @note Error flags correspond to: F_ID, F_LABEL, F_LATITUDE, F_LONGITUDE, F_ALTITUDE
  * @warning error_buffer must be large enough (128 bytes recommended)
  */
-HRESULT format_basic_error_string(char *error_buffer, int *error_flags)
+P_HRESULT format_basic_error_string(char *error_buffer, int *error_flags)
 {
     int er_cnt = -1;
 
@@ -314,14 +319,14 @@ HRESULT format_basic_error_string(char *error_buffer, int *error_flags)
  * 
  * @param config_file Name of the configuration file
  * @param mode Process mode (S_DEBUG for verbose output)
- * @return HRESULT S_OK on success, error code on failure
+ * @return P_HRESULT S_OK on success, error code on failure
  * 
  * @note Prompts user to create config if file doesn't exist
  * @note Sets global folder_path and color_mode based on config
  */
-HRESULT test_and_run_config(const char *config_file, PROCESS mode)
+P_HRESULT test_and_run_config(const char *config_file, PROCESS mode)
 {
-    HRESULT hr = S_OK;
+    P_HRESULT hr = S_OK;
     FILE *configfile = fopen(config_file, "r"); // "r" open file in read only mode
     if (!configfile)
     {
@@ -369,13 +374,13 @@ HRESULT test_and_run_config(const char *config_file, PROCESS mode)
  * 
  * @param config_file Path to the configuration file to recreate
  * @param mode Process mode (S_DEBUG for verbose output)
- * @return HRESULT S_OK on success, S_FALSE on failure
+ * @return P_HRESULT S_OK on success, S_FALSE on failure
  * 
  * @note Uses generate_config() to create new file, then reads it back
  */
-HRESULT recreate_config(const char *config_file, PROCESS mode)
+P_HRESULT recreate_config(const char *config_file, PROCESS mode)
 {
-    HRESULT hr = S_OK;
+    P_HRESULT hr = S_OK;
 
     if (generate_config(config_file) == S_FALSE)
         return S_FALSE;
@@ -401,12 +406,12 @@ HRESULT recreate_config(const char *config_file, PROCESS mode)
  * 
  * @param configfile FILE pointer (unused parameter, could be removed)
  * @param config_file Path where config file should be created
- * @return HRESULT S_OK on success, error code on failure
+ * @return P_HRESULT S_OK on success, error code on failure
  * 
  * @note Creates file with comments explaining format and parameters
  * @note Prompts for color mode (CM_COLOUR or CM_MONO)
  */
-HRESULT generate_config(const char *config_file)
+P_HRESULT generate_config(const char *config_file)
 {
     printf("Enter a new folder path or type [back] to exit:\n");
 Entry:
@@ -476,12 +481,12 @@ Entry:
  * each configuration directive.
  * 
  * @param config_file Path to the configuration file
- * @return HRESULT S_OK on success, error code on failure
+ * @return P_HRESULT S_OK on success, error code on failure
  * 
  * @note Uses the generic scan() function with handle_config() handler
  * @note Sets global folder_path and color_mode based on parsed values
  */
-HRESULT read_config(const char *config_file)
+P_HRESULT read_config(const char *config_file)
 {
     FILE *configfile = fopen(config_file, "r");
     if (!configfile)
@@ -507,12 +512,12 @@ HRESULT read_config(const char *config_file)
  * @param record The configuration record string to parse
  * @param data Unused parameter (required by RecordHandler signature)
  * @param error_flags Unused parameter (required by RecordHandler signature)
- * @return HRESULT S_OK on successful parsing
+ * @return P_HRESULT S_OK on successful parsing
  * 
  * @note Uses strtoken() and norm_strncmp() for parsing
  * @note Sets global variables: folder_path and color_mode
  */
-HRESULT handle_config(char *record, void *data, int *error_flags)
+P_HRESULT handle_config(char *record, void *data, int *error_flags)
 {
     (void)data;
     (void)error_flags;
@@ -547,14 +552,14 @@ HRESULT handle_config(char *record, void *data, int *error_flags)
  * @param record The record string to parse (format: I:id N:name W:weight etc.)
  * @param data Pointer to ammunition type linked list
  * @param error_flags Unused parameter (required by RecordHandler signature)
- * @return HRESULT S_OK on successful parsing
+ * @return P_HRESULT S_OK on successful parsing
  * 
  * @note Parameters: I=ID, N=Name, W=Weight, D=Diameter, BR=BlastRadius,
  *       MV=MuzzleVelocity, BC=BallisticCoefficient
  * @note Allocates memory for name field which is freed after adding to list
  * @warning Has hard-coded limit of 15 parameter checks per record
  */
-HRESULT handle_ammo_t(char *record, void *data, int *error_flags)
+P_HRESULT handle_ammo_t(char *record, void *data, int *error_flags)
 {
     (void)data;
     (void)error_flags;
@@ -642,7 +647,7 @@ HRESULT handle_ammo_t(char *record, void *data, int *error_flags)
  * @param record The record string to parse (format: I:id L:label CLA:lat etc.)
  * @param data Pointer to base linked list
  * @param error_flags Unused parameter (required by RecordHandler signature)
- * @return HRESULT S_OK on successful parsing
+ * @return P_HRESULT S_OK on successful parsing
  * 
  * @note Parameters: I=ID, L=Label, CLA=Latitude, CLO=Longitude, CA=Altitude,
  *       AMS=Ammunition Stock (list of ammo ID:amount pairs)
@@ -650,7 +655,7 @@ HRESULT handle_ammo_t(char *record, void *data, int *error_flags)
  * @note Allocates memory for label field which is freed after adding to list
  * @warning Has hard-coded limit of 15 parameter checks per record
  */
-HRESULT handle_base(char *record, void *data, int *error_flags)
+P_HRESULT handle_base(char *record, void *data, int *error_flags)
 {
     (void)data;
     (void)error_flags;
@@ -747,13 +752,13 @@ HRESULT handle_base(char *record, void *data, int *error_flags)
  * @param record The record string to parse (format: I:id L:label CLA:lat etc.)
  * @param data Pointer to target linked list
  * @param error_flags Unused parameter (required by RecordHandler signature)
- * @return HRESULT S_OK on successful parsing
+ * @return P_HRESULT S_OK on successful parsing
  * 
  * @note Parameters: I=ID, L=Label, CLA=Latitude, CLO=Longitude, CA=Altitude, A=Area
  * @note Allocates memory for label field which is freed after adding to list
  * @warning Has hard-coded limit of 15 parameter checks per record
  */
-HRESULT handle_target(char *record, void *data, int *error_flags)
+P_HRESULT handle_target(char *record, void *data, int *error_flags)
 {
     (void)data;
     (void)error_flags;
@@ -976,11 +981,15 @@ int HandleParameterSelection(void)
     }
 
     // If base or ammo is invalid or cannot hit target, suggest automatically
-    if (!base || !ammo || !compute_fire_solution(base, tgt, ammo).valid)
+    if (!base || !ammo || !compute_fire_solution(base, tgt, ammo, NULL).valid)
     {
         printf("Finding best available base and ammo...\n");
         printf("This may take a while...\n");
-        if (!SuggestBestBaseAndAmmo_RegionAware(base_list, tgt, &base, &ammo))
+
+        // the entry for the calculation model loop for multi threading
+        
+        
+        if (!SuggestBestBaseAndAmmo_Parallel(base_list, tgt, &base, &ammo))
         {
             printf("No suitable base/ammo combination found.\n");
             return 0;
@@ -1003,7 +1012,7 @@ int HandleParameterSelection(void)
     }
 
 Recalculate:
-    BallisticResult b_result = compute_fire_solution(base, tgt, ammo);
+    BallisticResult b_result = compute_fire_solution(base, tgt, ammo, NULL);
     if (!b_result.valid)
     {
         printf("Even the suggested base cannot reach the target.\n");

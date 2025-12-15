@@ -269,7 +269,7 @@ extern Target_List *target_list; ///< All targets
  * @return S_OK on success, S_FALSE if list already initialized
  * @ingroup Storage
  */
-HRESULT init_Ammo_t_List(Ammo_t_List **list);
+P_HRESULT init_Ammo_t_List(Ammo_t_List **list);
 
 /**
  * @brief Add ammunition type to list (sorted by ID)
@@ -318,7 +318,7 @@ void print_Ammo_t_List(Ammo_t_List *list);
  * @return S_OK on success, S_FALSE if list was NULL
  * @ingroup Storage
  */
-HRESULT free_Ammo_t_List(Ammo_t_List **list);
+P_HRESULT free_Ammo_t_List(Ammo_t_List **list);
 
 /**
  * @brief Find ammunition by ID
@@ -342,7 +342,7 @@ Ammo_t *FindAmmoByID(Ammo_t_List *list, unsigned id);
  * @return S_OK on success, S_FALSE if list already initialized
  * @ingroup Storage
  */
-HRESULT init_Base_List(Base_List **list);
+P_HRESULT init_Base_List(Base_List **list);
 
 /**
  * @brief Add base to list (sorted by ID)
@@ -401,7 +401,7 @@ Ammo_t *GetNode_Ammo_t_List(Ammo_t_List *list, unsigned id);
  * @return S_OK on success, S_FALSE if list was NULL
  * @ingroup Storage
  */
-HRESULT free_Base_List(Base_List **list);
+P_HRESULT free_Base_List(Base_List **list);
 
 /**
  * @brief Find base by ID
@@ -425,7 +425,7 @@ Base *FindBaseByID(Base_List *list, unsigned id);
  * @return S_OK on success, S_FALSE if list already initialized
  * @ingroup Storage
  */
-HRESULT init_Ammo_Stock_List(Ammo_Stock_List **list);
+P_HRESULT init_Ammo_Stock_List(Ammo_Stock_List **list);
 
 /**
  * @brief Add ammunition to base stock (sorted by ammo ID)
@@ -475,7 +475,7 @@ void print_Ammo_Stock_List(Ammo_Stock_List *list);
  * @return S_OK on success, S_FALSE if list was NULL
  * @ingroup Storage
  */
-HRESULT free_Ammo_Stock_List(Ammo_Stock_List **list);
+P_HRESULT free_Ammo_Stock_List(Ammo_Stock_List **list);
 
 /** @} */
 
@@ -490,7 +490,7 @@ HRESULT free_Ammo_Stock_List(Ammo_Stock_List **list);
  * @return S_OK on success, S_FALSE if list already initialized
  * @ingroup Storage
  */
-HRESULT init_Target_List(Target_List **list);
+P_HRESULT init_Target_List(Target_List **list);
 
 /**
  * @brief Add target to list (sorted by ID)
@@ -539,7 +539,7 @@ void print_Target_List(Target_List *list);
  * @return S_OK on success, S_FALSE if list was NULL
  * @ingroup Storage
  */
-HRESULT free_Target_List(Target_List **list);
+P_HRESULT free_Target_List(Target_List **list);
 
 /**
  * @brief Find target by ID
@@ -579,7 +579,7 @@ void Save_BaseList_file(FILE *fp);
  * @return S_OK on success, E_FAIL on file error
  * @ingroup Storage
  */
-HRESULT Save_BaseList(char *path);
+P_HRESULT Save_BaseList(char *path);
 
 /**
  * @brief Save target list to open file
@@ -595,7 +595,7 @@ void Save_TargetList_file(FILE *fp);
  * @return S_OK on success, E_FAIL on file error
  * @ingroup Storage
  */
-HRESULT Save_TargetList(char *path);
+P_HRESULT Save_TargetList(char *path);
 
 /**
  * @brief Save ammunition list to open file
@@ -611,13 +611,13 @@ void Save_Ammo_t_List_file(FILE *fp);
  * @return S_OK on success, E_FAIL on file error
  * @ingroup Storage
  */
-HRESULT Save_Ammo_t_List(char *path);
+P_HRESULT Save_Ammo_t_List(char *path);
 
 /** @} */
 
 
 
 void PrintRangeHeader(FILE *fp, RangeType r);
-HRESULT handle_save();
+P_HRESULT handle_save();
 
 #endif /* STORAGE_H */

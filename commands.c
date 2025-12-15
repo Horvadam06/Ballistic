@@ -388,7 +388,7 @@ void cmd_save(const char *args, Command_case case_flags, PROCESS *running)
         printf("Are you sure, you want to save? [yes/no]");
     if (GetCommand(CMD_C_LOOP | CMD_C_YESNO, NULL) == CMD_NO)
         return;
-    if (handle_save() == S_FALSE)
+    if (handle_save() == P_S_FALSE)
         printf("Atleast on save has failed!\n");
 }
 

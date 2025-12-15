@@ -5,6 +5,7 @@
             "label": "C/C++: gcc.exe build active file",
             "command": "C:\\Users\\Ádám\\scoop\\apps\\gcc\\current\\bin\\gcc.exe",
             "args": [
+                "-std=c11",
                 "-fdiagnostics-color=always",
                 "-g",
                 "${workspaceFolder}\\main.c",
@@ -16,6 +17,9 @@
                 "${workspaceFolder}\\storage.c",
                 "${workspaceFolder}\\color.c",
                 "${workspaceFolder}\\helpers.c",
+                "${workspaceFolder}\\worker.c",
+                "${workspaceFolder}\\worker_platform.c",
+                "${workspaceFolder}\\input_poll.c",
                 "-I${workspaceFolder}",
                 "-o",
                 "${workspaceFolder}/bin/ballistic.exe"

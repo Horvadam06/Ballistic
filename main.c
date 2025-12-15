@@ -11,7 +11,6 @@
  * @note Project finished: 2025.12.02
  * @author Horvath Adam Jozsef
  *
- * @bug Potential issue: Data files are loaded twice if run_pre_test() already loaded them
  * @todo Consider adding command-line argument support
  * @todo Add error recovery for partial data loading failures
  */
@@ -57,11 +56,11 @@ PROCESS Setup()
     printf("Starting setup...\n");
 
     // Step 1: Load or create configuration
-    if (FAILED(test_and_run_config("config.txt", S_RUNNING)))
+    if (P_FAILED(test_and_run_config("config.txt", S_RUNNING)))
         return S_TERMINATE;
 
     // Step 2: Run system self-test
-    if (FAILED(run_pre_test(S_RUNNING)))
+    if (P_FAILED(run_pre_test(S_RUNNING)))
         return S_TERMINATE;
 
     printf("Setup finished!\n");

@@ -79,10 +79,10 @@ void free_folder_path(void);
  * @param record Complete record string (without trailing ';')
  * @param data User data passed to parser
  * @param error_flags Array to indicate missing required fields
- * @return HRESULT status code
+ * @return P_HRESULT status code
  * @ingroup Loading
  */
-typedef HRESULT (*RecordHandler)(char *record, void *data, int *error_flags);
+typedef P_HRESULT (*RecordHandler)(char *record, void *data, int *error_flags);
 
 /**
  * @brief Parse a file and call handler for each record
@@ -95,7 +95,7 @@ typedef HRESULT (*RecordHandler)(char *record, void *data, int *error_flags);
  * @return S_OK on success, S_FALSE on file error
  * @ingroup Loading
  */
-HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS mode);
+P_HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS mode);
 
 /**
  * @brief Peek next character from file without consuming it
@@ -112,7 +112,7 @@ int peek(FILE *file);
  * @return S_OK on success, S_FALSE on buffer overflow
  * @ingroup Loading
  */
-HRESULT format_basic_error_string(char *error_buffer, int *error_flags);
+P_HRESULT format_basic_error_string(char *error_buffer, int *error_flags);
 
 /**
  * @name Configuration Functions
@@ -126,7 +126,7 @@ HRESULT format_basic_error_string(char *error_buffer, int *error_flags);
  * @return S_OK on success, S_FALSE on error
  * @ingroup Loading
  */
-HRESULT generate_config(const char *config_file);
+P_HRESULT generate_config(const char *config_file);
 
 /**
  * @brief Recreate configuration file with new settings
@@ -135,7 +135,7 @@ HRESULT generate_config(const char *config_file);
  * @return S_OK on success, error code on failure
  * @ingroup Loading
  */
-HRESULT recreate_config(const char *config_file, PROCESS mode);
+P_HRESULT recreate_config(const char *config_file, PROCESS mode);
 
 /**
  * @brief Read and apply existing configuration file
@@ -143,7 +143,7 @@ HRESULT recreate_config(const char *config_file, PROCESS mode);
  * @return S_OK on success, S_FALSE if file doesn't exist
  * @ingroup Loading
  */
-HRESULT read_config(const char *config_file);
+P_HRESULT read_config(const char *config_file);
 
 /**
  * @brief Test configuration and create if missing
@@ -152,7 +152,7 @@ HRESULT read_config(const char *config_file);
  * @return S_OK on success, E_FAIL if user declines creation
  * @ingroup Loading
  */
-HRESULT test_and_run_config(const char *config_file, PROCESS mode);
+P_HRESULT test_and_run_config(const char *config_file, PROCESS mode);
 
 /**
  * @brief Handle configuration file record parsing
@@ -162,7 +162,7 @@ HRESULT test_and_run_config(const char *config_file, PROCESS mode);
  * @return S_OK always (errors are non-fatal for config)
  * @ingroup Loading
  */
-HRESULT handle_config(char *record, void *data, int *error_flags);
+P_HRESULT handle_config(char *record, void *data, int *error_flags);
 
 /** @} */
 
@@ -179,7 +179,7 @@ HRESULT handle_config(char *record, void *data, int *error_flags);
  * @return S_OK on success
  * @ingroup Loading
  */
-HRESULT handle_ammo_t(char *record, void *data, int *error_flags);
+P_HRESULT handle_ammo_t(char *record, void *data, int *error_flags);
 
 /**
  * @brief Parse base record
@@ -189,7 +189,7 @@ HRESULT handle_ammo_t(char *record, void *data, int *error_flags);
  * @return S_OK on success
  * @ingroup Loading
  */
-HRESULT handle_base(char *record, void *data, int *error_flags);
+P_HRESULT handle_base(char *record, void *data, int *error_flags);
 
 /**
  * @brief Parse target record
@@ -199,7 +199,7 @@ HRESULT handle_base(char *record, void *data, int *error_flags);
  * @return S_OK on success
  * @ingroup Loading
  */
-HRESULT handle_target(char *record, void *data, int *error_flags);
+P_HRESULT handle_target(char *record, void *data, int *error_flags);
 
 /** @} */
 
@@ -224,5 +224,6 @@ int HandleParameterSelection(void);
  * @ingroup Loading
  */
 void LogResult(const Base *base, const Target *tgt, const Ammo_t *ammo, const BallisticResult *res);
+
 
 #endif /* LOAD_H */
