@@ -11,7 +11,7 @@
 
 #include "storage.h"
 #include "error.h"
-#include "calculations.h"
+#include "simulation\calculations.h"
 #include <stdio.h>
 
 /**
@@ -92,7 +92,7 @@ typedef P_HRESULT (*RecordHandler)(char *record, void *data, int *error_flags);
  * @param handler Callback function for each record
  * @param data User data passed to handler
  * @param mode Process mode (S_DEBUG enables debugging output)
- * @return S_OK on success, S_FALSE on file error
+ * @return P_S_OK on success, S_FALSE on file error
  * @ingroup Loading
  */
 P_HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS mode);
@@ -109,7 +109,7 @@ int peek(FILE *file);
  * @brief Format error string for missing parameters
  * @param error_buffer Buffer to write error message
  * @param error_flags Array indicating which fields are missing
- * @return S_OK on success, S_FALSE on buffer overflow
+ * @return P_S_OK on success, S_FALSE on buffer overflow
  * @ingroup Loading
  */
 P_HRESULT format_basic_error_string(char *error_buffer, int *error_flags);
@@ -123,7 +123,7 @@ P_HRESULT format_basic_error_string(char *error_buffer, int *error_flags);
  * @brief Generate new configuration file interactively
  * @param configfile FILE pointer (can be NULL)
  * @param config_file Configuration file path
- * @return S_OK on success, S_FALSE on error
+ * @return P_S_OK on success, S_FALSE on error
  * @ingroup Loading
  */
 P_HRESULT generate_config(const char *config_file);
@@ -132,7 +132,7 @@ P_HRESULT generate_config(const char *config_file);
  * @brief Recreate configuration file with new settings
  * @param config_file Configuration file path
  * @param mode Process mode
- * @return S_OK on success, error code on failure
+ * @return P_S_OK on success, error code on failure
  * @ingroup Loading
  */
 P_HRESULT recreate_config(const char *config_file, PROCESS mode);
@@ -140,7 +140,7 @@ P_HRESULT recreate_config(const char *config_file, PROCESS mode);
 /**
  * @brief Read and apply existing configuration file
  * @param config_file Configuration file path
- * @return S_OK on success, S_FALSE if file doesn't exist
+ * @return P_S_OK on success, S_FALSE if file doesn't exist
  * @ingroup Loading
  */
 P_HRESULT read_config(const char *config_file);
@@ -149,7 +149,7 @@ P_HRESULT read_config(const char *config_file);
  * @brief Test configuration and create if missing
  * @param config_file Configuration file name
  * @param mode Process mode
- * @return S_OK on success, E_FAIL if user declines creation
+ * @return P_S_OK on success, E_FAIL if user declines creation
  * @ingroup Loading
  */
 P_HRESULT test_and_run_config(const char *config_file, PROCESS mode);
@@ -159,7 +159,7 @@ P_HRESULT test_and_run_config(const char *config_file, PROCESS mode);
  * @param record Configuration record string
  * @param data User data (unused)
  * @param error_flags Error flags array
- * @return S_OK always (errors are non-fatal for config)
+ * @return P_S_OK always (errors are non-fatal for config)
  * @ingroup Loading
  */
 P_HRESULT handle_config(char *record, void *data, int *error_flags);
@@ -176,7 +176,7 @@ P_HRESULT handle_config(char *record, void *data, int *error_flags);
  * @param record Ammunition record string
  * @param data Pointer to Ammo_t_List
  * @param error_flags Array to indicate missing fields
- * @return S_OK on success
+ * @return P_S_OK on success
  * @ingroup Loading
  */
 P_HRESULT handle_ammo_t(char *record, void *data, int *error_flags);
@@ -186,7 +186,7 @@ P_HRESULT handle_ammo_t(char *record, void *data, int *error_flags);
  * @param record Base record string
  * @param data Pointer to Base_List
  * @param error_flags Array to indicate missing fields
- * @return S_OK on success
+ * @return P_S_OK on success
  * @ingroup Loading
  */
 P_HRESULT handle_base(char *record, void *data, int *error_flags);
@@ -196,7 +196,7 @@ P_HRESULT handle_base(char *record, void *data, int *error_flags);
  * @param record Target record string
  * @param data Pointer to Target_List
  * @param error_flags Array to indicate missing fields
- * @return S_OK on success
+ * @return P_S_OK on success
  * @ingroup Loading
  */
 P_HRESULT handle_target(char *record, void *data, int *error_flags);

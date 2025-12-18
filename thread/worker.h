@@ -2,7 +2,7 @@
 #define WORKER_H
 
 #include <stdatomic.h>
-#include "load.h"
+#include "memory\load.h"
 
 typedef enum
 {

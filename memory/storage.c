@@ -1,5 +1,5 @@
 #include "storage.h"
-#include "commands.h"
+#include "command\commands.h"
 #include "load.h"
 
 #include <stdio.h>
@@ -22,7 +22,7 @@ Target_List *target_list = NULL;
  * Creates a sentinel-based doubly-linked list with head and tail sentinel nodes.
  *
  * @param list Pointer to the list pointer (will be allocated and initialized)
- * @return P_HRESULT S_OK on success, S_FALSE if list already exists
+ * @return P_HRESULT P_S_OK on success, S_FALSE if list already exists
  *
  * @note Head and tail sentinels always exist and contain NULL data
  * @note List structure: head <-> [data nodes] <-> tail
@@ -289,7 +289,7 @@ void print_Ammo_t_List(Ammo_t_List *list)
  * Sets the list pointer to NULL to prevent use-after-free.
  *
  * @param list Pointer to the list pointer (will be set to NULL)
- * @return P_HRESULT S_OK on success, S_FALSE if list was already NULL
+ * @return P_HRESULT P_S_OK on success, S_FALSE if list was already NULL
  *
  * @note Uses pop_BackAmmo_t() which frees node contents
  */
@@ -363,7 +363,7 @@ Ammo_t *FindAmmoByID(Ammo_t_List *list, unsigned id)
  * Uses head and tail sentinel nodes to simplify operations.
  *
  * @param list Pointer to the list pointer (will be allocated and initialized)
- * @return P_HRESULT S_OK on success, S_FALSE if list already exists
+ * @return P_HRESULT P_S_OK on success, S_FALSE if list already exists
  *
  * @note Singly-linked (no prev pointers) unlike ammunition list
  * @note Structure: head -> [data nodes] -> tail -> NULL
@@ -583,7 +583,7 @@ void print_Base_List(Base_List *list, PROCESS mode)
  * Also frees all ammunition stock lists associated with each base.
  *
  * @param list Pointer to the list pointer (will be set to NULL)
- * @return P_HRESULT S_OK on success, S_FALSE if list was already NULL
+ * @return P_HRESULT P_S_OK on success, S_FALSE if list was already NULL
  *
  * @warning Invalidates all pointers to this list and its contents
  */
@@ -646,7 +646,7 @@ Base *FindBaseByID(Base_List *list, unsigned id)
  * quantities at a base. Each node references an ammunition type and quantity.
  *
  * @param list Pointer to the stock list pointer
- * @return P_HRESULT S_OK on success, S_FALSE if list already exists
+ * @return P_HRESULT P_S_OK on success, S_FALSE if list already exists
  *
  * @note Nodes reference ammunition types (don't own them)
  * @note Structure: head -> [stock nodes] -> tail -> NULL
@@ -861,7 +861,7 @@ void print_Ammo_Stock_List(Ammo_Stock_List *list)
  * Does NOT free the ammunition type pointers (owned by global list).
  *
  * @param list Pointer to the list pointer (will be set to NULL)
- * @return P_HRESULT S_OK on success, S_FALSE if list was already NULL
+ * @return P_HRESULT P_S_OK on success, S_FALSE if list was already NULL
  */
 P_HRESULT free_Ammo_Stock_List(Ammo_Stock_List **list)
 {
@@ -893,7 +893,7 @@ P_HRESULT free_Ammo_Stock_List(Ammo_Stock_List **list)
  * Similar structure to base list but for target data.
  *
  * @param list Pointer to the list pointer (will be allocated and initialized)
- * @return P_HRESULT S_OK on success, S_FALSE if list already exists
+ * @return P_HRESULT P_S_OK on success, S_FALSE if list already exists
  *
  * @note Singly-linked with head and tail sentinel nodes
  */
@@ -1096,7 +1096,7 @@ void print_Target_List(Target_List *list)
  * Sets the list pointer to NULL to prevent use-after-free.
  *
  * @param list Pointer to the list pointer (will be set to NULL)
- * @return P_HRESULT S_OK on success, S_FALSE if list was already NULL
+ * @return P_HRESULT P_S_OK on success, S_FALSE if list was already NULL
  */
 P_HRESULT free_Target_List(Target_List **list)
 {
@@ -1156,7 +1156,7 @@ Target *FindTargetByID(Target_List *list, unsigned id)
  * application's custom data format with comments and regional headers.
  *
  * @param path File path to save to
- * @return P_HRESULT S_OK on success, E_FAIL on file open error
+ * @return P_HRESULT P_S_OK on success, E_FAIL on file open error
  *
  * @note Uses Save_BaseList_file() for actual writing
  * @note File is overwritten if it exists
@@ -1183,7 +1183,7 @@ P_HRESULT Save_BaseList(char *path)
  * application's custom data format with comments and regional headers.
  *
  * @param path File path to save to
- * @return P_HRESULT S_OK on success, E_FAIL on file open error
+ * @return P_HRESULT P_S_OK on success, E_FAIL on file open error
  */
 P_HRESULT Save_TargetList(char *path)
 {
@@ -1207,7 +1207,7 @@ P_HRESULT Save_TargetList(char *path)
  * in the application's custom data format with comments.
  *
  * @param path File path to save to
- * @return P_HRESULT S_OK on success, E_FAIL on file open error
+ * @return P_HRESULT P_S_OK on success, E_FAIL on file open error
  */
 P_HRESULT Save_Ammo_t_List(char *path)
 {
@@ -1307,10 +1307,10 @@ void Save_BaseList_file(FILE *fp)
                     b->coord.altitude);
 
             // Write ammunition stock list
-            Ammo_Stock *as = b->ammoStock->head;
+            Ammo_Stock *as = b->ammoStock->head->next;
             int first = 1;
 
-            while (as)
+            while (as && as != b->ammoStock->tail)
             {
                 unsigned ammo_id = GetAmmoID(as->typePtr);
                 unsigned qty = as->quantity;
@@ -1434,6 +1434,7 @@ void Save_Ammo_t_List_file(FILE *fp)
             "\t[W]  : the weight\n"
             "\t[D]  : the diameter (caliber)\n"
             "\t[BR] : the blast radius\n"
+            "\t[BC] : ballistic coefficient"
             "=====================================================\n"
             "-The data structure has no order\n"
             "-The id gets normalized\n"
@@ -1550,7 +1551,7 @@ void PrintRangeHeader(FILE *fp, RangeType r)
  * to their respective files in the configured working directory.
  * Reports success/failure for each save operation.
  *
- * @return P_HRESULT S_OK if all saves succeeded, S_FALSE if any failed
+ * @return P_HRESULT P_S_OK if all saves succeeded, S_FALSE if any failed
  *
  * @note Saves to: bases.txt, targets.txt, ammo_catalouge.txt
  * @note Uses global folder_path for directory location

@@ -13,7 +13,7 @@
 #ifndef CALCULATIONS_H
 #define CALCULATIONS_H
 
-#include "storage.h"
+#include "memory\storage.h"
 
 typedef struct WorkerContext WorkerContext;
 

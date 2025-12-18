@@ -10,7 +10,7 @@ Use the following structure for the inputs:
 	[W]  : the weight
 	[D]  : the diameter (caliber)
 	[BR] : the blast radius
-=====================================================
+	[BC] : ballistic coefficient=====================================================
 -The data structure has no order
 -The id gets normalized
 -End every line with ;

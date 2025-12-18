@@ -1,8 +1,8 @@
 #include "debug.h"
 #include "error.h"
-#include "load.h"
-#include "color.h"
-#include "commands.h"
+#include "memory\load.h"
+#include "helpers\color.h"
+#include "command\commands.h"
 #include "helpers.h"
 
 #include <stdio.h>
@@ -18,7 +18,7 @@
  * 4. Providing debugging output when in debug mode
  *
  * @param process_state Current process state (S_DEBUG for verbose output)
- * @return P_HRESULT S_OK if all tests pass, error code otherwise
+ * @return P_HRESULT P_S_OK if all tests pass, error code otherwise
  *
  * @note This is a development/debugging function and should typically
  *       only be called via the 'test' command or during initialization

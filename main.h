@@ -8,7 +8,7 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#include "error.h"
+#include "helpers\error.h"
 
 /**
  * @brief Program initialization and setup

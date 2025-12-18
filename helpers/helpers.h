@@ -10,7 +10,7 @@
 #define NORMAL_SEPERATOR_SIZE 60
 
 #include <ctype.h>
-#include "debug.h"
+#include "helpers\debug.h"
 
 /*Ensures string ends with backslash for directory paths */
 

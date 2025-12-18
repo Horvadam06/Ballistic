@@ -1,10 +1,10 @@
-#include "commands.h"
-#include "error.h"
-#include "debug.h"
-#include "calculations.h"
-#include "color.h"
-#include "load.h"
-#include "helpers.h"
+#include "command\commands.h"
+#include "helpers\error.h"
+#include "helpers\debug.h"
+#include "simulation\calculations.h"
+#include "helpers\color.h"
+#include "memory\load.h"
+#include "helpers\helpers.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,31 +20,32 @@
 Command commands[] = {
     // Navigation and basic operations - these have NULL handlers as they're
     // handled directly in modal contexts (like cmd_base, cmd_target loops)
-    {"back", CMD_BACK, NULL, "step back", CMD_C_LOAD | CMD_C_SELECT | CMD_C_BACK},
+    {"back", CMD_BACK, NULL, "Step back", CMD_C_LOAD | CMD_C_SELECT | CMD_C_BACK},
     {"cancel", CMD_CANCEL, NULL, "Cancel event", CMD_C_CANCEL},
     {"select", CMD_SELECT, NULL, "select choice", CMD_C_SELECT},
-    {"list", CMD_LIST, NULL, "list values", CMD_C_LOAD},
-    {"add", CMD_ADD, NULL, "add value", CMD_C_LOAD},
-    {"delete", CMD_DELETE, NULL, "delete value", CMD_C_LOAD},
+    {"list", CMD_LIST, NULL, "List values", CMD_C_LOAD},
+    {"add", CMD_ADD, NULL, "Add a value", CMD_C_LOAD},
+    {"delete", CMD_DELETE, NULL, "Delete a value", CMD_C_LOAD},
 
-    {"bases", CMD_BASE, cmd_base, "List bases", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_CALC},
-    {"targets", CMD_TARGET, cmd_target, "List targets", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_CALC},
-    {"ammo", CMD_AMMO, cmd_ammo, "List ammo", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_CALC},
-    {"calc", CMD_CALCULATE, cmd_calculate, "calculate trajectory", CMD_C_GENERIC | CMD_C_DEFAULT},
+    {"bases", CMD_BASE, cmd_base, "Work with bases", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_CALC},
+    {"targets", CMD_TARGET, cmd_target, "Work with targets", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_CALC},
+    {"ammo", CMD_AMMO, cmd_ammo, "Work with ammo", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_CALC},
+    {"calc", CMD_CALCULATE, cmd_calculate, "Calculate trajectory", CMD_C_GENERIC | CMD_C_DEFAULT},
 
     // clear's the list, so it gives you a fresh start
     {"test", CMD_TEST, cmd_test, "Do a manual self-test", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
-    {"clear", CMD_CLEAR_TERMINAL, cmd_clr_ter, "Clears the terminal", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
+    {"clear", CMD_CLEAR_TERMINAL, cmd_clr_ter, "Clear the terminal", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
     {"config", CMD_TEST, cmd_config, "Modify config", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
-    {"save", CMD_SAVE, cmd_save, "save changes", CMD_C_EXIT | CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
+    {"save", CMD_SAVE, cmd_save, "Save changes", CMD_C_EXIT | CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
     {"exit", CMD_EXIT, cmd_exit, "Exit program", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
+    {"info", CMD_INFO, cmd_info, "Show program info", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
     {"help", CMD_HELP, cmd_help, "Show commands", CMD_C_ALL},
 
-    {"colour", CMD_COLOUR, cmd_colour, "coloured mode command", CMD_C_SETUP},
-    {"mono", CMD_MONO, cmd_mono, "monochrome mode command", CMD_C_SETUP},
+    {"colour", CMD_COLOUR, cmd_colour, "Coloured mode command", CMD_C_SETUP},
+    {"mono", CMD_MONO, cmd_mono, "Monochrome mode command", CMD_C_SETUP},
 
-    {"yes", CMD_YES, NULL, "yes command", CMD_C_YESNO},
-    {"no", CMD_NO, NULL, "no command", CMD_C_YESNO}};
+    {"yes", CMD_YES, NULL, "Yes", CMD_C_YESNO},
+    {"no", CMD_NO, NULL, "No", CMD_C_YESNO}};
 
 /*
 Calculates number of commands in the commands array
@@ -75,9 +76,14 @@ void cmd_exit(const char *args, Command_case case_flags, PROCESS *running)
     (void)args;
     (void)case_flags;
 
-    printf("Are you sure you want to exit? [yes/no]\n");
+    printf("Are you sure you want to exit? ");
+    cmd_help_inline(NULL, CMD_C_YESNO, NULL);
+    printf("\n");
     if (GetCommand(CMD_C_LOOP | CMD_C_YESNO, NULL) == CMD_NO)
+    {
+        clear_terminal();
         return;
+    }
 
     printf("Exiting...\n");
     // set's the process state, to S_END, which exit's the modal loop
@@ -119,6 +125,29 @@ void cmd_help(const char *args, Command_case case_flags, PROCESS *running)
     }
     add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
 }
+
+void cmd_help_inline(const char *args, Command_case case_flags, PROCESS *running)
+{
+    // needed for the compiler
+    (void)args;
+    (void)running;
+
+    // formated list
+    printf("[");
+    for (int i = 0; i < command_count; i++) // goes trough the commands list, and print's out the aviable one
+    {
+        if (!(commands[i].case_mask & case_flags) || (commands[i].type == CMD_HELP))
+            continue; // command not available in this mode
+
+        change_colour(ANSI_COLOR_GREEN);
+        printf("%s", commands[i].name);
+
+        change_colour(ANSI_COLOR_RESET);
+        if (i < command_count - 1)
+            printf("/");
+    }
+    printf("]");
+}
 /**
  * @brief Target management command handler
  *
@@ -134,12 +163,13 @@ void cmd_help(const char *args, Command_case case_flags, PROCESS *running)
  */
 void cmd_target(const char *args, Command_case case_flags, PROCESS *running)
 {
-    // needed for the compiler
     (void)args;
     (void)running;
 
-    // formated menu options
-    cmd_clr_ter(NULL, CMD_C_ALL, NULL);
+Entry:
+    clear_terminal();
+
+Entry_no_clr:
     if (!(case_flags & CMD_C_NOCOMMENT))
     {
         add_seperator("targets", '-', NORMAL_SEPERATOR_SIZE);
@@ -151,29 +181,81 @@ void cmd_target(const char *args, Command_case case_flags, PROCESS *running)
     }
 
     Command_t cmd;
-    // waits for a valid command
-    // on list, it exit's. In other cases it just returns, making it easier to input multiple parameters
     while ((cmd = GetCommand(CMD_C_LOAD | CMD_C_LOOP, NULL)) != CMD_BACK)
+    {
         switch (cmd)
         {
-
         case CMD_LIST:
             print_Target_List(target_list);
             return;
         case CMD_ADD:
-            char buffer[1024];
-            fgets(buffer, sizeof(buffer), stdin);
-            handle_target(buffer, target_list, NULL);
-            break;
-        case CMD_DELETE:
-            unsigned id;
-            scanf("%u", &id);
-            delete_Target(target_list, id);
-            break;
+        {
+            clear_terminal();
+            add_seperator("add target", '-', NORMAL_SEPERATOR_SIZE);
+            printf("Use the following structure for the input:\n"
+                   "\t[I]   : id of target\n"
+                   "\t[L] : label(name)\n"
+                   "\t[CLA] : latitude(degrees)\n"
+                   "\t[CLO] : longitude(degrees)\n"
+                   "\t[CA] : altitude(meters)\n"
+                   "\t[A] : area (km^2)\n");
+            add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
 
+        Entry_add_no_clr:
+            char buffer[1024];
+
+            int req = back_request(buffer, sizeof(buffer));
+            if (req == 1)
+                goto Entry;
+            if (req == -1)
+                goto Entry_add_no_clr;
+
+            buffer[strcspn(buffer, "\r\n")] = 0;
+
+            if (handle_target(buffer, target_list, NULL) == P_S_FALSE)
+            {
+                clear_terminal();
+                print_colored(ANSI_COLOR_RED, "Invalid input!\n", 1);
+                goto Entry_no_clr;
+            }
+
+            print_colored(ANSI_COLOR_GREEN, "List updated!\n", 1);
+            goto Entry_add_no_clr;
+        }
+        case CMD_DELETE:
+        {
+            clear_terminal();
+            add_seperator("delete target", '-', NORMAL_SEPERATOR_SIZE);
+            printf("Use the following structure for the input:\n");
+            printf("\t[I]   : id of target\n");
+            add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
+        Entry_delete_no_clr:
+
+            char buffer[1024];
+            int req = back_request(buffer, sizeof(buffer));
+            if (req == 1)
+                goto Entry;
+            if (req == -1)
+                goto Entry_delete_no_clr;
+
+            buffer[strcspn(buffer, "\r\n")] = 0;
+            unsigned id = (unsigned)strtoul(buffer, NULL, 10);
+
+            if (delete_Target(target_list, id) == -1)
+            {
+                clear_terminal();
+                print_colored(ANSI_COLOR_RED, "Invalid ID!\n", 1);
+                goto Entry_no_clr;
+            }
+
+            print_colored(ANSI_COLOR_GREEN, "List updated!\n", 1);
+            goto Entry_delete_no_clr;
+        }
         default:
             break;
         }
+    }
+
     cmd_clr_ter(NULL, CMD_C_ALL, NULL);
 }
 /**
@@ -186,7 +268,9 @@ void cmd_base(const char *args, Command_case case_flags, PROCESS *running)
 {
     (void)args;
     (void)running;
-    cmd_clr_ter(NULL, CMD_C_ALL, NULL);
+Entry:
+    clear_terminal();
+Entry_no_clr:
     if (!(case_flags & CMD_C_NOCOMMENT))
     {
         add_seperator("bases", '-', NORMAL_SEPERATOR_SIZE);
@@ -207,16 +291,85 @@ void cmd_base(const char *args, Command_case case_flags, PROCESS *running)
             print_Base_List(base_list, S_DEBUG);
             return;
         case CMD_ADD:
+        {
+            clear_terminal();
+            add_seperator("add base", '-', NORMAL_SEPERATOR_SIZE);
+            printf("Use the following structure for the input:\n"
+                   "\t[I]   : id of base\n"
+                   "\t[L] : label(name)\n"
+                   "\t[CLA] : latitude(degrees)\n"
+                   "\t[CLO] : longitude(degrees)\n"
+                   "\t[CA] : altitude(meters)\n"
+                   "\t[AMS] : ammo stock map {ammo_id:count, ...}\n");
+            add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
+
+        Entry_add_no_clr:
+
             char buffer[1024];
-            fgets(buffer, sizeof(buffer), stdin);
-            handle_base(buffer, base_list, NULL);
+            int req_val = back_request(buffer, sizeof(buffer));
+            if (req_val == 1)
+            {
+                goto Entry;
+            }
+            if (req_val == -1)
+            {
+                goto Entry_add_no_clr;
+            }
+
+            buffer[strcspn(buffer, "\r\n")] = 0;
+
+            if (handle_base(buffer, base_list, NULL) == P_S_FALSE)
+            {
+                clear_terminal();
+                print_colored(ANSI_COLOR_RED, "Invalid input!\n", 1);
+                goto Entry_no_clr;
+            }
+            else
+            {
+                print_colored(ANSI_COLOR_GREEN, "List updated!\n", 1);
+                goto Entry_add_no_clr;
+            }
             break;
+        }
         case CMD_DELETE:
-            unsigned id;
-            scanf("%u", &id);
-            delete_Base(base_list, id);
+        {
+            clear_terminal();
+            add_seperator("delete base", '-', NORMAL_SEPERATOR_SIZE);
+            printf("Use the following structure for the input:\n");
+            printf("\t[I]   : id of base\n");
+            add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
+
+        Entry_delete_no_clr:
+
+            char buffer[1024];
+            int req_val = back_request(buffer, sizeof(buffer));
+            if (req_val == 1)
+            {
+                goto Entry;
+            }
+            if (req_val == -1)
+            {
+                goto Entry_delete_no_clr;
+            }
+
+            buffer[strcspn(buffer, "\r\n")] = 0;
+            unsigned id = (unsigned)strtoul(buffer, NULL, 10);
+
+            if (isalpha((unsigned char)buffer[0]) || delete_Base(base_list, id) == -1)
+            {
+                clear_terminal();
+                print_colored(ANSI_COLOR_RED, "Invalid input!\n", 1);
+                goto Entry_no_clr;
+            }
+            else
+            {
+                print_colored(ANSI_COLOR_GREEN, "List updated!\n", 1);
+                goto Entry_delete_no_clr;
+            }
             break;
 
+            break;
+        }
         default:
             break;
         }
@@ -232,7 +385,11 @@ void cmd_ammo(const char *args, Command_case case_flags, PROCESS *running)
 {
     (void)args;
     (void)running;
-    cmd_clr_ter(NULL, CMD_C_ALL, NULL);
+
+Entry:
+    clear_terminal();
+
+Entry_no_clr:
     if (!(case_flags & CMD_C_NOCOMMENT))
     {
         add_seperator("ammo", '-', NORMAL_SEPERATOR_SIZE);
@@ -244,28 +401,81 @@ void cmd_ammo(const char *args, Command_case case_flags, PROCESS *running)
     }
 
     Command_t cmd;
-    // waits for a valid command
-    // on list, it exit's. In other cases it just returns, making it easier to input multiple parameters
     while ((cmd = GetCommand(CMD_C_LOAD | CMD_C_LOOP, NULL)) != CMD_BACK)
+    {
         switch (cmd)
         {
         case CMD_LIST:
             print_Ammo_t_List(ammo_t_list);
             return;
         case CMD_ADD:
-            char buffer[1024];
-            fgets(buffer, sizeof(buffer), stdin);
-            handle_ammo_t(buffer, ammo_t_list, NULL);
-            break;
-        case CMD_DELETE:
-            unsigned id;
-            scanf("%u", &id);
-            delete_Ammo_t(ammo_t_list, id);
-            break;
+        {
+            clear_terminal();
+            add_seperator("add ammo", '-', NORMAL_SEPERATOR_SIZE);
+            printf("Use the following structure for the input:\n"
+                   "\t[I]   : id of ammo\n"
+                   "\t[L] : label(name)\n"
+                   "\t[W] : weight\n"
+                   "\t[D] : diameter (caliber)\n"
+                   "\t[BR] : blast radius\n"
+                   "\t[BC] : ballistic coefficient\n");
+            add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
+        Entry_add_no_clr:
 
+            char buffer[1024];
+
+            int req = back_request(buffer, sizeof(buffer));
+            if (req == 1)
+                goto Entry;
+            if (req == -1)
+                goto Entry_add_no_clr;
+
+            buffer[strcspn(buffer, "\r\n")] = 0;
+
+            if (handle_ammo_t(buffer, ammo_t_list, NULL) == P_S_FALSE)
+            {
+                clear_terminal();
+                print_colored(ANSI_COLOR_RED, "Invalid input!\n", 1);
+                goto Entry_no_clr;
+            }
+
+            print_colored(ANSI_COLOR_GREEN, "List updated!\n", 1);
+            goto Entry_add_no_clr;
+        }
+        case CMD_DELETE:
+        {
+            clear_terminal();
+            add_seperator("delete ammo", '-', NORMAL_SEPERATOR_SIZE);
+            printf("Use the following structure for the input:\n");
+            printf("\t[I]   : id of ammo\n");
+            add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
+        Entry_delete_no_clr:
+
+            char buffer[1024];
+            int req = back_request(buffer, sizeof(buffer));
+            if (req == 1)
+                goto Entry;
+            if (req == -1)
+                goto Entry_delete_no_clr;
+
+            buffer[strcspn(buffer, "\r\n")] = 0;
+            unsigned id = (unsigned)strtoul(buffer, NULL, 10);
+
+            if (delete_Ammo_t(ammo_t_list, id) == -1)
+            {
+                clear_terminal();
+                print_colored(ANSI_COLOR_RED, "Invalid ID!\n", 1);
+                goto Entry_no_clr;
+            }
+
+            print_colored(ANSI_COLOR_GREEN, "List updated!\n", 1);
+            goto Entry_delete_no_clr;
+        }
         default:
             break;
         }
+    }
+
     cmd_clr_ter(NULL, CMD_C_ALL, NULL);
 }
 /**
@@ -390,13 +600,34 @@ void cmd_save(const char *args, Command_case case_flags, PROCESS *running)
     if (case_flags & CMD_C_NOHANDLE)
         return;
     if (!(case_flags & CMD_C_NOCOMMENT))
-        printf("Are you sure, you want to save? [yes/no]");
+    {
+        printf("Are you sure, you want to save? ");
+        cmd_help_inline(NULL, CMD_C_YESNO, NULL);
+    }
     if (GetCommand(CMD_C_LOOP | CMD_C_YESNO, NULL) == CMD_NO)
         return;
     if (handle_save() == P_S_FALSE)
         printf("Atleast on save has failed!\n");
 }
 
+/**
+ * @brief info command handler
+ *
+ * Display the info about the program and the program author.
+ */
+void cmd_info(const char *args, Command_case case_flags, PROCESS *running)
+{
+    (void)args;
+    (void)running;
+    if (case_flags & CMD_C_NOCOMMENT)
+        return;
+    printf("\n");
+    add_seperator(NULL, '=', NORMAL_SEPERATOR_SIZE);
+    print_colored(ANSI_COLOR_CYAN, "Ballistic trajectory calculator\n", 1);
+    print_colored(ANSI_COLOR_CYAN, "Created by.: Adam Jozsef Horvath\n", 1);
+    add_seperator(NULL, '=', NORMAL_SEPERATOR_SIZE);
+    printf("\n");
+}
 //========================================================================
 // COMMAND PROCESSING CORE
 //========================================================================
@@ -470,7 +701,9 @@ Command_t GetCommand(Command_case case_flags, PROCESS *running)
                         if (commands[i].type != CMD_HELP) // seraches for the help flag,
                             continue;                     // to print out it's current name (only for keeping it dynamic)
                         if (!(case_flags & CMD_C_NOCOMMENT))
-                            printf("Unknown command: [%s]\n If you need help, use the command [%s]\n", cmd, commands[i].name);
+                            printf("Unknown command: [" ANSI_COLOR_GREEN "%s" ANSI_COLOR_RESET "]\n"
+                                   "If you need help, use the command [" ANSI_COLOR_GREEN "%s" ANSI_COLOR_RESET "]\n",
+                                   cmd, commands[i].name);
 
                         if (!(case_flags & CMD_C_LOOP))
                             return CMD_INVALID;
@@ -480,6 +713,33 @@ Command_t GetCommand(Command_case case_flags, PROCESS *running)
         }
     }
     return command;
+}
+
+static int find_command_nontoken(
+    const char *input,
+    const char **cmd_start,
+    size_t *cmd_len,
+    const char **args)
+{
+    const char *p = input;
+
+    while (*p == ' ' || *p == '\t')
+        p++;
+
+    if (*p == '\0')
+        return 0;
+
+    *cmd_start = p;
+    *cmd_len = 0;
+
+    while (*p && *p != ' ' && *p != '\t' && *p != '\n')
+    {
+        p++;
+        (*cmd_len)++;
+    }
+
+    *args = (*p) ? p : NULL;
+    return 1;
 }
 /**
  * @brief Parse command from buffer (non-interactive)
@@ -495,25 +755,60 @@ Command_t ParseCommandFromBuffer(char *input, Command_case case_flags, PROCESS *
 {
     NormalizeInput(input);
 
-    char *cmd = strtok(input, " \t\n");
-    char *args = strtok(NULL, "\n");
+    const char *cmd = NULL;
+    size_t cmd_len = 0;
+    const char *args = NULL;
 
-    if (!cmd)
-        return CMD_INVALID;
+    // NOTOKEN MODE
+    if (case_flags & CMD_C_NOTOKEN)
+    {
+        if (!find_command_nontoken(input, &cmd, &cmd_len, &args))
+            return CMD_INVALID;
+    }
+    // NORMAL MODE
+    else
+    {
+        char *p = input;
+
+        while (*p == ' ' || *p == '\t')
+            p++;
+
+        if (*p == '\0')
+            return CMD_INVALID;
+
+        cmd = p;
+
+        while (*p && *p != ' ' && *p != '\t' && *p != '\n')
+            p++;
+
+        if (*p)
+        {
+            *p = '\0';
+            p++;
+
+            while (*p == ' ' || *p == '\t')
+                p++;
+
+            args = (*p) ? p : NULL;
+        }
+
+        cmd_len = strlen(cmd);
+    }
 
     int found = 0;
 
     for (int i = 0; i < command_count; i++)
     {
         if (!(commands[i].case_mask & case_flags))
-            continue; // command not available in this mode
+            continue;
 
-        if (strcmp(cmd, commands[i].name) == 0)
+        if (strlen(commands[i].name) == cmd_len &&
+            memcmp(cmd, commands[i].name, cmd_len) == 0)
         {
             found = 1;
 
             if (commands[i].handler && !(case_flags & CMD_C_NOHANDLE))
-                commands[i].handler(args, case_flags, running);
+                commands[i].handler((char *)args, case_flags, running);
 
             return commands[i].type;
         }
@@ -521,7 +816,6 @@ Command_t ParseCommandFromBuffer(char *input, Command_case case_flags, PROCESS *
 
     if (!found)
     {
-        // Only show help for commands valid in this mode
         for (int i = 0; i < command_count; i++)
         {
             if (!(commands[i].case_mask & case_flags))
@@ -530,11 +824,36 @@ Command_t ParseCommandFromBuffer(char *input, Command_case case_flags, PROCESS *
             if (commands[i].type == CMD_HELP)
             {
                 if (!(case_flags & CMD_C_NOCOMMENT))
-                    printf("Unknown command: [%s]\n If you need help, use the command [%s]\n", cmd, commands[i].name);
+                    printf(
+                        "Unknown command\n"
+                        "If you need help, use [%s]\n",
+                        commands[i].name);
                 break;
             }
         }
     }
 
     return CMD_INVALID;
+}
+
+// return values: 1 if CMD_BACK | -1 if not CMD_BACK, but valid | 0 if none
+int back_request(char input[], int length)
+{
+    printf("> ");
+    if (!fgets(input, length, stdin))
+        return -1;
+
+    input[strcspn(input, "\r\n")] = 0; // remove newline
+
+    // Check if input is a command (starts with letter)
+    if (isalpha((unsigned char)input[0]))
+    {
+        Command_t cmd = ParseCommandFromBuffer(input, CMD_C_BACK | CMD_C_NOCOMMENT | CMD_C_NOTOKEN, NULL);
+        if (cmd == CMD_BACK)
+            return 1;
+        if (cmd != CMD_INVALID)
+            return -1;
+    }
+
+    return 0;
 }

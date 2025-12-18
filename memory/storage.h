@@ -82,7 +82,7 @@
 #ifndef STORAGE_H
 #define STORAGE_H
 
-#include "error.h"
+#include "helpers\error.h"
 #include <stdio.h>
 
 /**
@@ -266,7 +266,7 @@ extern Target_List *target_list; ///< All targets
 /**
  * @brief Initialize an empty ammunition type list
  * @param list Double pointer to Ammo_t_List
- * @return S_OK on success, S_FALSE if list already initialized
+ * @return P_S_OK on success, S_FALSE if list already initialized
  * @ingroup Storage
  */
 P_HRESULT init_Ammo_t_List(Ammo_t_List **list);
@@ -315,7 +315,7 @@ void print_Ammo_t_List(Ammo_t_List *list);
 /**
  * @brief Free all memory associated with ammunition list
  * @param list Double pointer to ammunition list
- * @return S_OK on success, S_FALSE if list was NULL
+ * @return P_S_OK on success, S_FALSE if list was NULL
  * @ingroup Storage
  */
 P_HRESULT free_Ammo_t_List(Ammo_t_List **list);
@@ -339,7 +339,7 @@ Ammo_t *FindAmmoByID(Ammo_t_List *list, unsigned id);
 /**
  * @brief Initialize an empty base list
  * @param list Double pointer to Base_List
- * @return S_OK on success, S_FALSE if list already initialized
+ * @return P_S_OK on success, S_FALSE if list already initialized
  * @ingroup Storage
  */
 P_HRESULT init_Base_List(Base_List **list);
@@ -398,7 +398,7 @@ Ammo_t *GetNode_Ammo_t_List(Ammo_t_List *list, unsigned id);
 /**
  * @brief Free all memory associated with base list
  * @param list Double pointer to base list
- * @return S_OK on success, S_FALSE if list was NULL
+ * @return P_S_OK on success, S_FALSE if list was NULL
  * @ingroup Storage
  */
 P_HRESULT free_Base_List(Base_List **list);
@@ -422,7 +422,7 @@ Base *FindBaseByID(Base_List *list, unsigned id);
 /**
  * @brief Initialize an empty ammunition stock list
  * @param list Double pointer to Ammo_Stock_List
- * @return S_OK on success, S_FALSE if list already initialized
+ * @return P_S_OK on success, S_FALSE if list already initialized
  * @ingroup Storage
  */
 P_HRESULT init_Ammo_Stock_List(Ammo_Stock_List **list);
@@ -472,7 +472,7 @@ void print_Ammo_Stock_List(Ammo_Stock_List *list);
 /**
  * @brief Free all memory associated with ammunition stock list
  * @param list Double pointer to stock list
- * @return S_OK on success, S_FALSE if list was NULL
+ * @return P_S_OK on success, S_FALSE if list was NULL
  * @ingroup Storage
  */
 P_HRESULT free_Ammo_Stock_List(Ammo_Stock_List **list);
@@ -487,7 +487,7 @@ P_HRESULT free_Ammo_Stock_List(Ammo_Stock_List **list);
 /**
  * @brief Initialize an empty target list
  * @param list Double pointer to Target_List
- * @return S_OK on success, S_FALSE if list already initialized
+ * @return P_S_OK on success, S_FALSE if list already initialized
  * @ingroup Storage
  */
 P_HRESULT init_Target_List(Target_List **list);
@@ -536,7 +536,7 @@ void print_Target_List(Target_List *list);
 /**
  * @brief Free all memory associated with target list
  * @param list Double pointer to target list
- * @return S_OK on success, S_FALSE if list was NULL
+ * @return P_S_OK on success, S_FALSE if list was NULL
  * @ingroup Storage
  */
 P_HRESULT free_Target_List(Target_List **list);
@@ -576,7 +576,7 @@ void Save_BaseList_file(FILE *fp);
  * @brief Save base list to file path
  * @param list Pointer to base list
  * @param path File path
- * @return S_OK on success, E_FAIL on file error
+ * @return P_S_OK on success, E_FAIL on file error
  * @ingroup Storage
  */
 P_HRESULT Save_BaseList(char *path);
@@ -592,7 +592,7 @@ void Save_TargetList_file(FILE *fp);
  * @brief Save target list to file path
  * @param list Pointer to target list
  * @param path File path
- * @return S_OK on success, E_FAIL on file error
+ * @return P_S_OK on success, E_FAIL on file error
  * @ingroup Storage
  */
 P_HRESULT Save_TargetList(char *path);
@@ -608,7 +608,7 @@ void Save_Ammo_t_List_file(FILE *fp);
  * @brief Save ammunition list to file path
  * @param list Pointer to ammunition list
  * @param path File path
- * @return S_OK on success, E_FAIL on file error
+ * @return P_S_OK on success, E_FAIL on file error
  * @ingroup Storage
  */
 P_HRESULT Save_Ammo_t_List(char *path);

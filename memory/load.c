@@ -1,9 +1,9 @@
 #include "load.h"
-#include "calculations.h"
+#include "simulation\calculations.h"
 #include "error.h"
-#include "commands.h"
-#include "color.h"
-#include "helpers.h"
+#include "command\commands.h"
+#include "helpers\color.h"
+#include "helpers\helpers.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,8 +13,8 @@
 
 #include <stdatomic.h>
 
-#include "worker_platform.h"
-#include "input_poll.h"
+#include "thread\worker_platform.h"
+#include "helpers\input_poll.h"
 
 // Global variable storing the working directory path for all data files
 // Should be initialized via config file and used for all file operations
@@ -81,7 +81,7 @@ The only reason it's was left in the program, to show my development*/
  * @param handler Function pointer to process each parsed record
  * @param data User data passed to the handler (typically a linked list)
  * @param mode Process mode (S_DEBUG for verbose output, S_RUNNING for normal)
- * @return P_HRESULT S_OK on success, error code on failure
+ * @return P_HRESULT P_S_OK on success, error code on failure
  *
  * @note Records must end with semicolon (;)
  * @note Supports nested comments and error reporting for partial records
@@ -100,7 +100,7 @@ P_HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS 
     ParseState state = NORMAL;
     char buffer[512];
     int index = 0;
-    P_HRESULT hr = S_OK; // handle to a result
+    P_HRESULT hr = P_S_OK; // handle to a result
 
     // Process file character by character with state machine
     while ((c = fgetc(file)) != EOF && SUCCEEDED(hr))
@@ -238,7 +238,7 @@ int peek(FILE *file)
  *
  * @param error_buffer Output buffer for the error message
  * @param error_flags Array of 5 flags indicating missing parameters
- * @return P_HRESULT S_OK on success, S_FALSE on buffer overflow
+ * @return P_HRESULT P_S_OK on success, S_FALSE on buffer overflow
  *
  * @note Error flags correspond to: F_ID, F_LABEL, F_LATITUDE, F_LONGITUDE, F_ALTITUDE
  * @warning error_buffer must be large enough (128 bytes recommended)
@@ -302,7 +302,7 @@ P_HRESULT format_basic_error_string(char *error_buffer, int *error_flags)
     }
     // the error_buffer string is finsihed up, with a null terminator, just to be sure
     strncat(error_buffer, "\0", sizeof(error_buffer) - strlen(error_buffer));
-    return S_OK;
+    return P_S_OK;
 }
 
 // ===========================================================================
@@ -317,19 +317,21 @@ P_HRESULT format_basic_error_string(char *error_buffer, int *error_flags)
  *
  * @param config_file Name of the configuration file
  * @param mode Process mode (S_DEBUG for verbose output)
- * @return P_HRESULT S_OK on success, error code on failure
+ * @return P_HRESULT P_S_OK on success, error code on failure
  *
  * @note Prompts user to create config if file doesn't exist
  * @note Sets global folder_path and color_mode based on config
  */
 P_HRESULT test_and_run_config(const char *config_file, PROCESS mode)
 {
-    P_HRESULT hr = S_OK;
+    P_HRESULT hr = P_S_OK;
     FILE *configfile = fopen(config_file, "r"); // "r" open file in read only mode
     if (!configfile)
     {
         printf("Failed to open or locate [%s] in the working directory!\n", config_file);
-        printf("Do you want to create a new one [Yes/No]?\n");
+        printf("Do you want to create a new one? ");
+        cmd_help_inline(NULL, CMD_C_YESNO, NULL);
+        printf("\n");
 
         switch (GetCommand(CMD_C_LOOP | CMD_C_YESNO, NULL))
         {
@@ -372,13 +374,13 @@ P_HRESULT test_and_run_config(const char *config_file, PROCESS mode)
  *
  * @param config_file Path to the configuration file to recreate
  * @param mode Process mode (S_DEBUG for verbose output)
- * @return P_HRESULT S_OK on success, S_FALSE on failure
+ * @return P_HRESULT P_S_OK on success, S_FALSE on failure
  *
  * @note Uses generate_config() to create new file, then reads it back
  */
 P_HRESULT recreate_config(const char *config_file, PROCESS mode)
 {
-    P_HRESULT hr = S_OK;
+    P_HRESULT hr = P_S_OK;
 
     if (generate_config(config_file) == S_FALSE)
         return S_FALSE;
@@ -404,7 +406,7 @@ P_HRESULT recreate_config(const char *config_file, PROCESS mode)
  *
  * @param configfile FILE pointer (unused parameter, could be removed)
  * @param config_file Path where config file should be created
- * @return P_HRESULT S_OK on success, error code on failure
+ * @return P_HRESULT P_S_OK on success, error code on failure
  *
  * @note Creates file with comments explaining format and parameters
  * @note Prompts for color mode (CM_COLOUR or CM_MONO)
@@ -469,7 +471,7 @@ Entry:
         printf("\n=========================\n");
         return E_FAIL;
     }
-    return S_OK;
+    return P_S_OK;
 }
 
 /**
@@ -479,7 +481,7 @@ Entry:
  * each configuration directive.
  *
  * @param config_file Path to the configuration file
- * @return P_HRESULT S_OK on success, error code on failure
+ * @return P_HRESULT P_S_OK on success, error code on failure
  *
  * @note Uses the generic scan() function with handle_config() handler
  * @note Sets global folder_path and color_mode based on parsed values
@@ -498,7 +500,7 @@ P_HRESULT read_config(const char *config_file)
     if (fclose(configfile) == EOF)
         return E_FAIL;
 
-    return S_OK;
+    return P_S_OK;
 }
 
 /**
@@ -510,7 +512,7 @@ P_HRESULT read_config(const char *config_file)
  * @param record The configuration record string to parse
  * @param data Unused parameter (required by RecordHandler signature)
  * @param error_flags Unused parameter (required by RecordHandler signature)
- * @return P_HRESULT S_OK on successful parsing
+ * @return P_HRESULT P_S_OK on successful parsing
  *
  * @note Uses strtoken() and norm_strncmp() for parsing
  * @note Sets global variables: folder_path and color_mode
@@ -522,19 +524,19 @@ P_HRESULT handle_config(char *record, void *data, int *error_flags)
     char *end = NULL;
 
     /*searches for the normlaized DIR token, then if it is, searches for the value after the ':' charcter*/
-    if (norm_strncmp(strtoken(record, &end), "DIR") == S_OK && (record = strchr(end, ':')) != NULL)
+    if (norm_strncmp(strtoken(record, &end), "DIR") == P_S_OK && (record = strchr(end, ':')) != NULL)
     {
         set_folder_path(Normalize_path(ensure_trailing_backslash(remove_quotes((char *)strtoken(record, &record), '\"'))));
-        return S_OK;
+        return P_S_OK;
     }
 
     /*searches for the normlaized COLOUR_M token, then if it is, searches for the value after  the ':' charcter*/
-    if (norm_strncmp(strtoken(record, &end), "COLOUR_M") == S_OK && (record = strchr(end, ':')) != NULL)
+    if (norm_strncmp(strtoken(record, &end), "COLOUR_M") == P_S_OK && (record = strchr(end, ':')) != NULL)
     {
         set_color_mode((int)strtof(strtoken(record, &end), &record));
-        return S_OK;
+        return P_S_OK;
     }
-    return S_OK;
+    return P_S_OK;
 }
 
 // ===========================================================================
@@ -550,7 +552,7 @@ P_HRESULT handle_config(char *record, void *data, int *error_flags)
  * @param record The record string to parse (format: I:id N:name W:weight etc.)
  * @param data Pointer to ammunition type linked list
  * @param error_flags Unused parameter (required by RecordHandler signature)
- * @return P_HRESULT S_OK on successful parsing
+ * @return P_HRESULT P_S_OK on successful parsing
  *
  * @note Parameters: I=ID, N=Name, W=Weight, D=Diameter, BR=BlastRadius,
  *       MV=MuzzleVelocity, BC=BallisticCoefficient
@@ -559,25 +561,26 @@ P_HRESULT handle_config(char *record, void *data, int *error_flags)
  */
 P_HRESULT handle_ammo_t(char *record, void *data, int *error_flags)
 {
-    (void)data;
     (void)error_flags;
     // record in the scan case is only on the stack, so I can modify the pointer without a problem
     Ammo_t ammo;
+    ammo.name = NULL;
 
     // hard cap, so if the user gives some invalid parameters, the program won't get stuck
-    for (int i = 0; i < Param_Check_Limit && strlen(record) > 0; i++)
+    int i = 0;
+    for (i = 0; i < Param_Check_Limit && strlen(record) > 0; i++)
     {
         char *end = NULL;
 
         /*id*/
-        if (norm_strncmp(record, "I") == S_OK)
+        if (norm_strncmp(record, "I") == P_S_OK)
         {
             record = strtoken(record, &end);
             ammo.id = (unsigned)strtof(++record, &end);
             record = strtoken(end, &end);
         }
         /*name*/
-        if (norm_strncmp(record, "N") == S_OK)
+        if (norm_strncmp(record, "N") == P_S_OK)
         {
             record = strtoken(record, &end);
             record++;
@@ -588,21 +591,21 @@ P_HRESULT handle_ammo_t(char *record, void *data, int *error_flags)
             record = strtoken(end, &end);
         }
         /*weight*/
-        if (norm_strncmp(record, "W") == S_OK)
+        if (norm_strncmp(record, "W") == P_S_OK)
         {
             record = strtoken(record, &end);
             ammo.weight = strtod(++record, &end);
             record = strtoken(end, &end);
         }
         /*diameter*/
-        if (norm_strncmp(record, "D") == S_OK)
+        if (norm_strncmp(record, "D") == P_S_OK)
         {
             record = strtoken(record, &end);
             ammo.diameter = strtod(++record, &end);
             record = strtoken(end, &end);
         }
         /*blast radius*/
-        if (norm_strncmp(record, "BR") == S_OK)
+        if (norm_strncmp(record, "BR") == P_S_OK)
         {
             record = strtoken(record, &end);
             record++;
@@ -611,7 +614,7 @@ P_HRESULT handle_ammo_t(char *record, void *data, int *error_flags)
         }
 
         /*muzzle velocity*/
-        if (norm_strncmp(record, "MV") == S_OK)
+        if (norm_strncmp(record, "MV") == P_S_OK)
         {
             record = strtoken(record, &end);
             record++;
@@ -620,7 +623,7 @@ P_HRESULT handle_ammo_t(char *record, void *data, int *error_flags)
         }
 
         /*ballistic coefficent*/
-        if (norm_strncmp(record, "BC") == S_OK)
+        if (norm_strncmp(record, "BC") == P_S_OK)
         {
             record = strtoken(record, &end);
             record++;
@@ -628,15 +631,20 @@ P_HRESULT handle_ammo_t(char *record, void *data, int *error_flags)
             record = strtoken(end, &end);
         }
     }
-
+    if (i == Param_Check_Limit)
+    {
+        if (ammo.name)
+            free(ammo.name);
+        return P_S_FALSE;
+    }
     add_Ammo_t(data, ammo);
 
     free(ammo.name);
 
-    return S_OK;
+    return P_S_OK;
 }
 
-/**
+/**F
  * @brief Base record handler
  *
  * Parses base records from data files. Each record contains base information
@@ -645,7 +653,7 @@ P_HRESULT handle_ammo_t(char *record, void *data, int *error_flags)
  * @param record The record string to parse (format: I:id L:label CLA:lat etc.)
  * @param data Pointer to base linked list
  * @param error_flags Unused parameter (required by RecordHandler signature)
- * @return P_HRESULT S_OK on successful parsing
+ * @return P_HRESULT P_S_OK on successful parsing
  *
  * @note Parameters: I=ID, L=Label, CLA=Latitude, CLO=Longitude, CA=Altitude,
  *       AMS=Ammunition Stock (list of ammo ID:amount pairs)
@@ -655,26 +663,27 @@ P_HRESULT handle_ammo_t(char *record, void *data, int *error_flags)
  */
 P_HRESULT handle_base(char *record, void *data, int *error_flags)
 {
-    (void)data;
     (void)error_flags;
 
     // record in the scan case is only on the stack, so I can modify the pointer without a problem
     Base base;
+    base.label = NULL;
 
     // hard cap, so if the user gives some invalid parameters, the program won't get stuck
-    for (int i = 0; i < Param_Check_Limit && strlen(record) > 0; i++)
+    int i = 0;
+    for (i = 0; i < Param_Check_Limit && strlen(record) > 0; i++)
     {
         char *end = NULL;
 
         // id
-        if (norm_strncmp(record, "I") == S_OK)
+        if (norm_strncmp(record, "I") == P_S_OK)
         {
             record = strtoken(record, &end);
             base.id = (unsigned)strtof(++record, &end);
             record = strtoken(end, &end);
         }
         // name
-        if (norm_strncmp(record, "L") == S_OK)
+        if (norm_strncmp(record, "L") == P_S_OK)
         {
             record = strtoken(record, &end);
             record++;
@@ -685,7 +694,7 @@ P_HRESULT handle_base(char *record, void *data, int *error_flags)
             record = strtoken(end, &end);
         }
         // latitude
-        if (norm_strncmp(record, "CLA") == S_OK)
+        if (norm_strncmp(record, "CLA") == P_S_OK)
         {
             record = strtoken(record, &end);
             record += 3;
@@ -693,7 +702,7 @@ P_HRESULT handle_base(char *record, void *data, int *error_flags)
             record = strtoken(end, &end);
         }
         // longitude
-        if (norm_strncmp(record, "CLO") == S_OK)
+        if (norm_strncmp(record, "CLO") == P_S_OK)
         {
             record = strtoken(record, &end);
             record += 3;
@@ -701,7 +710,7 @@ P_HRESULT handle_base(char *record, void *data, int *error_flags)
             record = strtoken(end, &end);
         }
         // altitude
-        if (norm_strncmp(record, "CA") == S_OK)
+        if (norm_strncmp(record, "CA") == P_S_OK)
         {
             record = strtoken(record, &end);
             record += 2;
@@ -709,7 +718,7 @@ P_HRESULT handle_base(char *record, void *data, int *error_flags)
             record = strtoken(end, &end);
         }
         // ammo list
-        if (norm_strncmp(record, "AMS") == S_OK)
+        if (norm_strncmp(record, "AMS") == P_S_OK)
         {
             record += 3;
             record = strtoken(record, &end);
@@ -733,12 +742,17 @@ P_HRESULT handle_base(char *record, void *data, int *error_flags)
             }
         }
     }
+    if (i == Param_Check_Limit)
+    {
+        if (base.label)
+            free(base.label);
+        return P_S_FALSE;
+    }
 
     add_Base(data, base);
-
     free(base.label);
 
-    return S_OK;
+    return P_S_OK;
 }
 
 /**
@@ -750,7 +764,7 @@ P_HRESULT handle_base(char *record, void *data, int *error_flags)
  * @param record The record string to parse (format: I:id L:label CLA:lat etc.)
  * @param data Pointer to target linked list
  * @param error_flags Unused parameter (required by RecordHandler signature)
- * @return P_HRESULT S_OK on successful parsing
+ * @return P_HRESULT P_S_OK on successful parsing
  *
  * @note Parameters: I=ID, L=Label, CLA=Latitude, CLO=Longitude, CA=Altitude, A=Area
  * @note Allocates memory for label field which is freed after adding to list
@@ -758,26 +772,27 @@ P_HRESULT handle_base(char *record, void *data, int *error_flags)
  */
 P_HRESULT handle_target(char *record, void *data, int *error_flags)
 {
-    (void)data;
     (void)error_flags;
 
     // record in the scan case is only on the stack, so I can modify the pointer without a problem
     Target target;
+    target.label = NULL;
 
     // hard cap, so if the user gives some invalid parameters, the program won't get stuck
-    for (int i = 0; i < Param_Check_Limit && strlen(record) > 0; i++)
+    int i = 0;
+    for (i = 0; i < Param_Check_Limit && strlen(record) > 0; i++)
     {
         char *end = NULL;
 
         // id
-        if (norm_strncmp(record, "I") == S_OK)
+        if (norm_strncmp(record, "I") == P_S_OK)
         {
             record = strtoken(record, &end);
             target.id = (unsigned)strtof(++record, &end);
             record = strtoken(end, &end);
         }
         // name
-        if (norm_strncmp(record, "L") == S_OK)
+        if (norm_strncmp(record, "L") == P_S_OK)
         {
             record = strtoken(record, &end);
             record++;
@@ -788,7 +803,7 @@ P_HRESULT handle_target(char *record, void *data, int *error_flags)
             record = strtoken(end, &end);
         }
         // latitude
-        if (norm_strncmp(record, "CLA") == S_OK)
+        if (norm_strncmp(record, "CLA") == P_S_OK)
         {
             record = strtoken(record, &end);
             record += 3;
@@ -796,7 +811,7 @@ P_HRESULT handle_target(char *record, void *data, int *error_flags)
             record = strtoken(end, &end);
         }
         // longitude
-        if (norm_strncmp(record, "CLO") == S_OK)
+        if (norm_strncmp(record, "CLO") == P_S_OK)
         {
             record = strtoken(record, &end);
             record += 3;
@@ -804,7 +819,7 @@ P_HRESULT handle_target(char *record, void *data, int *error_flags)
             record = strtoken(end, &end);
         }
         // altitude
-        if (norm_strncmp(record, "CA") == S_OK)
+        if (norm_strncmp(record, "CA") == P_S_OK)
         {
             record = strtoken(record, &end);
             record += 2;
@@ -812,19 +827,25 @@ P_HRESULT handle_target(char *record, void *data, int *error_flags)
             record = strtoken(end, &end);
         }
         // area
-        if (norm_strncmp(record, "A") == S_OK)
+        if (norm_strncmp(record, "A") == P_S_OK)
         {
             record = strtoken(record, &end);
             target.area = strtod(++record, &end);
             record = strtoken(end, &end);
         }
     }
+    if (i == Param_Check_Limit)
+    {
+        if (target.label)
+            free(target.label);
+        return P_S_FALSE;
+    }
 
     add_Target(data, target);
 
     free(target.label);
 
-    return S_OK;
+    return P_S_OK;
 }
 
 // ===========================================================================
@@ -945,20 +966,16 @@ int HandleParameterSelection(void)
     add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
     printf("\n");
 
-    printf("> ");
-    if (!fgets(input, sizeof(input), stdin))
-        return -1;
-
-    input[strcspn(input, "\r\n")] = 0; // remove newline
-
-    // Check if input is a command (starts with letter)
-    if (isalpha((unsigned char)input[0]))
+    switch (back_request(input, sizeof(input)))
     {
-        Command_t cmd = ParseCommandFromBuffer(input, CMD_C_BACK, NULL);
-        if (cmd == CMD_BACK)
-            return -1;
-        if (cmd != CMD_INVALID)
-            return 0;
+    case 1:
+        return -1;
+    case 0:
+        break;
+    case -1:
+        return 0;
+    default:
+        return 0;
     }
 
     // Parse numerical IDs
@@ -1002,7 +1019,9 @@ int HandleParameterSelection(void)
         add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
         printf("\n");
 
-        printf("Would you like to accept these changes? [yes/no]\n");
+        printf("Would you like to accept these changes? ");
+        cmd_help_inline(NULL, CMD_C_YESNO, NULL);
+        printf("\n");
         if (GetCommand(CMD_C_LOOP | CMD_C_YESNO, NULL) == CMD_YES)
         {
             goto Recalculate;

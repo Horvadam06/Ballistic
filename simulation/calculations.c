@@ -21,11 +21,11 @@
 #include <float.h>
 
 #include "calculations.h"
-#include "load.h"
-#include "worker_platform.h"
-#include "input_poll.h"
-#include "worker.h"
-#include "helpers.h"
+#include "memory\load.h"
+#include "thread\worker_platform.h"
+#include "helpers\input_poll.h"
+#include "thread\worker.h"
+#include "helpers\helpers.h"
 
 #define DEG2RAD (M_PI / 180.0) ///< Conversion factor from degrees to radians
 #define RAD2DEG (180.0 / M_PI) ///< Conversion factor from radians to degrees
@@ -684,14 +684,22 @@ int SuggestBestBaseAndAmmo_Parallel(Base_List *list, Target *tgt, Base **outBase
     input_init();
     HIDE_CURSOR();
 
+    unsigned old_percent = 0;
     while (1)
     {
-        render_progress_bar(
-            progress_percent(atomic_load(&ctx.work_done), atomic_load(&ctx.work_total)),
-            hook_status_before,
-            hook_status_after, &ctx, NULL);
+        unsigned cur_percent = progress_percent(atomic_load(&ctx.work_done), atomic_load(&ctx.work_total));
 
-        printf("\033[%dA", 5);
+        if (cur_percent != old_percent)
+        {
+            render_progress_bar(
+                cur_percent,
+                hook_status_before,
+                hook_status_after, &ctx, NULL);
+
+            printf("\033[%dA", 5);
+        }
+
+        old_percent = cur_percent;
 
         if (input_available())
         {

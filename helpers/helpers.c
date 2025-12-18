@@ -1,5 +1,5 @@
 #include "helpers.h"
-#include "color.h"
+#include "helpers\color.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -140,7 +140,7 @@ char *remove_quotes(char *str, char symbol)
  *
  * @param record First string to compare
  * @param str2 Second string to compare
- * @return P_HRESULT S_OK if strings match exactly, S_FALSE otherwise
+ * @return P_HRESULT P_S_OK if strings match exactly, S_FALSE otherwise
  *
  * @note Comparison is case-insensitive (A == a)
  * @note Returns S_FALSE if str2 is longer than record (not just a prefix match)

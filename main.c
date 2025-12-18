@@ -19,14 +19,14 @@
 #include <string.h>
 
 #include "main.h"
-#include "debug.h"
-#include "commands.h"
-#include "calculations.h"
-#include "load.h"
+#include "helpers\debug.h"
+#include "command\commands.h"
+#include "simulation\calculations.h"
+#include "memory\load.h"
 #include "error.h"
-#include "storage.h"
-#include "color.h"
-#include "helpers.h"
+#include "memory\storage.h"
+#include "helpers\color.h"
+#include "helpers\helpers.h"
 
 //#include "debugmalloc.h"
 
@@ -102,12 +102,7 @@ PROCESS Setup()
     }
 
     // Step 7: Display introduction banner
-    printf("\n");
-    add_seperator(NULL, '=', NORMAL_SEPERATOR_SIZE);
-    print_colored(ANSI_COLOR_CYAN, "Ballistic trajectory calculator\n", 1);
-    print_colored(ANSI_COLOR_CYAN, "Created by.: Adam Jozsef Horvath\n", 1);
-    add_seperator(NULL, '=', NORMAL_SEPERATOR_SIZE);
-    printf("\n");
+
     printf("Type [exit] to leave or type [help] for the commands!\n");
 
     return S_RUNNING;
@@ -127,7 +122,7 @@ PROCESS Setup()
  */
 void CleanUp()
 {
-    printf("Do you want to save before leaving? [yes/no]\n");
+    printf("Do you want to save before leaving? "); cmd_help_inline(NULL, CMD_C_YESNO, NULL); printf("\n");
 
     // Prompt for save (CMD_C_NOCOMMENT suppresses extra prompts in cmd_save)
     cmd_save(NULL, CMD_C_NOCOMMENT, NULL);

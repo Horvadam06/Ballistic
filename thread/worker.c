@@ -1,5 +1,5 @@
 #include "worker.h"
-#include "calculations.h"
+#include "simulation\calculations.h"
 
 int worker_entry(void *arg)
 {
