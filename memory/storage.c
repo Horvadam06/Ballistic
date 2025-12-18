@@ -282,6 +282,48 @@ void print_Ammo_t_List(Ammo_t_List *list)
             printf("NULL ammo parameter\n");
 }
 
+unsigned list_count_nodes(void *head, void *tail, size_t next_offset, int (*is_valid)(const void *node), unsigned *null_cnt)
+{
+    if (!head || !tail || !is_valid)
+        return 0;
+
+    unsigned cnt = 0;
+    if (null_cnt)
+        *null_cnt = 0;
+
+    void *node = *(void **)((char *)head + next_offset);
+
+    while (node != tail)
+    {
+        if (is_valid(node))
+            cnt++;
+        else if (null_cnt)
+            (*null_cnt)++;
+
+        node = *(void **)((char *)node + next_offset);
+    }
+
+    return cnt;
+}
+
+int ammo_t_node_valid(const void *n)
+{
+    const Ammo_t_Node *node = n;
+    return node->ammoItem != NULL;
+}
+
+int base_node_valid(const void *n)
+{
+    const Base_Node *node = n;
+    return node->baseItem != NULL;
+}
+
+int target_node_valid(const void *n)
+{
+    const Target_Node *node = n;
+    return node->targetItem != NULL;
+}
+
 /**
  * @brief Completely frees all memory associated with an ammunition list
  *

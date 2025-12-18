@@ -15,6 +15,10 @@
  * @todo Add error recovery for partial data loading failures
  */
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include <stdio.h>
 #include <string.h>
 
@@ -27,8 +31,9 @@
 #include "memory\storage.h"
 #include "helpers\color.h"
 #include "helpers\helpers.h"
+#include "helpers\input_poll.h"
 
-//#include "debugmalloc.h"
+// #include "debugmalloc.h"
 
 //=========================================
 // Created by.: Horvath Adam Jozsef
@@ -53,9 +58,17 @@
  */
 PROCESS Setup()
 {
-    printf("Starting setup...\n");
+    printf("\nStarting setup...\n");
     enable_ansi_colors();
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+#endif
 
+    add_seperator_s(NULL, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+    printf("\n");
+
+    change_colour(ANSI_GRAY);
     // Step 1: Load or create configuration
     if (P_FAILED(test_and_run_config("config.txt", S_RUNNING)))
         return S_TERMINATE;
@@ -63,8 +76,6 @@ PROCESS Setup()
     // Step 2: Run system self-test
     if (P_FAILED(run_pre_test(S_RUNNING)))
         return S_TERMINATE;
-
-    printf("Setup finished!\n");
 
     char folder_buffer[1024];
 
@@ -95,14 +106,18 @@ PROCESS Setup()
         scan(folder_buffer, handle_target, target_list, S_RUNNING);
     }
 
+    print_colored(COLOR_SUCCESS, "Setup finished!\n", 1);
+    add_seperator_s(NULL, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+
     // Step 6: Clear terminal if color mode is enabled
     if (get_color_mode())
-    {
         clear_terminal();
-    }
 
     // Step 7: Display introduction banner
-
+    add_seperator_s(ANSI_CYAN, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+    printf(ANSI_CYAN "Ballistic trajectory calculator\n");
+    add_seperator_s(ANSI_CYAN, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+    printf("\n");
     printf("Type [exit] to leave or type [help] for the commands!\n");
 
     return S_RUNNING;
@@ -122,11 +137,6 @@ PROCESS Setup()
  */
 void CleanUp()
 {
-    printf("Do you want to save before leaving? "); cmd_help_inline(NULL, CMD_C_YESNO, NULL); printf("\n");
-
-    // Prompt for save (CMD_C_NOCOMMENT suppresses extra prompts in cmd_save)
-    cmd_save(NULL, CMD_C_NOCOMMENT, NULL);
-
     // Free all dynamically allocated linked lists
     if (base_list)
         free_Base_List(&base_list);
@@ -169,20 +179,31 @@ int main(void)
     }
 
     // Perform cleanup before exit
+    if (state != S_TERMINATE)
+    {
+        printf("Do you want to save before leaving? ");
+        cmd_help_inline(NULL, CMD_C_YESNO, NULL);
+        printf("\n");
+
+        // Prompt for save (CMD_C_NOCOMMENT suppresses extra prompts in cmd_save)
+        cmd_save(NULL, CMD_C_NOCOMMENT, NULL);
+    }
+
     CleanUp();
 
     // Determine exit status based on final state
     if (state == S_END)
     {
-        printf("Program exited succesfully!\n");
+        printf(COLOR_SUCCESS "Program exited succesfully!\n");
         return 0;
     }
     else if (state == S_TERMINATE)
     {
-        printf("Program terminated!\n");
+        fprintf(stderr, "Terminated with fatal error!\n");
         // Optional: Uncomment to keep terminal open for error inspection
-        printf("Press any key, to close the window!\n");
-        getchar(); //maybe use it, so the terminal is left open till some keypress
+        printf(COLOR_WARNING "Press any key, to close the window!\n");
+        while (!input_available())
+            Sleep(100);
         return -1;
     }
 

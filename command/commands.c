@@ -36,9 +36,10 @@ Command commands[] = {
     {"test", CMD_TEST, cmd_test, "Do a manual self-test", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
     {"clear", CMD_CLEAR_TERMINAL, cmd_clr_ter, "Clear the terminal", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
     {"config", CMD_TEST, cmd_config, "Modify config", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
+    {"info", CMD_INFO, cmd_info, "Show program info", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
     {"save", CMD_SAVE, cmd_save, "Save changes", CMD_C_EXIT | CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
     {"exit", CMD_EXIT, cmd_exit, "Exit program", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
-    {"info", CMD_INFO, cmd_info, "Show program info", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM},
+
     {"help", CMD_HELP, cmd_help, "Show commands", CMD_C_ALL},
 
     {"colour", CMD_COLOUR, cmd_colour, "Coloured mode command", CMD_C_SETUP},
@@ -100,7 +101,7 @@ void cmd_exit(const char *args, Command_case case_flags, PROCESS *running)
  * Filters commands based on case_flags to show only context-appropriate commands.
  * The help command itself is excluded from the displayed list.
  *
- * Note: add_seperator() is assumed to handle NULL title for closing separator
+ * Note: add_seperator_c() is assumed to handle NULL title for closing separator
  */
 void cmd_help(const char *args, Command_case case_flags, PROCESS *running)
 {
@@ -109,21 +110,21 @@ void cmd_help(const char *args, Command_case case_flags, PROCESS *running)
     (void)running;
 
     // formated list
-    add_seperator("command list", '-', NORMAL_SEPERATOR_SIZE);
+    add_seperator_c(NULL, ANSI_YELLOW, "command list", '-', NORMAL_SEPERATOR_SIZE);
     for (int i = 0; i < command_count; i++) // goes trough the commands list, and print's out the aviable one
     {
         if (!(commands[i].case_mask & case_flags) || (commands[i].type == CMD_HELP))
             continue; // command not available in this mode
 
-        change_colour(ANSI_COLOR_GREEN);
+        change_colour(ANSI_GREEN);
         printf("    %-4s", commands[i].name);
 
-        change_colour(ANSI_COLOR_MAGENTA);
+        change_colour(ANSI_MAGENTA);
         printf("\t- %s\n", commands[i].description);
 
-        change_colour(ANSI_COLOR_RESET);
+        change_colour(ANSI_RESET);
     }
-    add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
+    add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
 }
 
 void cmd_help_inline(const char *args, Command_case case_flags, PROCESS *running)
@@ -133,18 +134,22 @@ void cmd_help_inline(const char *args, Command_case case_flags, PROCESS *running
     (void)running;
 
     // formated list
-    printf("[");
+    printf(ANSI_RESET "[");
+    int is_first = 1;
     for (int i = 0; i < command_count; i++) // goes trough the commands list, and print's out the aviable one
     {
         if (!(commands[i].case_mask & case_flags) || (commands[i].type == CMD_HELP))
             continue; // command not available in this mode
 
-        change_colour(ANSI_COLOR_GREEN);
+        if (is_first)
+            is_first = 0;
+        else
+            printf("/");
+
+        printf(ANSI_GREEN);
         printf("%s", commands[i].name);
 
-        change_colour(ANSI_COLOR_RESET);
-        if (i < command_count - 1)
-            printf("/");
+        printf(ANSI_RESET);
     }
     printf("]");
 }
@@ -172,12 +177,12 @@ Entry:
 Entry_no_clr:
     if (!(case_flags & CMD_C_NOCOMMENT))
     {
-        add_seperator("targets", '-', NORMAL_SEPERATOR_SIZE);
+        add_seperator_c(NULL, ANSI_YELLOW, "targets", '-', NORMAL_SEPERATOR_SIZE);
         printf("%-39s <[%s]>\n", "What would you like to do?", "back");
         printf("\t- %-30s [%s]\n", "show target list", "list");
         printf("\t- %-30s [%s]\n", "add target to list", "add");
         printf("\t- %-30s [%s]\n", "remove target from list", "delete");
-        add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
+        add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
     }
 
     Command_t cmd;
@@ -191,7 +196,7 @@ Entry_no_clr:
         case CMD_ADD:
         {
             clear_terminal();
-            add_seperator("add target", '-', NORMAL_SEPERATOR_SIZE);
+            add_seperator_c(NULL, ANSI_YELLOW, "add target", '-', NORMAL_SEPERATOR_SIZE);
             printf("Use the following structure for the input:\n"
                    "\t[I]   : id of target\n"
                    "\t[L] : label(name)\n"
@@ -199,7 +204,7 @@ Entry_no_clr:
                    "\t[CLO] : longitude(degrees)\n"
                    "\t[CA] : altitude(meters)\n"
                    "\t[A] : area (km^2)\n");
-            add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
+            add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
 
         Entry_add_no_clr:
             char buffer[1024];
@@ -215,20 +220,20 @@ Entry_no_clr:
             if (handle_target(buffer, target_list, NULL) == P_S_FALSE)
             {
                 clear_terminal();
-                print_colored(ANSI_COLOR_RED, "Invalid input!\n", 1);
+                print_colored(COLOR_ERROR, "Invalid input!\n", 1);
                 goto Entry_no_clr;
             }
 
-            print_colored(ANSI_COLOR_GREEN, "List updated!\n", 1);
+            print_colored(COLOR_SUCCESS, "List updated!\n", 1);
             goto Entry_add_no_clr;
         }
         case CMD_DELETE:
         {
             clear_terminal();
-            add_seperator("delete target", '-', NORMAL_SEPERATOR_SIZE);
+            add_seperator_c(NULL, ANSI_YELLOW, "delete target", '-', NORMAL_SEPERATOR_SIZE);
             printf("Use the following structure for the input:\n");
             printf("\t[I]   : id of target\n");
-            add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
+            add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
         Entry_delete_no_clr:
 
             char buffer[1024];
@@ -244,11 +249,11 @@ Entry_no_clr:
             if (delete_Target(target_list, id) == -1)
             {
                 clear_terminal();
-                print_colored(ANSI_COLOR_RED, "Invalid ID!\n", 1);
+                print_colored(COLOR_ERROR, "Invalid ID!\n", 1);
                 goto Entry_no_clr;
             }
 
-            print_colored(ANSI_COLOR_GREEN, "List updated!\n", 1);
+            print_colored(COLOR_SUCCESS, "List updated!\n", 1);
             goto Entry_delete_no_clr;
         }
         default:
@@ -273,12 +278,12 @@ Entry:
 Entry_no_clr:
     if (!(case_flags & CMD_C_NOCOMMENT))
     {
-        add_seperator("bases", '-', NORMAL_SEPERATOR_SIZE);
+        add_seperator_c(NULL, ANSI_YELLOW, "bases", '-', NORMAL_SEPERATOR_SIZE);
         printf("%-39s <[%s]>\n", "What would you like to do?", "back");
         printf("\t- %-30s [%s]\n", "show base list", "list");
         printf("\t- %-30s [%s]\n", "add base to list", "add");
         printf("\t- %-30s [%s]\n", "remove base from list", "delete");
-        add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
+        add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
     }
 
     // waits for a valid command
@@ -293,7 +298,7 @@ Entry_no_clr:
         case CMD_ADD:
         {
             clear_terminal();
-            add_seperator("add base", '-', NORMAL_SEPERATOR_SIZE);
+            add_seperator_c(NULL, ANSI_YELLOW, "add base", '-', NORMAL_SEPERATOR_SIZE);
             printf("Use the following structure for the input:\n"
                    "\t[I]   : id of base\n"
                    "\t[L] : label(name)\n"
@@ -301,7 +306,7 @@ Entry_no_clr:
                    "\t[CLO] : longitude(degrees)\n"
                    "\t[CA] : altitude(meters)\n"
                    "\t[AMS] : ammo stock map {ammo_id:count, ...}\n");
-            add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
+            add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
 
         Entry_add_no_clr:
 
@@ -321,12 +326,12 @@ Entry_no_clr:
             if (handle_base(buffer, base_list, NULL) == P_S_FALSE)
             {
                 clear_terminal();
-                print_colored(ANSI_COLOR_RED, "Invalid input!\n", 1);
+                print_colored(COLOR_ERROR, "Invalid input!\n", 1);
                 goto Entry_no_clr;
             }
             else
             {
-                print_colored(ANSI_COLOR_GREEN, "List updated!\n", 1);
+                print_colored(COLOR_SUCCESS, "List updated!\n", 1);
                 goto Entry_add_no_clr;
             }
             break;
@@ -334,10 +339,10 @@ Entry_no_clr:
         case CMD_DELETE:
         {
             clear_terminal();
-            add_seperator("delete base", '-', NORMAL_SEPERATOR_SIZE);
+            add_seperator_c(NULL, ANSI_YELLOW, "delete base", '-', NORMAL_SEPERATOR_SIZE);
             printf("Use the following structure for the input:\n");
             printf("\t[I]   : id of base\n");
-            add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
+            add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
 
         Entry_delete_no_clr:
 
@@ -358,12 +363,12 @@ Entry_no_clr:
             if (isalpha((unsigned char)buffer[0]) || delete_Base(base_list, id) == -1)
             {
                 clear_terminal();
-                print_colored(ANSI_COLOR_RED, "Invalid input!\n", 1);
+                print_colored(COLOR_ERROR, "Invalid input!\n", 1);
                 goto Entry_no_clr;
             }
             else
             {
-                print_colored(ANSI_COLOR_GREEN, "List updated!\n", 1);
+                print_colored(COLOR_SUCCESS, "List updated!\n", 1);
                 goto Entry_delete_no_clr;
             }
             break;
@@ -392,12 +397,12 @@ Entry:
 Entry_no_clr:
     if (!(case_flags & CMD_C_NOCOMMENT))
     {
-        add_seperator("ammo", '-', NORMAL_SEPERATOR_SIZE);
+        add_seperator_c(NULL, ANSI_YELLOW, "ammo", '-', NORMAL_SEPERATOR_SIZE);
         printf("%-39s <[%s]>\n", "What would you like to do?", "back");
         printf("\t- %-30s [%s]\n", "show ammo type list", "list");
         printf("\t- %-30s [%s]\n", "add ammo type to list", "add");
         printf("\t- %-30s [%s]\n", "remove ammo type from list", "delete");
-        add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
+        add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
     }
 
     Command_t cmd;
@@ -411,7 +416,7 @@ Entry_no_clr:
         case CMD_ADD:
         {
             clear_terminal();
-            add_seperator("add ammo", '-', NORMAL_SEPERATOR_SIZE);
+            add_seperator_c(NULL, ANSI_YELLOW, "add ammo", '-', NORMAL_SEPERATOR_SIZE);
             printf("Use the following structure for the input:\n"
                    "\t[I]   : id of ammo\n"
                    "\t[L] : label(name)\n"
@@ -419,7 +424,7 @@ Entry_no_clr:
                    "\t[D] : diameter (caliber)\n"
                    "\t[BR] : blast radius\n"
                    "\t[BC] : ballistic coefficient\n");
-            add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
+            add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
         Entry_add_no_clr:
 
             char buffer[1024];
@@ -435,20 +440,20 @@ Entry_no_clr:
             if (handle_ammo_t(buffer, ammo_t_list, NULL) == P_S_FALSE)
             {
                 clear_terminal();
-                print_colored(ANSI_COLOR_RED, "Invalid input!\n", 1);
+                print_colored(COLOR_ERROR, "Invalid input!\n", 1);
                 goto Entry_no_clr;
             }
 
-            print_colored(ANSI_COLOR_GREEN, "List updated!\n", 1);
+            print_colored(COLOR_SUCCESS, "List updated!\n", 1);
             goto Entry_add_no_clr;
         }
         case CMD_DELETE:
         {
             clear_terminal();
-            add_seperator("delete ammo", '-', NORMAL_SEPERATOR_SIZE);
+            add_seperator_c(NULL, ANSI_YELLOW, "delete ammo", '-', NORMAL_SEPERATOR_SIZE);
             printf("Use the following structure for the input:\n");
             printf("\t[I]   : id of ammo\n");
-            add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
+            add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
         Entry_delete_no_clr:
 
             char buffer[1024];
@@ -464,11 +469,11 @@ Entry_no_clr:
             if (delete_Ammo_t(ammo_t_list, id) == -1)
             {
                 clear_terminal();
-                print_colored(ANSI_COLOR_RED, "Invalid ID!\n", 1);
+                print_colored(COLOR_ERROR, "Invalid ID!\n", 1);
                 goto Entry_no_clr;
             }
 
-            print_colored(ANSI_COLOR_GREEN, "List updated!\n", 1);
+            print_colored(COLOR_SUCCESS, "List updated!\n", 1);
             goto Entry_delete_no_clr;
         }
         default:
@@ -558,13 +563,13 @@ EntryPoint:
     Command_t cmd;
     if (!(case_flags & CMD_C_NOCOMMENT))
     {
-        add_seperator("calculate", '-', NORMAL_SEPERATOR_SIZE);
+        add_seperator_c(NULL, ANSI_YELLOW, "calculate", '-', NORMAL_SEPERATOR_SIZE);
         printf("%-39s <[%s]>\n", "What would you like to do?", "back");
         printf("\t- %-30s [%s]\n", "select parameters", "select");
         printf("\t- %-30s [%s]\n", "work with bases", "bases");
         printf("\t- %-30s [%s]\n", "work with target", "target");
         printf("\t- %-30s [%s]\n", "work with ammo", "ammo");
-        add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
+        add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
     }
     // waits for a valid command
     // on list, it exit's. In other cases it just returns, making it easier to make multiple calculations
@@ -622,10 +627,14 @@ void cmd_info(const char *args, Command_case case_flags, PROCESS *running)
     if (case_flags & CMD_C_NOCOMMENT)
         return;
     printf("\n");
-    add_seperator(NULL, '=', NORMAL_SEPERATOR_SIZE);
-    print_colored(ANSI_COLOR_CYAN, "Ballistic trajectory calculator\n", 1);
-    print_colored(ANSI_COLOR_CYAN, "Created by.: Adam Jozsef Horvath\n", 1);
-    add_seperator(NULL, '=', NORMAL_SEPERATOR_SIZE);
+    printf(ANSI_GRAY);
+    add_seperator_s(NULL, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+    printf(ANSI_GRAY " %-10s : " COLOR_TITLE "Ballistic trajectory calculator\n", "Product");
+    printf(ANSI_GRAY " %-10s : " COLOR_TITLE "Adam Jozsef Horvath\n", "Author");
+    printf(ANSI_GRAY " %-10s : " COLOR_TITLE "7.2.2\n", "Version");
+    printf(ANSI_GRAY);
+    add_seperator_s(NULL, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+    printf(ANSI_RESET);
     printf("\n");
 }
 //========================================================================
@@ -701,8 +710,8 @@ Command_t GetCommand(Command_case case_flags, PROCESS *running)
                         if (commands[i].type != CMD_HELP) // seraches for the help flag,
                             continue;                     // to print out it's current name (only for keeping it dynamic)
                         if (!(case_flags & CMD_C_NOCOMMENT))
-                            printf("Unknown command: [" ANSI_COLOR_GREEN "%s" ANSI_COLOR_RESET "]\n"
-                                   "If you need help, use the command [" ANSI_COLOR_GREEN "%s" ANSI_COLOR_RESET "]\n",
+                            printf("Unknown command: [" ANSI_GREEN "%s" ANSI_RESET "]\n"
+                                   "If you need help, use the command [" ANSI_GREEN "%s" ANSI_RESET "]\n",
                                    cmd, commands[i].name);
 
                         if (!(case_flags & CMD_C_LOOP))

@@ -3,13 +3,62 @@
 
 #include "debug.h"
 
-#define ANSI_COLOR_RED "\x1b[31m"
-#define ANSI_COLOR_GREEN "\x1b[32m"
-#define ANSI_COLOR_YELLOW "\x1b[33m"
-#define ANSI_COLOR_BLUE "\x1b[34m"
-#define ANSI_COLOR_MAGENTA "\x1b[35m"
-#define ANSI_COLOR_CYAN "\x1b[36m"
-#define ANSI_COLOR_RESET "\x1b[0m"
+/* Reset */
+#define ANSI_RESET "\x1b[0m"
+
+/* Standard colors */
+#define ANSI_RED "\x1b[31m"
+#define ANSI_GREEN "\x1b[32m"
+#define ANSI_YELLOW "\x1b[33m"
+#define ANSI_BLUE "\x1b[34m"
+#define ANSI_MAGENTA "\x1b[35m"
+#define ANSI_CYAN "\x1b[36m"
+#define ANSI_WHITE "\x1b[37m"
+
+/* Bright colors */
+#define ANSI_BRIGHT_RED "\x1b[91m"
+#define ANSI_BRIGHT_GREEN "\x1b[92m"
+#define ANSI_BRIGHT_YELLOW "\x1b[93m"
+#define ANSI_BRIGHT_BLUE "\x1b[94m"
+#define ANSI_BRIGHT_MAGENTA "\x1b[95m"
+#define ANSI_BRIGHT_CYAN "\x1b[96m"
+#define ANSI_BRIGHT_WHITE "\x1b[97m"
+
+/* Grayscale / emphasis */
+#define ANSI_DIM "\x1b[2m"
+#define ANSI_GRAY "\x1b[90m"
+
+/* Text styles (use sparingly) */
+#define ANSI_BOLD "\x1b[1m"
+#define ANSI_UNDERLINE "\x1b[4m"
+
+/* UI structure */
+#define COLOR_TITLE "\x1b[2;37m" // dim white
+#define COLOR_HINT "\x1b[2;90m"
+#define COLOR_PROMPT "\x1b[2;37m"
+
+/* Commands & input */
+#define COLOR_COMMAND "\x1b[36m"
+#define COLOR_PARAM "\x1b[33m"
+
+/* Status */
+#define COLOR_SUCCESS "\x1b[32m"
+#define COLOR_ERROR "\x1b[31m"
+#define COLOR_WARNING "\x1b[33m"
+#define COLOR_INFO "\x1b[36m"
+
+/* w char's */
+#define HLINE "\xE2\x94\x80"    // char: ─
+
+/* Reset alias */
+#define COLOR_RESET ANSI_RESET
+
+/*#ifdef NO_COLOR
+  #define COLOR_COMMAND ""
+  #define COLOR_SUCCESS ""
+  #define COLOR_ERROR   ""
+  #define COLOR_RESET   ""
+#endif*/
 
 typedef enum
 {

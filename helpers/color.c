@@ -30,7 +30,7 @@ P_HRESULT print_colored(const char *color, const char *string, bool always_p)
 {
     if (current_mode == CM_COLOUR)
     {
-        printf("%s%s%s", color, string, ANSI_COLOR_RESET);
+        printf("%s%s%s", color, string, ANSI_RESET);
         return P_S_OK;
     }
     else if (always_p)

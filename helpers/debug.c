@@ -26,7 +26,7 @@
  */
 P_HRESULT run_pre_test(PROCESS process_state)
 {
-    printf("Starting test...\n");
+    printf(ANSI_GRAY "Starting test...\n");
 
     P_HRESULT hr = P_S_OK;
 
@@ -69,9 +69,25 @@ P_HRESULT run_pre_test(PROCESS process_state)
         print_Ammo_t_List(ammo_t_list);
         print_Base_List(base_list, process_state);
         print_Target_List(target_list);
+        printf("\n");
+    }
 
-        printf("\n--- Testing color output ---\n");
-        if (print_colored(ANSI_COLOR_RED, "This text should be RED!\n", false) == P_S_FALSE)
+    add_seperator_s(ANSI_GRAY, ANSI_YELLOW, "Database test summary", HLINE, NORMAL_SEPERATOR_SIZE);
+    unsigned null_cnt;
+    unsigned all_cnt;
+    printf(ANSI_GRAY);
+    all_cnt = list_count_nodes(ammo_t_list->head, ammo_t_list->tail, offsetof(Ammo_t_Node, next), ammo_t_node_valid, &null_cnt);
+    printf("%-22s : %-6u | %s : %6u\n", "Ammo type node count", all_cnt, "null node count", null_cnt);
+    all_cnt = list_count_nodes(base_list->head, base_list->tail, offsetof(Base_Node, next), base_node_valid, &null_cnt);
+    printf("%-22s : %-6u | %s : %6u\n", "Base node count", all_cnt, "null node count", null_cnt);
+    all_cnt = list_count_nodes(target_list->head, target_list->tail, offsetof(Target_Node, next), target_node_valid, &null_cnt);
+    printf("%-22s : %-6u | %s : %6u\n", "Target snode count", all_cnt, "null node count", null_cnt);
+    printf("\n");
+
+    if (process_state == S_DEBUG)
+    {
+        add_seperator_s(NULL, ANSI_YELLOW, "Colour mode test", HLINE, NORMAL_SEPERATOR_SIZE);
+        if (print_colored(ANSI_RED, "This text should be RED!\n", false) == P_S_FALSE)
         {
             // This executes if color output failed (e.g., ANSI codes disabled)
             printf("This text shouldn't be RED!\n");
@@ -85,19 +101,19 @@ P_HRESULT run_pre_test(PROCESS process_state)
     }
 
     // test result summary
-    add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
+    add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
     if (hr == P_S_OK)
         // Success - display in green
-        print_colored(ANSI_COLOR_GREEN, "Test succeeded!\n", false);
+        print_colored(ANSI_GREEN, "Test succeeded!\n", false);
     else
         // Failure - display in red with newline
-        print_colored(ANSI_COLOR_RED, "Test failed!\n", true);
+        print_colored(ANSI_RED, "Test failed!\n", true);
 
-    add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
+    add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+    printf("\n");
 
     return hr;
 }
-
 
 #ifdef _WIN32
 #include <windows.h>

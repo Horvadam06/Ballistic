@@ -324,45 +324,54 @@ P_HRESULT format_basic_error_string(char *error_buffer, int *error_flags)
  */
 P_HRESULT test_and_run_config(const char *config_file, PROCESS mode)
 {
+    printf(ANSI_GRAY "Loading config...\n");
     P_HRESULT hr = P_S_OK;
     FILE *configfile = fopen(config_file, "r"); // "r" open file in read only mode
     if (!configfile)
     {
-        printf("Failed to open or locate [%s] in the working directory!\n", config_file);
+        printf(COLOR_WARNING "Failed to open or locate [%s] in the working directory!\n", config_file);
         printf("Do you want to create a new one? ");
         cmd_help_inline(NULL, CMD_C_YESNO, NULL);
-        printf("\n");
+        printf(ANSI_RESET "\n");
 
         switch (GetCommand(CMD_C_LOOP | CMD_C_YESNO, NULL))
         {
         case CMD_YES:
         {
+            printf("Starting config creation...\n");
             hr = generate_config(config_file);
+            if (P_SUCCEEDED(hr)) goto ReadConfig;
             break;
         }
         case CMD_NO:
         {
+            printf(COLOR_ERROR "Config creation was interrupted!\n");
             hr = E_FAIL;
             break;
         }
         default:
             break;
         }
+        printf(ANSI_RESET);
         return hr;
     }
     fclose(configfile);
 
+    ReadConfig:
     // if everything succeded, then it reads and loads the config
     hr = read_config(config_file);
+    add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
     if (SUCCEEDED(hr))
     {
         if (mode == S_DEBUG)
-            printf("Working directory have been set to: [%s]\n", folder_path);
-        add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
-        printf("Config loaded succesfully!\n");
-        add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
-        printf("\n");
+            printf(ANSI_GRAY "Working directory have been set to: [%s]\n", folder_path);
+        print_colored(COLOR_SUCCESS, "Config loaded succesfully!\n", 1);
     }
+    else
+        print_colored(COLOR_ERROR, "Failed to load config!\n", 1);
+
+    add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+    printf(ANSI_RESET "\n");
     return hr;
 }
 
@@ -390,9 +399,9 @@ P_HRESULT recreate_config(const char *config_file, PROCESS mode)
     {
         if (mode == S_DEBUG)
             printf("Working directory have been set to: [%s]\n", folder_path);
-        add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
-        printf("Config updated successfully!\n");
-        add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
+        add_seperator_s(NULL, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+        printf(COLOR_SUCCESS"Config updated successfully!\n");
+        add_seperator_s(NULL, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
         printf("\n");
     }
     return hr;
@@ -413,7 +422,9 @@ P_HRESULT recreate_config(const char *config_file, PROCESS mode)
  */
 P_HRESULT generate_config(const char *config_file)
 {
-    printf("Enter a new folder path or type [back] to exit:\n");
+    printf("Enter a new folder path or type ");
+    cmd_help_inline(NULL, CMD_C_BACK, NULL);
+    printf(" to exit:\n");
 Entry:
 
     char temp[1024]; // temporary buffer for user input
@@ -466,9 +477,7 @@ Entry:
 
     if (fclose(configfile) != 0)
     {
-        printf("\n=========================\n");
-        printf("[ERROR] Config file creation error");
-        printf("\n=========================\n");
+        fprintf(stderr, "Config file creation error! Couldn't close config file!");
         return E_FAIL;
     }
     return P_S_OK;
@@ -491,7 +500,8 @@ P_HRESULT read_config(const char *config_file)
     FILE *configfile = fopen(config_file, "r");
     if (!configfile)
     {
-        printf("Failed to open or locate [%s] in the working directory!\n", config_file);
+
+        printf(COLOR_ERROR "Failed to open or locate [%s] in the working directory!\n" ANSI_RESET, config_file);
         return S_FALSE;
     }
 
@@ -960,10 +970,10 @@ int HandleParameterSelection(void)
 {
     unsigned baseID, targetID, ammoID;
     char input[128] = {0};
-    add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
+    add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
     printf("Enter parameters: <base_id> <target_id> <ammo_id>\n");
     printf("Type [back] to return or to view/expand the available [list]!\n");
-    add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
+    add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
     printf("\n");
 
     switch (back_request(input, sizeof(input)))
@@ -1011,12 +1021,12 @@ int HandleParameterSelection(void)
             printf("No suitable base/ammo combination found.\n");
             return 0;
         }
-        add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
+        add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
         printf("Suggested base and ammo for [%u | %s]:\n", tgt->id, tgt->label);
         printf("  Base ID: %u  Label: %s  Coordinates: lat %.6f, lon %.6f, alt %.2f m\n",
                base->id, base->label, base->coord.latitude, base->coord.longitude, base->coord.altitude);
         printf("  Ammo ID: %u  Label: %s\n", ammo->id, ammo->name);
-        add_seperator(NULL, '-', NORMAL_SEPERATOR_SIZE);
+        add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
         printf("\n");
 
         printf("Would you like to accept these changes? ");

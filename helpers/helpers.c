@@ -200,32 +200,65 @@ void NormalizeInput(char *input)
  * @example add_seperator("Menu", '-', NORMAL_SEPERATOR_SIZE) prints: "------------ Menu ------------"
  * @example add_seperator(NULL, '=', NORMAL_SEPERATOR_SIZE) prints: "========================================"
  */
-void add_seperator(const char *str, char symbol, unsigned sep_length)
+void add_seperator_c(const char *sep_colour, const char *str_colour, const char *str, char symbol, unsigned sep_length)
 {
     size_t str_length = (str) ? strlen(str) : 0;
     unsigned start = (sep_length - str_length) / 2; // Center position
     unsigned cnt = 0;
+    printf(ANSI_RESET);
 
     // Print leading symbols
+    if (sep_colour)
+        printf(sep_colour);
     for (cnt = 0; cnt < start; cnt++)
-    {
         printf("%c", symbol);
-    };
 
     // Print centered text (if any)
+    if (str_colour)
+        printf(str_colour);
     if (str)
-        print_colored(ANSI_COLOR_YELLOW, str, 1);
-        
+        printf(str);
+
+    printf(ANSI_RESET);
 
     // Print trailing symbols to fill remaining length
+    if (sep_colour)
+        printf(sep_colour);
     for (cnt += str_length; cnt < sep_length; cnt++)
-    {
         printf("%c", symbol);
-    };
 
-    printf("\n");
+    printf(ANSI_RESET "\n");
 }
 
+void add_seperator_s(const char *sep_colour, const char *str_colour, const char *str, const char *symbol, unsigned sep_length)
+{
+    size_t str_length = (str) ? strlen(str) : 0;
+    unsigned start = (sep_length - str_length) / 2; // Center position
+    unsigned cnt = 0;
+    printf(ANSI_RESET);
+
+    // Print leading symbols
+    if (sep_colour)
+        printf(sep_colour);
+    for (cnt = 0; cnt < start; cnt++)
+        printf("%s", symbol);
+
+    // Print centered text (if any)
+    if (str_colour)
+        printf(str_colour);
+    if (str)
+        printf(str);
+
+    printf(ANSI_RESET);
+
+    // Print trailing symbols to fill remaining length
+    if (sep_colour)
+        printf(sep_colour);
+    for (cnt += str_length; cnt < sep_length; cnt++)
+        printf("%s", symbol);
+
+    printf(ANSI_RESET "\n");
+}
 /**
  * @brief Clears the terminal screen using ANSI escape codes
  *

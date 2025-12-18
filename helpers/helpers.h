@@ -38,7 +38,9 @@ void NormalizeInput(char *input);
 
 /*Prints formatted separator line with optional centered text */
 
-void add_seperator(const char *str, char symbol, unsigned sep_length);
+void add_seperator_c(const char *sep_colour, const char *str_colour, const char *str, char symbol, unsigned sep_length);
+
+void add_seperator_s(const char *sep_colour, const char *str_colour, const char *str, const char *symbol, unsigned sep_length);
 
 /*Clears terminal using ANSI codes if color mode enabled */
 

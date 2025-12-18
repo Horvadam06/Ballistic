@@ -26,6 +26,7 @@
 #include "helpers\input_poll.h"
 #include "thread\worker.h"
 #include "helpers\helpers.h"
+#include "helpers\color.h"
 
 #define DEG2RAD (M_PI / 180.0) ///< Conversion factor from degrees to radians
 #define RAD2DEG (180.0 / M_PI) ///< Conversion factor from radians to degrees
@@ -656,16 +657,15 @@ static void hook_status_before(void *arg)
     if (!arg)
         return;
     WorkerContext *ctx = (WorkerContext *)arg;
-    add_seperator(NULL, '_', NORMAL_SEPERATOR_SIZE);
-    printf("\n");
+    add_seperator_s(NULL, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
     printf(" - base id: %5u | ammo id: %5u \n - progress: ", ctx->current_base_id, ctx->current_ammo_id);
 }
 
 static void hook_status_after(void *arg)
 {
-
+    (void)arg;
     printf("\n");
-    add_seperator(NULL, '_', NORMAL_SEPERATOR_SIZE);
+    add_seperator_s(NULL, NULL,NULL, HLINE, NORMAL_SEPERATOR_SIZE);
 }
 
 int SuggestBestBaseAndAmmo_Parallel(Base_List *list, Target *tgt, Base **outBase, Ammo_t **outAmmo)
@@ -696,7 +696,7 @@ int SuggestBestBaseAndAmmo_Parallel(Base_List *list, Target *tgt, Base **outBase
                 hook_status_before,
                 hook_status_after, &ctx, NULL);
 
-            printf("\033[%dA", 5);
+            printf("\033[%dA", 4);
         }
 
         old_percent = cur_percent;
@@ -719,7 +719,7 @@ int SuggestBestBaseAndAmmo_Parallel(Base_List *list, Target *tgt, Base **outBase
         Sleep(20); // don't busy-wait
     }
 
-    printf("\033[%dB", 5);
+    printf("\033[%dB", 4);
     input_shutdown();
     SHOW_CURSOR();
     printf("\n");

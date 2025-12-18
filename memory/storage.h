@@ -258,6 +258,12 @@ extern Ammo_t_List *ammo_t_list; ///< Global ammunition type database
 extern Base_List *base_list;     ///< All military bases
 extern Target_List *target_list; ///< All targets
 
+
+unsigned list_count_nodes(void *head, void *tail, size_t next_offset, int (*is_valid)(const void *node), unsigned *null_cnt);
+int ammo_t_node_valid(const void *n);
+int base_node_valid(const void *n);
+int target_node_valid(const void *n);
+
 /**
  * @name Ammunition List Functions
  * @{
