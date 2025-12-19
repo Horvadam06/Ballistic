@@ -36,12 +36,12 @@ Command commands[] = {
     CMD_INIT("test", CMD_TEST, cmd_test, "Do a manual self-test", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM),
     CMD_INIT("clear", CMD_CLEAR_TERMINAL, cmd_clr_ter, "Clear the terminal", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM),
     CMD_INIT("config", CMD_CONFIG, cmd_config, "Modify config", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM),
-    CMD_INIT("info", CMD_INFO, cmd_info, "Show program info", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM),
+    CMD_INIT("info", CMD_INFO, cmd_info, "Show program info", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM | CMD_C_STAYMODAL),
     CMD_INIT("save", CMD_SAVE, cmd_save, "Save changes", CMD_C_EXIT | CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM),
     CMD_INIT("exit", CMD_EXIT, cmd_exit, "Exit program", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM),
-    CMD_INIT("debug", CMD_DEBUG, cmd_debug, "Debug info", CMD_C_DEBUG),
+    CMD_INIT("debug", CMD_DEBUG, cmd_debug, "Debug info", CMD_C_DEBUG | CMD_C_STAYMODAL),
 
-    CMD_INIT("help", CMD_HELP, cmd_help, "Show commands", CMD_C_ALL),
+    CMD_INIT("help", CMD_HELP, cmd_help, "Show commands", CMD_C_ALL | CMD_C_STAYMODAL),
 
     CMD_INIT("colour", CMD_COLOUR, cmd_colour, "Coloured mode command", CMD_C_SETUP),
     CMD_INIT("mono", CMD_MONO, cmd_mono, "Monochrome mode command", CMD_C_SETUP),
@@ -81,7 +81,7 @@ void cmd_exit(const char *args, Command_case case_flags, PROCESS *running)
     printf("Are you sure you want to exit? ");
     cmd_help_inline(NULL, CMD_C_YESNO, NULL);
     printf("\n");
-    if (GetCommand(CMD_C_LOOP | CMD_C_YESNO, NULL) == CMD_NO)
+    if (GetCommand(CMD_C_MODAL | CMD_C_YESNO, NULL) == CMD_NO)
     {
         clear_terminal();
         return;
@@ -196,7 +196,7 @@ Entry_no_clr:
     }
 
     Command_t cmd;
-    while ((cmd = GetCommand(CMD_C_LOAD | CMD_C_LOOP, NULL)) != CMD_BACK)
+    while ((cmd = GetCommand(CMD_C_LOAD | CMD_C_MODAL, NULL)) != CMD_BACK)
     {
         switch (cmd)
         {
@@ -307,7 +307,7 @@ Entry_no_clr:
     // waits for a valid command
     // on list, it exit's. In other cases it just returns, making it easier to input multiple parameters
     Command_t cmd;
-    while ((cmd = GetCommand(CMD_C_LOAD | CMD_C_LOOP, NULL)) != CMD_BACK)
+    while ((cmd = GetCommand(CMD_C_LOAD | CMD_C_MODAL, NULL)) != CMD_BACK)
         switch (cmd)
         {
         case CMD_LIST:
@@ -434,7 +434,7 @@ Entry_no_clr:
     }
 
     Command_t cmd;
-    while ((cmd = GetCommand(CMD_C_LOAD | CMD_C_LOOP, NULL)) != CMD_BACK)
+    while ((cmd = GetCommand(CMD_C_LOAD | CMD_C_MODAL, NULL)) != CMD_BACK)
     {
         switch (cmd)
         {
@@ -601,7 +601,7 @@ EntryPoint:
     }
     // waits for a valid command
     // on list, it exit's. In other cases it just returns, making it easier to make multiple calculations
-    while ((cmd = GetCommand(CMD_C_LOOP | CMD_C_CALC | CMD_C_SELECT, NULL)) != CMD_BACK)
+    while ((cmd = GetCommand(CMD_C_MODAL | CMD_C_CALC | CMD_C_SELECT, NULL)) != CMD_BACK)
     {
         cmd_clr_ter(NULL, CMD_C_ALL, NULL);
         switch (cmd)
@@ -637,7 +637,7 @@ void cmd_save(const char *args, Command_case case_flags, PROCESS *running)
         printf("Are you sure, you want to save? ");
         cmd_help_inline(NULL, CMD_C_YESNO, NULL);
     }
-    if (GetCommand(CMD_C_LOOP | CMD_C_YESNO, NULL) == CMD_NO)
+    if (GetCommand(CMD_C_MODAL | CMD_C_YESNO, NULL) == CMD_NO)
         return;
     if (handle_save() == P_S_FALSE)
         printf("Atleast on save has failed!\n");
@@ -740,7 +740,7 @@ Command_t GetCommand(Command_case case_flags, PROCESS *running)
 
         command = resolve_command(cmd, cmd_len, args, case_flags, running);
 
-        if (!(case_flags & CMD_C_LOOP))
+        if (!(case_flags & CMD_C_MODAL))
             break;
     }
     return command;
@@ -804,8 +804,9 @@ Command_t resolve_command(const char *cmd, size_t cmd_len, const char *args, Com
                 if (commands[i].handler && !(flags & CMD_C_NOHANDLE))
                     commands[i].handler(args, flags, running);
 
-                if ((CMD_C_LOOP & flags) &&
-                    commands[i].type == CMD_HELP)
+                if ((CMD_C_MODAL & flags) &&
+                    (commands[i].type == CMD_HELP ||
+                     commands[i].case_mask & CMD_C_STAYMODAL))
                     return CMD_INVALID;
 
                 return commands[i].type;

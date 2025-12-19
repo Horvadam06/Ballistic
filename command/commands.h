@@ -64,10 +64,11 @@ typedef enum
     CMD_C_SELECT = 1 << 8,     ///< Selection commands
     CMD_C_BACK = 1 << 9,       ///< Back/return commands
     CMD_C_CANCEL = 1 << 10,    ///< Cancel commands
-    CMD_C_NOHANDLE = 1 << 11,  ///< Cancel's out the commands handler
-    CMD_C_NOCOMMENT = 1 << 12, ///< Cancel's out the commands stdout
     CMD_C_DEBUG = 1 << 13,     ///< Access for debug commands
-    CMD_C_LOOP = 1 << 20       ///< Special: loop until valid input
+    CMD_C_MODAL = 1 << 20,     ///< Special: loop until valid input
+    CMD_C_NOHANDLE = 1 << 21,  ///< Cancel's out the commands handler
+    CMD_C_NOCOMMENT = 1 << 22, ///< Cancel's out the commands stdout
+    CMD_C_STAYMODAL = 1 << 23  ///< Special: loop until valid input
 } Command_case;
 
 /**

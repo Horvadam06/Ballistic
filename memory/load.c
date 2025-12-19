@@ -334,7 +334,7 @@ P_HRESULT test_and_run_config(const char *config_file, PROCESS mode)
         cmd_help_inline(NULL, CMD_C_YESNO, NULL);
         printf(ANSI_RESET "\n");
 
-        switch (GetCommand(CMD_C_LOOP | CMD_C_YESNO, NULL))
+        switch (GetCommand(CMD_C_MODAL | CMD_C_YESNO, NULL))
         {
         case CMD_YES:
         {
@@ -450,7 +450,7 @@ Entry:
 
     printf("Enter the colour mode:\n");
 
-    switch (GetCommand(CMD_C_LOOP | CMD_C_SETUP, NULL))
+    switch (GetCommand(CMD_C_MODAL | CMD_C_SETUP, NULL))
     {
     case CMD_COLOUR:
         set_color_mode(CM_COLOUR);
@@ -1032,7 +1032,7 @@ int HandleParameterSelection(void)
         printf("Would you like to accept these changes? ");
         cmd_help_inline(NULL, CMD_C_YESNO, NULL);
         printf("\n");
-        if (GetCommand(CMD_C_LOOP | CMD_C_YESNO, NULL) == CMD_YES)
+        if (GetCommand(CMD_C_MODAL | CMD_C_YESNO, NULL) == CMD_YES)
         {
             goto Recalculate;
         }

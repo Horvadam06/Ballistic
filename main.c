@@ -172,7 +172,7 @@ int main(void)
     // Main application loop - runs while in running state
     while (state == S_RUNNING)
     {
-        Command_case main_flags =  CMD_C_LOOP | CMD_C_GENERIC | CMD_C_SYSTEM | CMD_C_DEBUG;
+        Command_case main_flags =  CMD_C_MODAL | CMD_C_GENERIC | CMD_C_SYSTEM | CMD_C_DEBUG;
         // Display available commands for current context
         cmd_help(NULL, main_flags, NULL);
         // Get and process user command, updating state if needed
