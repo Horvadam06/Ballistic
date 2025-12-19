@@ -23,7 +23,7 @@
 #include "calculations.h"
 #include "memory\load.h"
 #include "thread\worker_platform.h"
-#include "helpers\input_poll.h"
+#include "os\input_poll.h"
 #include "thread\worker.h"
 #include "helpers\helpers.h"
 #include "helpers\color.h"

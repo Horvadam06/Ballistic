@@ -14,7 +14,7 @@
 #include <stdatomic.h>
 
 #include "thread\worker_platform.h"
-#include "helpers\input_poll.h"
+#include "os\input_poll.h"
 
 // Global variable storing the working directory path for all data files
 // Should be initialized via config file and used for all file operations

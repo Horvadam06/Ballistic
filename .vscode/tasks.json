@@ -21,7 +21,8 @@
                 "${workspaceFolder}\\helpers\\helpers.c",
                 "${workspaceFolder}\\thread\\worker.c",
                 "${workspaceFolder}\\thread\\worker_platform.c",
-                "${workspaceFolder}\\helpers\\input_poll.c",
+                "${workspaceFolder}\\os\\input_poll.c",
+                "${workspaceFolder}\\os\\terminal_info.c",
                 "-I${workspaceFolder}",
                 "-o",
                 "${workspaceFolder}/bin/ballistic.exe"

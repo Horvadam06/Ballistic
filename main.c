@@ -31,7 +31,8 @@
 #include "memory\storage.h"
 #include "helpers\color.h"
 #include "helpers\helpers.h"
-#include "helpers\input_poll.h"
+#include "os\input_poll.h"
+#include "os\terminal_info.h"
 
 // #include "debugmalloc.h"
 
@@ -171,11 +172,11 @@ int main(void)
     // Main application loop - runs while in running state
     while (state == S_RUNNING)
     {
+        Command_case main_flags =  CMD_C_LOOP | CMD_C_GENERIC | CMD_C_SYSTEM | CMD_C_DEBUG;
         // Display available commands for current context
-        cmd_help(NULL, CMD_C_DEFAULT | CMD_C_GENERIC | CMD_C_SYSTEM, NULL);
-
+        cmd_help(NULL, main_flags, NULL);
         // Get and process user command, updating state if needed
-        GetCommand(CMD_C_LOOP | CMD_C_GENERIC | CMD_C_SYSTEM, &state);
+        GetCommand(main_flags, &state);
     }
 
     // Perform cleanup before exit

@@ -311,3 +311,14 @@ void render_progress_bar(unsigned percent, progress_hook_fn before, progress_hoo
         after(arg_a);
     fflush(stdout);
 }
+
+const char *skip_spaces(const char *str)
+{
+    if (!str)
+        return NULL;
+
+    while (*str == ' ')
+        str++;
+
+    return str;
+}

@@ -28,6 +28,8 @@ char *strtoken(char *s, char **endptr);
 
 char *remove_quotes(char *str, char symbol);
 
+const char *skip_spaces(const char *str);
+
 /*Case-insensitive string comparison with exact length check */
 
 P_HRESULT norm_strncmp(const char *record, const char *str2);
@@ -49,7 +51,6 @@ void clear_terminal();
 unsigned progress_percent(unsigned current, unsigned total);
 
 typedef void (*progress_hook_fn)(void *arg);
-
 void render_progress_bar(unsigned percent, progress_hook_fn before, progress_hook_fn after, void *arg_b, void *arg_a);
 
 #endif

@@ -18,29 +18,31 @@
  */
 typedef enum
 {
-    CMD_INVALID,       ///< Invalid or unknown command
-    CMD_INFO,          ///< Display prgram info
-    CMD_EXIT,          ///< Exit program
-    CMD_HELP,          ///< Show help
-    CMD_CONTINUE,      ///< Continue operation
-    CMD_YES,           ///< Yes response
-    CMD_NO,            ///< No response
-    CMD_SAVE,          ///< Save data
-    CMD_CANCEL,        ///< Cancel operation
-    CMD_SELECT,        ///< Select option
-    CMD_BACK,          ///< Go back/return
-    CMD_CALCULATE,     ///< Calculate trajectory
-    CMD_RESET,         ///< Reset system
-    CMD_TARGET,        ///< Target operations
-    CMD_BASE,          ///< Base operations
-    CMD_AMMO,          ///< Ammunition operations
-    CMD_TEST,          ///< Run test
-    CMD_LIST,          ///< List items
-    CMD_ADD,           ///< Add item
-    CMD_DELETE,        ///< Delete item
-    CMD_COLOUR,        ///< Set color mode
-    CMD_MONO,          ///< Set monochrome mode
-    CMD_CLEAR_TERMINAL ///< Clear terminal
+    CMD_INVALID,   ///< Invalid or unknown command
+    CMD_INFO,      ///< Display prgram info
+    CMD_EXIT,      ///< Exit program
+    CMD_HELP,      ///< Show help
+    CMD_CONTINUE,  ///< Continue operation
+    CMD_YES,       ///< Yes response
+    CMD_NO,        ///< No response
+    CMD_SAVE,      ///< Save data
+    CMD_CANCEL,    ///< Cancel operation
+    CMD_SELECT,    ///< Select option
+    CMD_BACK,      ///< Go back/return
+    CMD_CALCULATE, ///< Calculate trajectory
+    CMD_RESET,     ///< Reset system
+    CMD_TARGET,    ///< Target operations
+    CMD_BASE,      ///< Base operations
+    CMD_AMMO,      ///< Ammunition operations
+    CMD_TEST,      ///< Run test
+    CMD_CONFIG,
+    CMD_LIST,           ///< List items
+    CMD_ADD,            ///< Add item
+    CMD_DELETE,         ///< Delete item
+    CMD_COLOUR,         ///< Set color mode
+    CMD_MONO,           ///< Set monochrome mode
+    CMD_CLEAR_TERMINAL, ///< Clear terminal
+    CMD_DEBUG           ///< Debug command
 } Command_t;
 
 /**
@@ -64,7 +66,7 @@ typedef enum
     CMD_C_CANCEL = 1 << 10,    ///< Cancel commands
     CMD_C_NOHANDLE = 1 << 11,  ///< Cancel's out the commands handler
     CMD_C_NOCOMMENT = 1 << 12, ///< Cancel's out the commands stdout
-    CMD_C_NOTOKEN = 1 << 13,
+    CMD_C_DEBUG = 1 << 13,     ///< Access for debug commands
     CMD_C_LOOP = 1 << 20       ///< Special: loop until valid input
 } Command_case;
 
@@ -80,13 +82,24 @@ typedef enum
  */
 typedef struct
 {
-    const char *name;                                                             ///< Command name (lowercase)
+    const char *name;
+    size_t name_len;                                                              ///< Command name (lowercase)
     Command_t type;                                                               ///< Command type identifier
     void (*handler)(const char *args, Command_case case_flags, PROCESS *running); ///< Command handler function
     const char *description;                                                      ///< Help description
     uint32_t case_mask;                                                           ///< Bitmask of contexts where command is available
 } Command;
 
+#define CMD_INIT(name, type, handler, description, mask) \
+    (Command) { name, sizeof(name) - 1, type, handler, description, mask }
+
+typedef struct
+{
+    const char *title;                    // "targets", "bases", "ammo"
+    void (*display_list)(void);           // Function to print the list
+    int (*handle_add)(const char *input); // Function to add an item
+    int (*handle_delete)(unsigned id);    // Function to delete an item
+} Submenu;
 /**
  * @name Core Command Functions
  * @{
@@ -123,6 +136,20 @@ Command_t GetCommand(Command_case case_flags, PROCESS *running);
  */
 Command_t ParseCommandFromBuffer(char *input, Command_case case_flags, PROCESS *running);
 
+int parse_command(
+    char *input,
+    Command_case flags,
+    const char **cmd,
+    size_t *cmd_len,
+    const char **args);
+
+Command_t resolve_command(
+    const char *cmd,
+    size_t cmd_len,
+    const char *args,
+    Command_case flags,
+    PROCESS *running);
+
 /** @} */
 
 /**
@@ -152,14 +179,6 @@ void cmd_exit(const char *args, Command_case case_flags, PROCESS *running);
 void cmd_help(const char *args, Command_case case_flags, PROCESS *running);
 
 void cmd_help_inline(const char *args, Command_case case_flags, PROCESS *running);
-/**
- * @brief Base operations handler
- * @param args Command arguments
- * @param case_flags Current context flags
- * @param running Pointer to program state
- * @ingroup CommandHandling
- */
-void cmd_base(const char *args, Command_case case_flags, PROCESS *running);
 
 /**
  * @brief Calculate trajectory handler
@@ -171,6 +190,15 @@ void cmd_base(const char *args, Command_case case_flags, PROCESS *running);
 void cmd_calculate(const char *args, Command_case case_flags, PROCESS *running);
 
 /**
+ * @brief Base operations handler
+ * @param args Command arguments
+ * @param case_flags Current context flags
+ * @param running Pointer to program state
+ * @ingroup CommandHandling
+ */
+void cmd_base(const char *args, Command_case case_flags, PROCESS *running);
+
+/**
  * @brief Ammunition operations handler
  * @param args Command arguments
  * @param case_flags Current context flags
@@ -178,7 +206,6 @@ void cmd_calculate(const char *args, Command_case case_flags, PROCESS *running);
  * @ingroup CommandHandling
  */
 void cmd_ammo(const char *args, Command_case case_flags, PROCESS *running);
-
 /**
  * @brief Target operations handler
  * @param args Command arguments
@@ -250,6 +277,15 @@ void cmd_save(const char *args, Command_case case_flags, PROCESS *running);
  * @ingroup CommandHandling
  */
 void cmd_info(const char *args, Command_case case_flags, PROCESS *running);
+
+/**
+ * @brief Program debug handler
+ * @param args Command arguments
+ * @param case_flags Current context flags
+ * @param running Pointer to program state
+ * @ingroup CommandHandling
+ */
+void cmd_debug(const char *args, Command_case case_flags, PROCESS *running);
 
 int back_request(char input[], int length);
 /** @} */
