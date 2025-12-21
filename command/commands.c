@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 //========================================================================
 // GLOBAL COMMAND TABLE
@@ -21,17 +22,18 @@
 Command commands[] = {
     // Navigation and basic operations - these have NULL handlers as they're
     // handled directly in modal contexts (like cmd_base, cmd_target loops)
-    CMD_INIT("back", CMD_BACK, NULL, "Step back", CMD_C_LOAD | CMD_C_SELECT | CMD_C_BACK),
+
     CMD_INIT("cancel", CMD_CANCEL, NULL, "Cancel event", CMD_C_CANCEL),
     CMD_INIT("select", CMD_SELECT, NULL, "Select choice", CMD_C_SELECT),
     CMD_INIT("list", CMD_LIST, NULL, "List values", CMD_C_LOAD),
     CMD_INIT("add", CMD_ADD, NULL, "Add a value", CMD_C_LOAD),
     CMD_INIT("delete", CMD_DELETE, NULL, "Delete a value", CMD_C_LOAD),
+    CMD_INIT("back", CMD_BACK, NULL, "Step back", CMD_C_LOAD | CMD_C_SELECT | CMD_C_BACK),
 
     CMD_INIT("bases", CMD_BASE, cmd_base, "Work with bases", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_CALC),
     CMD_INIT("targets", CMD_TARGET, cmd_target, "Work with targets", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_CALC),
     CMD_INIT("ammo", CMD_AMMO, cmd_ammo, "Work with ammo", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_CALC),
-    CMD_INIT("calc", CMD_CALCULATE, cmd_calculate, "Calculate trajectory", CMD_C_GENERIC | CMD_C_DEFAULT),
+    CMD_INIT("calculate", CMD_CALCULATE, cmd_calculate, "Calculate trajectory", CMD_C_GENERIC | CMD_C_DEFAULT),
 
     CMD_INIT("test", CMD_TEST, cmd_test, "Do a manual self-test", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM),
     CMD_INIT("clear", CMD_CLEAR_TERMINAL, cmd_clr_ter, "Clear the terminal", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_SYSTEM),
@@ -49,13 +51,30 @@ Command commands[] = {
     CMD_INIT("yes", CMD_YES, NULL, "Yes", CMD_C_YESNO),
     CMD_INIT("no", CMD_NO, NULL, "No", CMD_C_YESNO)};
 
+static const CommandAlias aliases[] = {
+    {"y", CMD_YES},
+    {"n", CMD_NO},
+    {"b", CMD_BACK},
+    {"c", CMD_CANCEL},
+    {"calc", CMD_CALCULATE},
+    {"sel", CMD_SELECT},
+    {"e", CMD_EXIT},
+    {"clr", CMD_CLEAR_TERMINAL},
+    {"h", CMD_HELP},
+    {"i", CMD_INFO},
+};
+
 /*
 Calculates number of commands in the commands array
 sizeof(commands) gives total bytes of the array
 sizeof(commands[0]) gives bytes per element
 Division yields element count - automatically updates when commands are added
 */
-int command_count = sizeof(commands) / sizeof(commands[0]);
+static size_t command_count = sizeof(commands) / sizeof(commands[0]);
+static size_t alias_count = sizeof(aliases) / sizeof(aliases[0]);
+static size_t command_key_count = 0;
+
+static CommandKey *command_keys = NULL;
 
 //========================================================================
 // COMMAND HANDLER IMPLEMENTATIONS
@@ -111,21 +130,36 @@ void cmd_help(const char *args, Command_case case_flags, PROCESS *running)
     (void)running;
 
     // formated list
-    add_seperator_c(NULL, ANSI_YELLOW, "command list", '-', NORMAL_SEPERATOR_SIZE);
-    for (int i = 0; i < command_count; i++) // goes trough the commands list, and print's out the aviable one
+    printf("\n Command list\n");
+    add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+    printf(COLOR_TITLE " %-28s%-10s%10s\n", "description", "command", "aliases");
+    add_seperator_s(COLOR_TITLE, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+    for (size_t i = 0; i < command_count; i++) // goes trough the commands list, and print's out the aviable one
     {
         if (!(commands[i].case_mask & case_flags) || (commands[i].type == CMD_HELP))
             continue; // command not available in this mode
 
-        change_colour(ANSI_GREEN);
+        printf(ANSI_GRAY " %-24s : [" COLOR_TITLE "%-10s" ANSI_GRAY "]%2s", commands[i].description, commands[i].name, "");
+
+        /*change_colour(ANSI_GREEN);
         printf("    %-4s", commands[i].name);
 
         change_colour(ANSI_MAGENTA);
-        printf("\t- %s\n", commands[i].description);
+        printf("\t- %s ", commands[i].description);*/
+        int alias_cnt = 0;
 
-        change_colour(ANSI_RESET);
+        for (size_t j = command_count; j < command_key_count; j++)
+        {
+            if (command_keys[j].cmd != &commands[i])
+                continue;
+            if (alias_cnt++ > 0)
+                printf("/");
+            printf(COLOR_TITLE"%s"ANSI_GRAY, command_keys[j].key);
+        }
+
+        printf(ANSI_RESET "\n");
     }
-    add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
+    add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
 }
 
 void cmd_help_inline(const char *args, Command_case case_flags, PROCESS *running)
@@ -137,7 +171,7 @@ void cmd_help_inline(const char *args, Command_case case_flags, PROCESS *running
     // formated list
     printf(ANSI_RESET "[");
     int is_first = 1;
-    for (int i = 0; i < command_count; i++) // goes trough the commands list, and print's out the aviable one
+    for (size_t i = 0; i < command_count; i++) // goes trough the commands list, and print's out the aviable one
     {
         if (!(commands[i].case_mask & case_flags) || (commands[i].type == CMD_HELP))
             continue; // command not available in this mode
@@ -591,13 +625,24 @@ EntryPoint:
     Command_t cmd;
     if (!(case_flags & CMD_C_NOCOMMENT))
     {
-        add_seperator_c(NULL, ANSI_YELLOW, "calculate", '-', NORMAL_SEPERATOR_SIZE);
-        printf("%-39s <[%s]>\n", "What would you like to do?", "back");
-        printf("\t- %-30s [%s]\n", "select parameters", "select");
-        printf("\t- %-30s [%s]\n", "work with bases", "bases");
-        printf("\t- %-30s [%s]\n", "work with target", "target");
-        printf("\t- %-30s [%s]\n", "work with ammo", "ammo");
-        add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
+        printf("\n Calculation menu\n");
+        add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "select" ANSI_GRAY "]\n", "Calculation select");
+        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "bases" ANSI_GRAY "]\n", "Base menu");
+        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "targets" ANSI_GRAY "]\n", "Target menu");
+        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "ammo" ANSI_GRAY "]\n", "Ammo type menu");
+        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "back" ANSI_GRAY "]\n", "Step back");
+        add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+        printf(ANSI_RESET);
+
+        /*
+                add_seperator_c(NULL, ANSI_YELLOW, "calculate", '-', NORMAL_SEPERATOR_SIZE);
+                printf("%-39s <[%s]>\n", "What would you like to do?", "back");
+                printf("\t- %-30s [%s]\n", "select parameters", "select");
+                printf("\t- %-30s [%s]\n", "work with bases", "bases");
+                printf("\t- %-30s [%s]\n", "work with target", "target");
+                printf("\t- %-30s [%s]\n", "work with ammo", "ammo");
+                add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);*/
     }
     // waits for a valid command
     // on list, it exit's. In other cases it just returns, making it easier to make multiple calculations
@@ -607,9 +652,13 @@ EntryPoint:
         switch (cmd)
         {
         case CMD_SELECT:
-            printf("Please input the base, target, ammo ID!\n");
-            printf("If you aren't sure about the ID's, type [back], and check the [list] for the desired value!\n");
-            printf("If you can't find, what you are looking for, then [add] it to the list!\n");
+            printf("\n Calculation\n");
+            add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+            printf(ANSI_GRAY);
+            printf(" Retry dumb fuck!\n");
+            add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+            printf(ANSI_RESET);
+
             while (HandleParameterSelection() == 0)
                 ;
             break;
@@ -634,13 +683,13 @@ void cmd_save(const char *args, Command_case case_flags, PROCESS *running)
         return;
     if (!(case_flags & CMD_C_NOCOMMENT))
     {
-        printf("Are you sure, you want to save? ");
+        printf(" Are you sure, you want to save? ");
         cmd_help_inline(NULL, CMD_C_YESNO, NULL);
     }
     if (GetCommand(CMD_C_MODAL | CMD_C_YESNO, NULL) == CMD_NO)
         return;
     if (handle_save() == P_S_FALSE)
-        printf("Atleast on save has failed!\n");
+        printf(" Atleast on save has failed!\n");
 }
 
 /**
@@ -680,6 +729,7 @@ void cmd_debug(const char *args, Command_case case_flags, PROCESS *running)
 //========================================================================
 // COMMAND PROCESSING CORE
 //========================================================================
+
 static int find_command_nontoken(const char *input, const char **cmd_start, size_t *cmd_len, const char **args)
 {
     const char *p = input;
@@ -702,6 +752,146 @@ static int find_command_nontoken(const char *input, const char **cmd_start, size
     *args = (*p) ? skip_spaces(p) : NULL;
     return 1;
 }
+
+// similiar to find_command_nontoken, but can work in tokened, and non token mode
+static int parse_command(char *input, Command_case flags, const char **cmd, size_t *cmd_len, const char **args)
+{
+    (void)flags;
+    input[strcspn(input, "\n")] = '\0';
+
+    // remove trailing newline
+    if (!find_command_nontoken(input, cmd, cmd_len, args))
+        return 0;
+
+    if (!*args || **args == '\0')
+        *args = NULL;
+
+    return 1;
+}
+
+static int register_key(const char *key, Command *cmd)
+{
+    // Check for duplicates first
+    for (size_t i = 0; i < command_key_count; i++)
+    {
+        if (command_keys[i].key && strcmp(command_keys[i].key, key) == 0)
+        {
+            fprintf(stderr, "Duplicate command key detected: '%s' used by commands '%s' and '%s'\n",
+                    key, command_keys[i].cmd->name, cmd->name);
+            return -1;
+        }
+    }
+
+    // Add key to next available slot
+    command_keys[command_key_count++] = (CommandKey){
+        .key = key,
+        .len = strlen(key),
+        .cmd = cmd};
+
+    return 0;
+}
+
+PROCESS build_command_keys()
+{
+    // Allocate maximum possible slots (commands + aliases)
+    size_t max_keys = command_count + alias_count;
+    command_keys = calloc(max_keys, sizeof(CommandKey));
+    if (!command_keys)
+    {
+        fprintf(stderr, "Out of memory building command keys\n");
+        return S_TERMINATE;
+    }
+
+    command_key_count = 0; // will increment inside register_key
+
+    // Register primary commands
+    for (size_t i = 0; i < command_count; i++)
+    {
+        if (register_key(commands[i].name, &commands[i]) < 0)
+            return S_TERMINATE; // duplicate found, stop
+    }
+
+    // Register aliases
+    for (size_t i = 0; i < alias_count; i++)
+    {
+        Command *cmd = NULL;
+        // find command with matching type
+        for (size_t j = 0; j < command_count; j++)
+        {
+            if (commands[j].type == aliases[i].target)
+            {
+                cmd = &commands[j];
+                break;
+            }
+        }
+        if (!cmd)
+        {
+            fprintf(stderr, "Alias '%s' points to unknown command type %d\n",
+                    aliases[i].key, aliases[i].target);
+            continue;
+        }
+
+        if (register_key(aliases[i].key, cmd) < 0)
+            return S_TERMINATE;
+    }
+
+    return S_RUNNING;
+}
+
+static Command *lookup_command(const char *cmd, size_t len, Command_case flags)
+{
+    for (size_t i = 0; i < command_key_count; i++)
+    {
+        CommandKey *k = &command_keys[i];
+
+        if (k->len != len)
+            continue;
+
+        if (memcmp(k->key, cmd, len) != 0)
+            continue;
+
+        if (k->cmd->case_mask & flags)
+            return k->cmd;
+
+        // error handling
+        if (!(flags & CMD_C_NOCOMMENT))
+            printf("Invalid command: [" ANSI_GREEN "%.*s" ANSI_RESET "]\n", (int)len, cmd);
+        return NULL;
+    }
+    // error handling
+    if (!(flags & CMD_C_NOCOMMENT))
+        printf("Unknown command: [" ANSI_GREEN "%.*s" ANSI_RESET "]\n", (int)len, cmd);
+    return NULL;
+}
+
+// handle the command thing, calling the ptr, returning the cmd etc.
+static Command_t resolve_command(const char *cmd, size_t cmd_len, const char *args, Command_case flags, PROCESS *running)
+{
+    Command *c = lookup_command(cmd, cmd_len, flags);
+    if (!c)
+        for (size_t i = 0; i < command_count; i++)
+        {
+            if (commands[i].type != CMD_HELP) // seraches for the help flag,
+                continue;                     // to print out it's current name (only for keeping it dynamic)
+            if (!(flags & CMD_C_NOCOMMENT) &&
+                (flags & commands[i].case_mask))
+                printf("If you need help, use the command [" ANSI_GREEN "%s" ANSI_RESET "]\n", commands[i].name);
+
+            return CMD_INVALID;
+        }
+
+    if (c->handler && !(flags & CMD_C_NOHANDLE))
+        c->handler(args, flags, running);
+
+    return c->type;
+}
+
+void free_command_keys(void)
+{
+    free(command_keys);
+    command_keys = NULL;
+}
+
 /**
  * @brief Get command from user with modal context
  *
@@ -767,67 +957,6 @@ Command_t ParseCommandFromBuffer(char *input, Command_case case_flags, PROCESS *
         return CMD_INVALID;
 
     return resolve_command(cmd, cmd_len, args, case_flags, running);
-}
-
-// similiar to find_command_nontoken, but can work in tokened, and non token mode
-int parse_command(char *input, Command_case flags, const char **cmd, size_t *cmd_len, const char **args)
-{
-    (void)flags;
-    input[strcspn(input, "\n")] = '\0';
-
-    // remove trailing newline
-    if (!find_command_nontoken(input, cmd, cmd_len, args))
-        return 0;
-
-    if (!*args || **args == '\0')
-        *args = NULL;
-
-    return 1;
-}
-
-// handle the command thing, calling the ptr, returning the cmd etc.
-Command_t resolve_command(const char *cmd, size_t cmd_len, const char *args, Command_case flags, PROCESS *running)
-{
-    if (cmd)
-    {
-        // searches the commands list
-        for (int i = 0; i < command_count; i++)
-        {
-            // checks the mask
-            if (!(commands[i].case_mask & flags))
-                continue; // if command not available in this mode, continue
-
-            if (commands[i].name_len == cmd_len &&
-                memcmp(cmd, commands[i].name, cmd_len) == 0)
-            {
-                // if the mode is set to no handlers, then it skips this part, used for NULL functions mostly
-                if (commands[i].handler && !(flags & CMD_C_NOHANDLE))
-                    commands[i].handler(args, flags, running);
-
-                if ((CMD_C_MODAL & flags) &&
-                    (commands[i].type == CMD_HELP ||
-                     commands[i].case_mask & CMD_C_STAYMODAL))
-                    return CMD_INVALID;
-
-                return commands[i].type;
-            }
-        }
-        // error handling
-        if (!(flags & CMD_C_NOCOMMENT))
-            printf("Unknown command: [" ANSI_GREEN "%.*s" ANSI_RESET "]\n", (int)cmd_len, cmd);
-
-        for (int i = 0; i < command_count; i++)
-        {
-            if (commands[i].type != CMD_HELP) // seraches for the help flag,
-                continue;                     // to print out it's current name (only for keeping it dynamic)
-            if (!(flags & CMD_C_NOCOMMENT) &&
-                (flags & commands[i].case_mask))
-                printf("If you need help, use the command [" ANSI_GREEN "%s" ANSI_RESET "]\n", commands[i].name);
-
-            return CMD_INVALID;
-        }
-    }
-    return CMD_INVALID;
 }
 
 // return values: 1 if CMD_BACK | -1 if not CMD_BACK, but valid | 0 if none

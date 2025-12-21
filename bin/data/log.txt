@@ -82,3 +82,59 @@ Solution:
   Valid:     YES
 -----------------------------
 
+=== ENTRY @ Sun Dec 21 12:27:48 2025 ===
+Base:
+  ID: 0
+  Label: London
+  Coord: latitude 51.507400, longitude -0.127800, altitude 35.00 m
+
+Target:
+  ID: 0
+  Label: London
+  Coord: latitude 51.507400, longitude -0.127800, altitude 35.00 m
+
+Ammo:
+  ID: 0
+  Name: 122GRAD_HE
+  Weight: 66.000 kg
+  Diameter: 122.000 mm
+  BlastRadius: 28.000 m
+  MuzzleVel: 710.000 m/s
+  BC(G7): 25.00000
+
+Solution:
+  Elevation: 80.0000 deg
+  Azimuth:   0.0000 deg
+  TOF:       15.2200 s
+  ImpactVel: 28.2619 m/s
+  Valid:     YES
+-----------------------------
+
+=== ENTRY @ Sun Dec 21 12:29:07 2025 ===
+Base:
+  ID: 0
+  Label: London
+  Coord: latitude 51.507400, longitude -0.127800, altitude 35.00 m
+
+Target:
+  ID: 0
+  Label: London
+  Coord: latitude 51.507400, longitude -0.127800, altitude 35.00 m
+
+Ammo:
+  ID: 0
+  Name: 122GRAD_HE
+  Weight: 66.000 kg
+  Diameter: 122.000 mm
+  BlastRadius: 28.000 m
+  MuzzleVel: 710.000 m/s
+  BC(G7): 25.00000
+
+Solution:
+  Elevation: 80.0000 deg
+  Azimuth:   0.0000 deg
+  TOF:       15.2200 s
+  ImpactVel: 28.2619 m/s
+  Valid:     YES
+-----------------------------
+

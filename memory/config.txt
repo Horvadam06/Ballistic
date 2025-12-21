@@ -1,0 +1,13 @@
+/*
+=====================================================
+--------Parameters-------------------------------
+working directory :
+color mode : [0=monochrome, 1=coloured]
+=====================================================
+-the id gets normalized
+-end every line with ;
+=====================================================
+*/
+
+DIR: "c:/vscode/ballistic/bin/";
+COLOUR_M: 1;

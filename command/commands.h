@@ -91,6 +91,17 @@ typedef struct
     uint32_t case_mask;                                                           ///< Bitmask of contexts where command is available
 } Command;
 
+typedef struct {
+    const char *key;
+    Command_t target;
+} CommandAlias;
+
+typedef struct {
+    const char *key;     // "yes", "y", "calc"
+    size_t      len;
+    Command    *cmd;     // pointer to canonical command
+} CommandKey;
+
 #define CMD_INIT(name, type, handler, description, mask) \
     (Command) { name, sizeof(name) - 1, type, handler, description, mask }
 
@@ -105,6 +116,10 @@ typedef struct
  * @name Core Command Functions
  * @{
  */
+
+ PROCESS build_command_keys();
+
+ void free_command_keys(void);
 
 /**
  * @brief Get command from user with modal context
@@ -136,21 +151,6 @@ Command_t GetCommand(Command_case case_flags, PROCESS *running);
  * @ingroup CommandHandling
  */
 Command_t ParseCommandFromBuffer(char *input, Command_case case_flags, PROCESS *running);
-
-int parse_command(
-    char *input,
-    Command_case flags,
-    const char **cmd,
-    size_t *cmd_len,
-    const char **args);
-
-Command_t resolve_command(
-    const char *cmd,
-    size_t cmd_len,
-    const char *args,
-    Command_case flags,
-    PROCESS *running);
-
 /** @} */
 
 /**
@@ -303,6 +303,6 @@ extern Command commands[];
  * @brief Number of commands in command table
  * @ingroup CommandHandling
  */
-extern int command_count;
+//extern int command_count;
 
 #endif /* COMMANDS_H */

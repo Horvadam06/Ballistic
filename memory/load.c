@@ -340,7 +340,8 @@ P_HRESULT test_and_run_config(const char *config_file, PROCESS mode)
         {
             printf("Starting config creation...\n");
             hr = generate_config(config_file);
-            if (P_SUCCEEDED(hr)) goto ReadConfig;
+            if (P_SUCCEEDED(hr))
+                goto ReadConfig;
             break;
         }
         case CMD_NO:
@@ -357,7 +358,7 @@ P_HRESULT test_and_run_config(const char *config_file, PROCESS mode)
     }
     fclose(configfile);
 
-    ReadConfig:
+ReadConfig:
     // if everything succeded, then it reads and loads the config
     hr = read_config(config_file);
     add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
@@ -400,7 +401,7 @@ P_HRESULT recreate_config(const char *config_file, PROCESS mode)
         if (mode == S_DEBUG)
             printf("Working directory have been set to: [%s]\n", folder_path);
         add_seperator_s(NULL, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-        printf(COLOR_SUCCESS"Config updated successfully!\n");
+        printf(COLOR_SUCCESS "Config updated successfully!\n");
         add_seperator_s(NULL, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
         printf("\n");
     }
@@ -991,7 +992,12 @@ int HandleParameterSelection(void)
     // Parse numerical IDs
     if (sscanf(input, "%u %u %u", &baseID, &targetID, &ammoID) != 3)
     {
-        printf("Invalid input. Expected format: <base_id> <target_id> <ammo_id>\n");
+        printf(COLOR_ERROR "Invalid input. Expected format: <base_id> <target_id> <ammo_id>\n" ANSI_RESET);
+        printf("Press any key to return!\n");
+        while (!input_available())
+            ;
+        input_getchar();
+        clear_terminal();
         return -1;
     }
 
@@ -1006,13 +1012,48 @@ int HandleParameterSelection(void)
     }
 
     // If base or ammo is invalid or cannot hit target, suggest automatically
-    if (!base || !ammo || !compute_fire_solution(base, tgt, ammo, NULL).valid)
+    BallisticResult b_result;
+    FireCheckResult c_result;
+    if (!base || !ammo || ((c_result = test_fire_solution(base, tgt, ammo, &b_result, NULL)) != FIRE_OK))
     {
         clear_terminal();
-        printf("Invalid input. Target is out of reach!\n");
-        printf("Finding best available base and ammo for [id: %3d | label: %10s]\n", tgt->id, tgt->label);
-        printf("This may take a while...\n");
-        printf("Press [q] or [Esc] to terminate the calculation!\n");
+        printf(COLOR_ERROR " Invalid input");
+        switch (c_result)
+        {
+        case FIRE_TOO_CLOSE:
+        {
+            printf(COLOR_ERROR ", base is too close to the target!\n");
+            break;
+        }
+        case FIRE_NO_AMMO:
+        {
+            printf(COLOR_ERROR ", base has no ammo type!\n");
+            break;
+        }
+        case FIRE_OUT_OF_RANGE:
+        {
+            printf(COLOR_ERROR ", base is too far from the target!\n");
+            break;
+        }
+        case FIRE_INVALID_INPUT:
+        {
+            printf(COLOR_ERROR ", missing parameter!\n");
+            break;
+        }
+        default:
+            printf("!\n");
+            break;
+        }
+        printf(ANSI_RESET);
+
+        printf(" Suggest base and ammo? ");
+        cmd_help_inline(NULL, CMD_C_YESNO, NULL);
+        if (GetCommand(CMD_C_MODAL | CMD_C_YESNO, NULL) == CMD_NO)
+            return 0;
+
+        printf(" Finding best available base and ammo for [id: %3d | label: %10s]\n", tgt->id, tgt->label);
+        printf(" This may take a while...\n");
+        printf(" Press [q] or [Esc] to terminate the calculation!\n");
 
         // the entry for the calculation model loop for multi threading
 
@@ -1034,20 +1075,13 @@ int HandleParameterSelection(void)
         printf("\n");
         if (GetCommand(CMD_C_MODAL | CMD_C_YESNO, NULL) == CMD_YES)
         {
-            goto Recalculate;
+            goto Log;
         }
 
         return 0;
     }
 
-Recalculate:
-    BallisticResult b_result = compute_fire_solution(base, tgt, ammo, NULL);
-    if (!b_result.valid)
-    {
-        printf("Even the suggested base cannot reach the target.\n");
-        return 0;
-    }
-
+Log:
     LogResult(base, tgt, ammo, &b_result);
     printf("Parameters accepted and logged.\n");
     return 0;

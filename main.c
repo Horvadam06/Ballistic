@@ -60,7 +60,12 @@
 PROCESS Setup()
 {
     printf("\nStarting setup...\n");
+
+    if (build_command_keys() != S_RUNNING)
+        return S_TERMINATE;
+
     enable_ansi_colors();
+
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
@@ -148,6 +153,7 @@ void CleanUp()
 
     // Free global folder path
     free_folder_path();
+    free_command_keys();
 }
 
 /**
@@ -172,7 +178,7 @@ int main(void)
     // Main application loop - runs while in running state
     while (state == S_RUNNING)
     {
-        Command_case main_flags =  CMD_C_MODAL | CMD_C_GENERIC | CMD_C_SYSTEM | CMD_C_DEBUG;
+        Command_case main_flags = CMD_C_MODAL | CMD_C_GENERIC | CMD_C_SYSTEM | CMD_C_DEBUG;
         // Display available commands for current context
         cmd_help(NULL, main_flags, NULL);
         // Get and process user command, updating state if needed
@@ -204,7 +210,7 @@ int main(void)
         // Optional: Uncomment to keep terminal open for error inspection
         printf(COLOR_WARNING "Press any key, to close the window!\n");
         while (!input_available())
-            Sleep(100);
+            Sleep(20);
         return -1;
     }
 

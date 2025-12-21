@@ -55,6 +55,9 @@ typedef struct
     double z; ///< Z coordinate (meters)
 } Vec3;
 
+static double GeoDistance3D(const Coordinate *a, const Coordinate *b);
+static int BaseHasAmmo(Base *b, unsigned ammo_id);
+
 /**
  * @brief Convert WGS84 coordinates to Earth-Centered, Earth-Fixed (ECEF) coordinates
  *
@@ -324,7 +327,6 @@ static BallisticResult solve_ballistic(Vec3 targetENU, double muzzleVel, double 
  *
  * @see BallisticResult
  * @note Firing solution is invalid if no elevation angle produces a hit within tolerance
- * @todo Cache results for frequently used base-target-ammo combinations
  */
 BallisticResult compute_fire_solution(Base *b, Target *t, Ammo_t *ammo, const WorkerContext *ctx)
 {
@@ -338,6 +340,26 @@ BallisticResult compute_fire_solution(Base *b, Target *t, Ammo_t *ammo, const Wo
         b->coord.longitude);
 
     return solve_ballistic(enu_target, ammo->muzzleVelocity, ammo->ballistic_coefficient, ctx);
+}
+
+FireCheckResult test_fire_solution(const Base *b, const Target *t, const Ammo_t *ammo, BallisticResult *out, const WorkerContext *ctx)
+{
+    if (!b || !t || !ammo)
+        return FIRE_INVALID_INPUT;
+
+    double dist = GeoDistance3D(&b->coord, &t->coord);
+    if (dist < target_tolerance)
+        return FIRE_TOO_CLOSE;
+
+    if (!BaseHasAmmo((Base *)b, ammo->id))
+        return FIRE_NO_AMMO;
+
+    BallisticResult r = compute_fire_solution((Base *)b, (Target *)t, (Ammo_t *)ammo, ctx);
+    if (!r.valid)
+        return FIRE_OUT_OF_RANGE;
+
+    *out = r;
+    return FIRE_OK;
 }
 
 // ============================================================
@@ -396,7 +418,7 @@ static double GeoDistance3D(const Coordinate *a, const Coordinate *b)
  * @param ammo_id Ammunition type ID to look for
  * @return 1 if base has the ammunition with quantity > 0, 0 otherwise
  */
-int BaseHasAmmo(Base *b, unsigned ammo_id)
+static int BaseHasAmmo(Base *b, unsigned ammo_id)
 {
     if (!b || !b->ammoStock)
         return 0;
@@ -665,7 +687,7 @@ static void hook_status_after(void *arg)
 {
     (void)arg;
     printf("\n");
-    add_seperator_s(NULL, NULL,NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+    add_seperator_s(NULL, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
 }
 
 int SuggestBestBaseAndAmmo_Parallel(Base_List *list, Target *tgt, Base **outBase, Ammo_t **outAmmo)

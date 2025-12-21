@@ -32,6 +32,16 @@ typedef struct
     int valid;              ///< Flag indicating valid solution (1) or invalid (0)
 } BallisticResult;
 
+typedef enum
+{
+    FIRE_OK,
+    FIRE_TOO_CLOSE,
+    FIRE_NO_AMMO,
+    FIRE_OUT_OF_RANGE,
+    FIRE_INVALID_INPUT
+} FireCheckResult;
+
+FireCheckResult test_fire_solution(const Base *b, const Target *t, const Ammo_t *ammo, BallisticResult *out, const WorkerContext *ctx);
 /**
  * @brief Compute firing solution for base-target-ammunition combination
  *
@@ -73,7 +83,7 @@ BallisticResult compute_fire_solution(Base *b, Target *t, Ammo_t *ammo, const Wo
  *
  * @ingroup Calculations
  */
-//int SuggestBestBaseAndAmmo(Base_List *list, Target *tgt, Base **outBase, Ammo_t **outAmmo, const WorkerContext *ctx);
+// int SuggestBestBaseAndAmmo(Base_List *list, Target *tgt, Base **outBase, Ammo_t **outAmmo, const WorkerContext *ctx);
 
 /**
  * @brief Suggest optimal base and ammunition with regional preference
