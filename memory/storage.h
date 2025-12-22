@@ -366,7 +366,7 @@ Base_Node *add_Base(Base_List *list, Base base);
  * @return ID if found and deleted, -1 if not found
  * @ingroup Storage
  */
-int delete_Base(Base_List *list, unsigned id);
+int delete_BaseById(Base_List *list, unsigned id);
 
 /**
  * @brief Remove and return first base from list

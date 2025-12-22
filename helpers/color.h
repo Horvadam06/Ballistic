@@ -48,10 +48,38 @@
 #define COLOR_INFO "\x1b[36m"
 
 /* w char's */
-#define HLINE "\xE2\x94\x80"    // char: ─
+#define HLINE "\xE2\x94\x80" // char: ─
 
 /* Reset alias */
 #define COLOR_RESET ANSI_RESET
+
+#define ASCI_ANGEL                          \
+  "                      .              \n" \
+  "                     .           .   \n" \
+  "                    ..        .:;.   \n" \
+  "                   .:...    :;+;:.   \n" \
+  "                   ;:::   .++;;:     \n" \
+  "                  ;;::.  +;;;:::     \n" \
+  "                  +;::::;:;;;::.     \n" \
+  "                   :;;;;;:::::.      \n" \
+  "              .&&Xx++;:+x:;::..      \n" \
+  "               :&Xxx+xXx::.:..       \n" \
+  "                :$+;;;:.......       \n" \
+  "              :$$++;:;.::...         \n" \
+  "           .Xx;:+++;:.....           \n" \
+  "         .x:    x;;:::...            \n" \
+  "       .x      ;++:.:                \n" \
+  "     .;       ::;... .               \n" \
+  "   ;:         :+::..  :              \n" \
+  "  :          :+::..                  \n" \
+  "            ;:.         .            \n" \
+  "            ..::                     \n" \
+  "            :  ..                    \n" \
+  "    ..:::   :..                      \n" \
+  " XXxx++x++;;;..                 .    \n" \
+  " &&$$Xx++++;;;:::.             ....  \n" \
+  " :+X$Xxxxx+++;;+;;:.          ..     \n" \
+  " .:.X$XxXx+x++;;;;::....    .        \n"
 
 /*#ifdef NO_COLOR
   #define COLOR_COMMAND ""
@@ -62,8 +90,8 @@
 
 typedef enum
 {
-    CM_MONO = 0,
-    CM_COLOUR = 1
+  CM_MONO = 0,
+  CM_COLOUR = 1
 } ColorMode;
 
 ColorMode get_color_mode(void);

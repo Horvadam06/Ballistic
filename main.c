@@ -120,11 +120,9 @@ PROCESS Setup()
         clear_terminal();
 
     // Step 7: Display introduction banner
-    add_seperator_s(ANSI_CYAN, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-    printf(ANSI_CYAN "Ballistic trajectory calculator\n");
-    add_seperator_s(ANSI_CYAN, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-    printf("\n");
-    printf("Type [exit] to leave or type [help] for the commands!\n");
+    add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+    printf(ANSI_GRAY " Ballistic trajectory calculator\n");
+    add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);    
 
     return S_RUNNING;
 }

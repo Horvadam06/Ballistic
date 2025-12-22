@@ -55,13 +55,24 @@ static const CommandAlias aliases[] = {
     {"y", CMD_YES},
     {"n", CMD_NO},
     {"b", CMD_BACK},
+    {"bas", CMD_BASE},
+    {"tgt", CMD_TARGET},
+    {"am", CMD_AMMO},
+    {"tst", CMD_TEST},
+    {"conf", CMD_CONFIG},
+    {"cnf", CMD_CONFIG},
+    {"s", CMD_SAVE},
+    {"d", CMD_DEBUG},
     {"c", CMD_CANCEL},
+    {"clc", CMD_CALCULATE},
     {"calc", CMD_CALCULATE},
     {"sel", CMD_SELECT},
     {"e", CMD_EXIT},
     {"clr", CMD_CLEAR_TERMINAL},
     {"h", CMD_HELP},
     {"i", CMD_INFO},
+    {"del", CMD_DELETE},
+    {"ls", CMD_LIST},
 };
 
 /*
@@ -154,7 +165,7 @@ void cmd_help(const char *args, Command_case case_flags, PROCESS *running)
                 continue;
             if (alias_cnt++ > 0)
                 printf("/");
-            printf(COLOR_TITLE"%s"ANSI_GRAY, command_keys[j].key);
+            printf(COLOR_TITLE "%s" ANSI_GRAY, command_keys[j].key);
         }
 
         printf(ANSI_RESET "\n");
@@ -240,15 +251,17 @@ Entry_no_clr:
         case CMD_ADD:
         {
             clear_terminal();
-            add_seperator_c(NULL, ANSI_YELLOW, "add target", '-', NORMAL_SEPERATOR_SIZE);
-            printf("Use the following structure for the input:\n"
-                   "\t[I]   : id of target\n"
-                   "\t[L] : label(name)\n"
-                   "\t[CLA] : latitude(degrees)\n"
-                   "\t[CLO] : longitude(degrees)\n"
-                   "\t[CA] : altitude(meters)\n"
-                   "\t[A] : area (km^2)\n");
-            add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
+            printf("\n Add target\n");
+            add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+            printf(
+                COLOR_INFO
+                " Format:\n"
+                "   I<id> L<label> CLA<lat> CLO<lon> CA<alt> A<area>\n"
+                "\n"
+                " Example:\n"
+                "   I1 LAlpha CLA47.5 CLO19.0 CA120 A14.3\n");
+            printf("Type 'back' to return to the previous menu.\n");
+            add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
 
         Entry_add_no_clr:
             char buffer[1024];
@@ -274,31 +287,62 @@ Entry_no_clr:
         case CMD_DELETE:
         {
             clear_terminal();
-            add_seperator_c(NULL, ANSI_YELLOW, "delete target", '-', NORMAL_SEPERATOR_SIZE);
-            printf("Use the following structure for the input:\n");
-            printf("\t[I]   : id of target\n");
-            add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
+            printf("\n Delete target\n");
+            add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+            printf(
+                COLOR_INFO
+                " Enter the ID of the target to delete.\n"
+                " Type 'back' to return to the previous menu.\n");
+            add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+
         Entry_delete_no_clr:
 
             char buffer[1024];
-            int req = back_request(buffer, sizeof(buffer));
-            if (req == 1)
+            int req_val = back_request(buffer, sizeof(buffer));
+            if (req_val == 1)
+            {
                 goto Entry;
-            if (req == -1)
+            }
+            if (req_val == -1)
+            {
                 goto Entry_delete_no_clr;
+            }
 
             buffer[strcspn(buffer, "\r\n")] = 0;
             unsigned id = (unsigned)strtoul(buffer, NULL, 10);
 
-            if (delete_Target(target_list, id) == -1)
+            Target *t = NULL;
+            if (isalpha((unsigned char)buffer[0]) || !(t = FindTargetByID(target_list, id)))
             {
                 clear_terminal();
-                print_colored(COLOR_ERROR, "Invalid ID!\n", 1);
+                print_colored(COLOR_ERROR, "Invalid input!\n", 1);
                 goto Entry_no_clr;
             }
+            else
+            {
+                printf("\n Selected target:\n");
+                printf("   ID: %u\n", t->id);
+                printf("   Label: %s\n", t->label);
+                printf("   Location: %.3f°, %.3f°\n", t->coord.latitude, t->coord.longitude);
+                printf("   Altitude: %.2f m\n", t->coord.altitude);
 
-            print_colored(COLOR_SUCCESS, "List updated!\n", 1);
-            goto Entry_delete_no_clr;
+                printf("\n Confirm deletion of this target? ");
+                cmd_help_inline(NULL, CMD_C_YESNO, NULL);
+
+                printf("\n");
+                if (GetCommand(CMD_C_MODAL | CMD_C_YESNO, NULL) == CMD_NO)
+                {
+                    printf(COLOR_ERROR " Operation cancelled.\n");
+                    goto Entry_delete_no_clr;
+                }
+
+                if (delete_Target(target_list, id))
+                    printf(COLOR_SUCCESS "List updated!\n");
+                else
+                    printf(COLOR_ERROR "Delete failed!\n");
+                printf(ANSI_RESET);
+                goto Entry_delete_no_clr;
+            }
         }
         default:
             break;
@@ -350,15 +394,17 @@ Entry_no_clr:
         case CMD_ADD:
         {
             clear_terminal();
-            add_seperator_c(NULL, ANSI_YELLOW, "add base", '-', NORMAL_SEPERATOR_SIZE);
-            printf("Use the following structure for the input:\n"
-                   "\t[I]   : id of base\n"
-                   "\t[L] : label(name)\n"
-                   "\t[CLA] : latitude(degrees)\n"
-                   "\t[CLO] : longitude(degrees)\n"
-                   "\t[CA] : altitude(meters)\n"
-                   "\t[AMS] : ammo stock map {ammo_id:count, ...}\n");
-            add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
+            printf("\n Add base\n");
+            add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+            printf(
+                COLOR_INFO
+                " Format:\n"
+                "   I<id> L<label> CLA<lat> CLO<lon> CA<alt> AMS<:{id:count,...}>\n"
+                "\n"
+                " Example:\n"
+                "   I1 LAlpha CLA47.5 CLO19.0 CA120 AMS:{2:50,5:10}\n");
+            printf("Type 'back' to return to the previous menu.\n");
+            add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
 
         Entry_add_no_clr:
 
@@ -391,10 +437,13 @@ Entry_no_clr:
         case CMD_DELETE:
         {
             clear_terminal();
-            add_seperator_c(NULL, ANSI_YELLOW, "delete base", '-', NORMAL_SEPERATOR_SIZE);
-            printf("Use the following structure for the input:\n");
-            printf("\t[I]   : id of base\n");
-            add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
+            printf("\n Delete base\n");
+            add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+            printf(
+                COLOR_INFO
+                " Enter the ID of the base to delete.\n"
+                " Type 'back' to return to the previous menu.\n");
+            add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
 
         Entry_delete_no_clr:
 
@@ -412,7 +461,8 @@ Entry_no_clr:
             buffer[strcspn(buffer, "\r\n")] = 0;
             unsigned id = (unsigned)strtoul(buffer, NULL, 10);
 
-            if (isalpha((unsigned char)buffer[0]) || delete_Base(base_list, id) == -1)
+            Base *b = NULL;
+            if (isalpha((unsigned char)buffer[0]) || !(b = FindBaseByID(base_list, id)))
             {
                 clear_terminal();
                 print_colored(COLOR_ERROR, "Invalid input!\n", 1);
@@ -420,11 +470,28 @@ Entry_no_clr:
             }
             else
             {
-                print_colored(COLOR_SUCCESS, "List updated!\n", 1);
+                printf("\n Selected base:\n");
+                printf("   ID: %u\n", b->id);
+                printf("   Label: %s\n", b->label);
+                printf("   Location: %.3f°, %.3f°\n", b->coord.latitude, b->coord.longitude);
+                printf("   Altitude: %.2f m\n", b->coord.altitude);
+
+                printf("\n Confirm deletion of this base? ");
+                cmd_help_inline(NULL, CMD_C_YESNO, NULL);
+
+                printf("\n");
+                if (GetCommand(CMD_C_MODAL | CMD_C_YESNO, NULL) == CMD_NO)
+                {
+                    printf(COLOR_ERROR " Operation cancelled.\n");
+                    goto Entry_delete_no_clr;
+                }
+
+                if (delete_BaseById(base_list, id) != -1)
+                    printf(COLOR_SUCCESS "List updated!\n");
+                else
+                    printf(COLOR_ERROR "Delete failed!\n");
                 goto Entry_delete_no_clr;
             }
-            break;
-
             break;
         }
         default:
@@ -512,31 +579,61 @@ Entry_no_clr:
         case CMD_DELETE:
         {
             clear_terminal();
-            add_seperator_c(NULL, ANSI_YELLOW, "delete ammo", '-', NORMAL_SEPERATOR_SIZE);
-            printf("Use the following structure for the input:\n");
-            printf("\t[I]   : id of ammo\n");
-            add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
+            printf("\n Delete ammo\n");
+            add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+            printf(
+                COLOR_INFO
+                " Enter the ID of the ammo to delete.\n"
+                " Type 'back' to return to the previous menu.\n");
+            add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+
         Entry_delete_no_clr:
 
             char buffer[1024];
-            int req = back_request(buffer, sizeof(buffer));
-            if (req == 1)
+            int req_val = back_request(buffer, sizeof(buffer));
+            if (req_val == 1)
+            {
                 goto Entry;
-            if (req == -1)
+            }
+            if (req_val == -1)
+            {
                 goto Entry_delete_no_clr;
+            }
 
             buffer[strcspn(buffer, "\r\n")] = 0;
             unsigned id = (unsigned)strtoul(buffer, NULL, 10);
 
-            if (delete_Ammo_t(ammo_t_list, id) == -1)
+            Ammo_t *a = NULL;
+            if (isalpha((unsigned char)buffer[0]) || !(a = FindAmmoByID(ammo_t_list, id)))
             {
                 clear_terminal();
-                print_colored(COLOR_ERROR, "Invalid ID!\n", 1);
+                print_colored(COLOR_ERROR, "Invalid input!\n", 1);
                 goto Entry_no_clr;
             }
+            else
+            {
+                printf("\n Selected ammo:\n");
+                printf("   ID: %u\n", a->id);
+                printf("   Label: %s\n", a->name);
+                printf("   Mass: %f\n", a->weight);
+                printf("   Bore: %f\n", a->diameter);
+                printf("\n Confirm deletion of this target? ");
+                cmd_help_inline(NULL, CMD_C_YESNO, NULL);
 
-            print_colored(COLOR_SUCCESS, "List updated!\n", 1);
-            goto Entry_delete_no_clr;
+                printf("\n");
+                if (GetCommand(CMD_C_MODAL | CMD_C_YESNO, NULL) == CMD_NO)
+                {
+                    printf(COLOR_ERROR " Operation cancelled.\n");
+                    goto Entry_delete_no_clr;
+                }
+
+                if (delete_Ammo_t(ammo_t_list, id) != -1)
+                    printf(COLOR_SUCCESS "List updated!\n");
+                else
+                    printf(COLOR_ERROR "Delete failed!\n");
+                printf(ANSI_RESET);
+                goto Entry_delete_no_clr;
+            }
         }
         default:
             break;
@@ -707,7 +804,7 @@ void cmd_info(const char *args, Command_case case_flags, PROCESS *running)
     add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
     printf(ANSI_GRAY " %-10s : " COLOR_TITLE "Ballistic trajectory calculator\n", "Product");
     printf(ANSI_GRAY " %-10s : " COLOR_TITLE "Adam Jozsef Horvath\n", "Author");
-    printf(ANSI_GRAY " %-10s : " COLOR_TITLE "7.2.3\n", "Version");
+    printf(ANSI_GRAY " %-10s : " COLOR_TITLE "7.3.0\n", "Version");
     add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
     printf(ANSI_RESET);
     printf("\n");
@@ -719,12 +816,13 @@ void cmd_debug(const char *args, Command_case case_flags, PROCESS *running)
     (void)running;
     if (case_flags & CMD_C_NOCOMMENT)
         return;
+    clear_terminal();
+    printf(ANSI_GRAY ASCI_ANGEL ANSI_RESET);
     printf("\n");
     add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
     printf(ANSI_GRAY " %-10s : " COLOR_TITLE "%d\n", "Terminal width", terminal_width());
     add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
     printf(ANSI_RESET);
-    printf("\n");
 }
 //========================================================================
 // COMMAND PROCESSING CORE
@@ -883,6 +981,9 @@ static Command_t resolve_command(const char *cmd, size_t cmd_len, const char *ar
     if (c->handler && !(flags & CMD_C_NOHANDLE))
         c->handler(args, flags, running);
 
+    if (c->case_mask && (c->case_mask & CMD_C_STAYMODAL))
+        return CMD_MODAL;
+
     return c->type;
 }
 
@@ -913,7 +1014,7 @@ Command_t GetCommand(Command_case case_flags, PROCESS *running)
     Command_t command = CMD_INVALID;
 
     // if case_flags CMD_C_LOOP has been set, than the function run's till a valid input
-    while (command == CMD_INVALID)
+    while (command == CMD_INVALID || command == CMD_MODAL)
     {
         printf("> ");
         if (!fgets(input, (sizeof(input) > 128) ? 128 : sizeof(input), stdin))

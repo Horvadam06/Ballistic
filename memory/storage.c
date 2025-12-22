@@ -495,7 +495,7 @@ Base_Node *add_Base(Base_List *list, Base base)
  * @note Also frees the associated ammunition stock list
  * @warning Invalidates any existing pointers to deleted base
  */
-int delete_Base(Base_List *list, unsigned id)
+int delete_BaseById(Base_List *list, unsigned id)
 {
     if (!list)
         return -1;

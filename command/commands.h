@@ -18,6 +18,7 @@
  */
 typedef enum
 {
+    CMD_MODAL,     ///< modal control flag
     CMD_INVALID,   ///< Invalid or unknown command
     CMD_INFO,      ///< Display prgram info
     CMD_EXIT,      ///< Exit program
@@ -91,15 +92,17 @@ typedef struct
     uint32_t case_mask;                                                           ///< Bitmask of contexts where command is available
 } Command;
 
-typedef struct {
+typedef struct
+{
     const char *key;
     Command_t target;
 } CommandAlias;
 
-typedef struct {
-    const char *key;     // "yes", "y", "calc"
-    size_t      len;
-    Command    *cmd;     // pointer to canonical command
+typedef struct
+{
+    const char *key; // "yes", "y", "calc"
+    size_t len;
+    Command *cmd; // pointer to canonical command
 } CommandKey;
 
 #define CMD_INIT(name, type, handler, description, mask) \
@@ -117,9 +120,9 @@ typedef struct
  * @{
  */
 
- PROCESS build_command_keys();
+PROCESS build_command_keys();
 
- void free_command_keys(void);
+void free_command_keys(void);
 
 /**
  * @brief Get command from user with modal context
@@ -303,6 +306,6 @@ extern Command commands[];
  * @brief Number of commands in command table
  * @ingroup CommandHandling
  */
-//extern int command_count;
+// extern int command_count;
 
 #endif /* COMMANDS_H */
