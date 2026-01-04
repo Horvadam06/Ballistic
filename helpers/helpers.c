@@ -263,7 +263,7 @@ void add_seperator_s(const char *sep_colour, const char *str_colour, const char 
 #include <stdarg.h>
 
 // if 0 is the width, auto clamp to the input length, use │ for seperation
-void print_header(size_t width, const char *__format, ...)
+void print_header(size_t width, const char *box_colour, const char *__format, ...)
 {
     // make it dynamic, so it's scans the input, and put the down thingis, where there is a │ in the mid data
     // like this ...┬...
@@ -278,28 +278,99 @@ void print_header(size_t width, const char *__format, ...)
     va_start(ap, __format);
     inputs = __format;
 
+    // modify later to use dynamic memory alloc
+    char buffer[1024];
+    vsprintf(buffer, __format, ap);
+
     // or the phrased length
     for (size_t row = 1; row <= row_n; row++)
     {
+        printf("%s", box_colour);
         printf("%s", (row == 1) ? "┌" : ((row == row_n) ? "└" : "│"));
+        printf(ANSI_RESET);
         // can do it because of the end brackets colum < width comes from colum <= width - 1
+        int j = 0;
         for (size_t column = 2; column < width; column++)
         {
             if (row == 1 || row == row_n)
             {
+                printf("%s", box_colour);
+                if (j == 0)
+                {
+                    int in_esc_code = 0;
+                    int trimmed_length = 0;
+                    for (; buffer[j] != '\0'; j++)
+                    {
+                        if (buffer[j] == '\033')
+                            in_esc_code = 1;
+                        else if (in_esc_code && buffer[j] == 'm')
+                            in_esc_code = 0;
+                        else if (!in_esc_code)
+                        {
+                            if (buffer[j] == '|')
+                            {
+                                printf((row == 1) ? "┬" : "┴");
+                            }
+                            else
+                                printf("─");
+                            trimmed_length++;
+                        }
+                    }
+                    column = trimmed_length + 1;
+                }
+
                 printf("─");
+
+                if (j == 0)
+                {
+                    int esc_code_len_sum = 0;
+                    for (; buffer[j] != '\0'; j++)
+                        if (buffer[j] == '\033')
+                        {
+                            for (; buffer[j] != '\0' && buffer[j] != 'm'; j++, esc_code_len_sum++)
+                                ;
+                        }
+                        else if (buffer[j] == '|')
+                            printf("│");
+                        else
+
+                            column = j + 1 - esc_code_len_sum;
+                }
             }
             else
             {
-                printf(" ");
+
+                if (j == 0)
+                {
+                    int in_esc_code = 0;
+                    int trimmed_length = 0;
+                    for (; buffer[j] != '\0'; j++)
+                    {
+                        if (buffer[j] == '\033')
+                            in_esc_code = 1;
+                        else if (in_esc_code && buffer[j] == 'm')
+                            in_esc_code = 0;
+                        else if (!in_esc_code)
+                            trimmed_length++;
+
+                        if (buffer[j] == '|')
+                            printf("│");
+                        else
+                            printf("%c", buffer[j]);
+                    }
+                    column = trimmed_length + 1;
+                }
+
+                putchar(' ');
             }
         }
+        printf("%s", box_colour);
         printf("%s\n", (row == 1) ? "┐" : ((row == row_n) ? "┘" : "│"));
+        printf(ANSI_RESET);
     }
-    vprintf(__format, ap);
+    //vprintf(__format, ap);
 
     va_end(ap);
-    putchar('\n');
 
     /* top border */
     /*for (size_t i = 1; i <= row_n * width; i++)
