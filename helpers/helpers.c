@@ -259,6 +259,123 @@ void add_seperator_s(const char *sep_colour, const char *str_colour, const char 
 
     printf(ANSI_RESET "\n");
 }
+
+#include <stdarg.h>
+
+// if 0 is the width, auto clamp to the input length, use │ for seperation
+void print_header(size_t width, const char *__format, ...)
+{
+    // make it dynamic, so it's scans the input, and put the down thingis, where there is a │ in the mid data
+    // like this ...┬...
+    //       data...│...
+    //           ...┴...
+    size_t row_n = 3;
+    if (width == 0)
+        return;
+    va_list ap;
+    const char *inputs;
+
+    va_start(ap, __format);
+    inputs = __format;
+
+    // or the phrased length
+    for (size_t row = 1; row <= row_n; row++)
+    {
+        printf("%s", (row == 1) ? "┌" : ((row == row_n) ? "└" : "│"));
+        // can do it because of the end brackets colum < width comes from colum <= width - 1
+        for (size_t column = 2; column < width; column++)
+        {
+            if (row == 1 || row == row_n)
+            {
+                printf("─");
+            }
+            else
+            {
+                printf(" ");
+            }
+        }
+        printf("%s\n", (row == 1) ? "┐" : ((row == row_n) ? "┘" : "│"));
+    }
+    vprintf(__format, ap);
+
+    va_end(ap);
+    putchar('\n');
+
+    /* top border */
+    /*for (size_t i = 1; i <= row_n * width; i++)
+    {
+        int rem = i % width;
+
+        if (i == 1)
+            printf("┌");
+        else if (i == width)
+            printf("┐");
+        else if (i == (row_n - 1) * width + 1)
+            printf("└");
+        else if (i == row_n * width)
+            printf("┘");
+        else if (rem == 0 || rem == 1)
+            printf("│");
+        else if (i < width || i > (row_n - 1) * width)
+            printf("─");
+        else
+            putchar(' ');
+
+        if (rem == 0)
+            putchar('\n');
+
+        /*else if (*inputs)
+        {
+            size_t needed = j + strlen(inputs);
+            if (needed <= width)
+            {
+                if (printed)
+                {
+                    printf("│");
+                    printed = 0;
+                }
+                else
+                {
+                    printed = 1;
+                    do
+                    {
+                        printf("─");
+                        j++;
+                    } while (j <= needed);
+
+                    inputs = va_arg(ap, const char *);
+                }
+            }
+            else if (j + 1 < width)
+                printf(COLOR_ERROR "E" ANSI_RESET);
+        }
+
+        else if (*inputs)
+        {
+            size_t needed = j + strlen(inputs);
+            if (needed < width)
+            {
+                if (printed)
+                {
+                    printf("│");
+                    needed++;
+                }
+                else
+                    printed = 1;
+
+                printf("%s", inputs);
+
+                j = needed;
+                inputs = va_arg(ap, const char *);
+            }
+            else if (j + 1 < width)
+
+                printf(COLOR_ERROR "E" ANSI_RESET);
+        }
+
+    }*/
+}
+
 /**
  * @brief Clears the terminal screen using ANSI escape codes
  *

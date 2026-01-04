@@ -44,6 +44,8 @@ void add_seperator_c(const char *sep_colour, const char *str_colour, const char 
 
 void add_seperator_s(const char *sep_colour, const char *str_colour, const char *str, const char *symbol, unsigned sep_length);
 
+void print_header(size_t width, const char *str, ...);
+
 /*Clears terminal using ANSI codes if color mode enabled */
 
 void clear_terminal();

@@ -134,6 +134,7 @@ void cmd_exit(const char *args, Command_case case_flags, PROCESS *running)
  *
  * Note: add_seperator_c() is assumed to handle NULL title for closing separator
  */
+
 void cmd_help(const char *args, Command_case case_flags, PROCESS *running)
 {
     // needed for the compiler
@@ -141,16 +142,24 @@ void cmd_help(const char *args, Command_case case_flags, PROCESS *running)
     (void)running;
 
     // formated list
-    printf("\n Command list\n");
-    add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-    printf(COLOR_TITLE " %-28s%-10s%10s\n", "description", "command", "aliases");
-    add_seperator_s(COLOR_TITLE, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+    if (!(case_flags & CMD_C_NOCOMMENT))
+    {
+        printf("┌─────────────────────────┬────────────┬───────────────────┐\n"
+               "│description              │command     │aliases            │\n"
+               "└─────────────────────────┴────────────┴───────────────────┘\n");
+
+        print_header(NORMAL_SEPERATOR_SIZE,
+            COLOR_TITLE" %-24s"COLOR_HINT" │ "COLOR_TITLE"%s"COLOR_HINT" │ "COLOR_TITLE"%s", "description", "command", "aliases");
+        // add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+        // printf(COLOR_TITLE" %-24s"COLOR_HINT" │ "COLOR_TITLE"%-10s"COLOR_HINT" │ "COLOR_TITLE"%-10s\n", "description", "command", "aliases");
+        // add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+    }
     for (size_t i = 0; i < command_count; i++) // goes trough the commands list, and print's out the aviable one
     {
         if (!(commands[i].case_mask & case_flags) || (commands[i].type == CMD_HELP))
             continue; // command not available in this mode
 
-        printf(ANSI_GRAY " %-24s : [" COLOR_TITLE "%-10s" ANSI_GRAY "]%2s", commands[i].description, commands[i].name, "");
+        printf(ANSI_GRAY " %-24s │" COLOR_TITLE "%-10s" ANSI_GRAY "  │", commands[i].description, commands[i].name);
 
         /*change_colour(ANSI_GREEN);
         printf("    %-4s", commands[i].name);
