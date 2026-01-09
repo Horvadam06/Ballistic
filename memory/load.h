@@ -95,7 +95,7 @@ typedef P_HRESULT (*RecordHandler)(char *record, void *data, int *error_flags);
  * @return P_S_OK on success, S_FALSE on file error
  * @ingroup Loading
  */
-P_HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS mode);
+P_HRESULT scan(const char *filename, RecordHandler handler, void *data, int *err_cnt, PROCESS mode);
 
 /**
  * @brief Peek next character from file without consuming it

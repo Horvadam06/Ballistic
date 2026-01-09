@@ -149,6 +149,8 @@ void cmd_help(const char *args, Command_case case_flags, PROCESS *running)
                      COLOR_TITLE "%-24s" COLOR_HINT " |" COLOR_TITLE "%-10s" COLOR_HINT " |" COLOR_TITLE "%s",
                      "description", "command", "aliases");
     }
+    else
+        add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
     for (size_t i = 0; i < command_count; i++) // goes trough the commands list, and print's out the aviable one
     {
         if (!(commands[i].case_mask & case_flags) || (commands[i].type == CMD_HELP))
@@ -203,6 +205,189 @@ void cmd_help_inline(const char *args, Command_case case_flags, PROCESS *running
     }
     printf("]");
 }
+
+// ==================== BASE DISPLAY FUNCTIONS ====================
+
+void base_info_print(DisplayType display, void *entry_ptr)
+{
+    switch (display)
+    {
+    case LIST_MENU_ENTRY:
+        printf("\n Bases menu\n");
+        add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "list" ANSI_GRAY "]\n", "Display list");
+        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "add" ANSI_GRAY "]\n", "Add to list");
+        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "delete" ANSI_GRAY "]\n", "Delete from list");
+        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "back" ANSI_GRAY "]\n", "Step back");
+        add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+        printf(ANSI_RESET);
+        break;
+
+    case LIST_MENU_ADD:
+        printf("\n Add base wizard\n");
+        add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+        int state = 1;
+        char *step[] = {
+            "Enter ID",
+            "Enter label",
+            "Enter position",
+            "Enter altitude",
+            "Enter ammo stock",
+            "Confirm"};
+        int n = sizeof(step) / sizeof(char *);
+
+        for (int i = state; i <= n; i++)
+            printf(COLOR_RESET " %d." COLOR_HINT " %s\n", i, (i > 0) ? step[i - 1] : "nan");
+
+        add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+
+        printf(COLOR_HINT " Add base (%d/%u) : " COLOR_RESET "%s\n", state, n, (state > 0) ? step[state - 1] : "nan");
+
+        break;
+
+    case LIST_MENU_DELETE:
+        printf("\n Delete base\n");
+        add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+        printf(
+            COLOR_INFO
+            " Enter the ID of the base to delete.\n"
+            " Type 'back' to return to the previous menu.\n");
+        add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+        break;
+
+    case LIST_MENU_DEL_CONFIR:
+    {
+        Base *b = (Base *)entry_ptr;
+        printf("\n Selected base:\n");
+        printf("   ID: %u\n", b->id);
+        printf("   Label: %s\n", b->label);
+        printf("   Location: %.3f°, %.3f°\n", b->coord.latitude, b->coord.longitude);
+        printf("   Altitude: %.2f m\n", b->coord.altitude);
+        printf("\n");
+        break;
+    }
+    default:
+        Error_message("Missing display type!\n");
+    }
+}
+
+// ==================== TARGET DISPLAY FUNCTIONS ====================
+
+void target_info_print(DisplayType display, void *entry_ptr)
+{
+    switch (display)
+    {
+    case LIST_MENU_ENTRY:
+        printf("\n Targets menu\n");
+        add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "list" ANSI_GRAY "]\n", "Display list");
+        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "add" ANSI_GRAY "]\n", "Add to list");
+        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "delete" ANSI_GRAY "]\n", "Delete from list");
+        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "back" ANSI_GRAY "]\n", "Step back");
+        add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+        printf(ANSI_RESET);
+        break;
+
+    case LIST_MENU_ADD:
+        printf("\n Add target wizard\n");
+        add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+        int state = 1;
+        char *step[] = {"Enter ID", "Enter label", "Enter position", "Enter altitude", "Enter area", "Confirm"};
+        int n = sizeof(step) / sizeof(char *);
+
+        for (int i = state; i <= n; i++)
+            printf(COLOR_RESET " %d." COLOR_HINT " %s\n", i, (i > 0) ? step[i - 1] : "nan");
+
+        add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+
+        printf(COLOR_HINT " Add target (%d/%u) : " COLOR_RESET "%s\n", state, n, (state > 0) ? step[state - 1] : "nan");
+
+        break;
+
+    case LIST_MENU_DELETE:
+        printf("\n Delete target\n");
+        add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+        printf(
+            COLOR_INFO
+            " Enter the ID of the target to delete.\n"
+            " Type 'back' to return to the previous menu.\n");
+        add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+        break;
+
+    case LIST_MENU_DEL_CONFIR:
+    {
+        Target *t = (Target *)entry_ptr;
+        printf("\n Selected target:\n");
+        printf("   ID: %u\n", t->id);
+        printf("   Label: %s\n", t->label);
+        printf("   Location: %.3f°, %.3f°\n", t->coord.latitude, t->coord.longitude);
+        printf("   Altitude: %.2f m\n", t->coord.altitude);
+        printf("   Area: %.2f m²\n", t->area);
+        printf("\n");
+        break;
+    }
+    default:
+        Error_message("Missing display type!\n");
+    }
+}
+
+// ==================== AMMO_T DISPLAY FUNCTIONS ====================
+
+void ammo_info_print(DisplayType display, void *entry_ptr)
+{
+    switch (display)
+    {
+    case LIST_MENU_ENTRY:
+        printf("\n Ammo type menu\n");
+        add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "list" ANSI_GRAY "]\n", "Display list");
+        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "add" ANSI_GRAY "]\n", "Add to list");
+        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "delete" ANSI_GRAY "]\n", "Delete from list");
+        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "back" ANSI_GRAY "]\n", "Step back");
+        add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+        printf(ANSI_RESET);
+        break;
+    case LIST_MENU_ADD:
+        printf("\n Add ammo_t wizard\n");
+        add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+        int state = 1;
+        char *step[] = {"Enter ID", "Enter label", "Enter weight", "Enter diameter", "Enter blast radius", "Enter ballistic coefficient", "Confirm"};
+        int n = sizeof(step) / sizeof(char *);
+        for (int i = state; i <= n; i++)
+            printf(COLOR_RESET " %d." COLOR_HINT " %s\n", i, (i > 0) ? step[i - 1] : "nan");
+        add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+
+        printf(COLOR_HINT " Add base (%d/%u) : " COLOR_RESET "%s\n", state, n, (state > 0) ? step[state - 1] : "nan");
+
+        break;
+    case LIST_MENU_DELETE:
+        printf("\n Delete ammo\n");
+        add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+        printf(
+            COLOR_INFO
+            " Enter the ID of the ammo to delete.\n"
+            " Type 'back' to return to the previous menu.\n");
+        add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+        break;
+    case LIST_MENU_DEL_CONFIR:
+        if (!entry_ptr)
+        {
+            Error_message("Missing node ptr!\n");
+            return;
+        }
+        Ammo_t *a = (Ammo_t *)entry_ptr;
+        printf("\n Selected ammo:\n");
+        printf("   ID: %u\n", a->id);
+        printf("   Label: %s\n", a->name);
+        printf("   Mass: %f\n", a->weight);
+        printf("   Bore: %f\n", a->diameter);
+        printf("\n");
+        break;
+    default:
+        Error_message("Missing display type!\n");
+    }
+}
+
 /**
  * @brief Target management command handler
  *
@@ -220,139 +405,16 @@ void cmd_target(const char *args, Command_case case_flags, PROCESS *running)
 {
     (void)args;
     (void)running;
+    ListManagerConfig target_config = {
+        .name = "target",
+        .list_ptr = target_list,
+        .print_ = (void (*)(DisplayType, void *))target_info_print,
+        .print_list = (void (*)(void *))print_Target_List,
+        .add_handler = (P_HRESULT (*)(char *, void *, int *))handle_target,
+        .find_by_id = (void *(*)(void *, unsigned))FindTargetByID,
+        .delete_by_id = (int (*)(void *, unsigned))delete_Target};
 
-Entry:
-    clear_terminal();
-
-Entry_no_clr:
-    if (!(case_flags & CMD_C_NOCOMMENT))
-    {
-        printf("\n Targets menu\n");
-        add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "list" ANSI_GRAY "]\n", "Display list");
-        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "add" ANSI_GRAY "]\n", "Add to list");
-        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "delete" ANSI_GRAY "]\n", "Delete from list");
-        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "back" ANSI_GRAY "]\n", "Step back");
-        add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-        printf(ANSI_RESET);
-
-        /*add_seperator_c(NULL, ANSI_YELLOW, "targets", '-', NORMAL_SEPERATOR_SIZE);
-        printf("%-39s <[%s]>\n", "What would you like to do?", "back");
-        printf("\t- %-30s [%s]\n", "show target list", "list");
-        printf("\t- %-30s [%s]\n", "add target to list", "add");
-        printf("\t- %-30s [%s]\n", "remove target from list", "delete");
-        add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);*/
-    }
-
-    Command_t cmd;
-    while ((cmd = GetCommand(CMD_C_LOAD | CMD_C_MODAL, NULL)) != CMD_BACK)
-    {
-        switch (cmd)
-        {
-        case CMD_LIST:
-            print_Target_List(target_list);
-            return;
-        case CMD_ADD:
-        {
-            clear_terminal();
-            printf("\n Add target\n");
-            add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-            printf(
-                COLOR_INFO
-                " Format:\n"
-                "   I<id> L<label> CLA<lat> CLO<lon> CA<alt> A<area>\n"
-                "\n"
-                " Example:\n"
-                "   I1 LAlpha CLA47.5 CLO19.0 CA120 A14.3\n");
-            printf("Type 'back' to return to the previous menu.\n");
-            add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-
-        Entry_add_no_clr:
-            char buffer[1024];
-
-            int req = back_request(buffer, sizeof(buffer));
-            if (req == 1)
-                goto Entry;
-            if (req == -1)
-                goto Entry_add_no_clr;
-
-            buffer[strcspn(buffer, "\r\n")] = 0;
-
-            if (handle_target(buffer, target_list, NULL) == P_S_FALSE)
-            {
-                clear_terminal();
-                print_colored(COLOR_ERROR, "Invalid input!\n", 1);
-                goto Entry_no_clr;
-            }
-
-            print_colored(COLOR_SUCCESS, "List updated!\n", 1);
-            goto Entry_add_no_clr;
-        }
-        case CMD_DELETE:
-        {
-            clear_terminal();
-            printf("\n Delete target\n");
-            add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-            printf(
-                COLOR_INFO
-                " Enter the ID of the target to delete.\n"
-                " Type 'back' to return to the previous menu.\n");
-            add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-
-        Entry_delete_no_clr:
-
-            char buffer[1024];
-            int req_val = back_request(buffer, sizeof(buffer));
-            if (req_val == 1)
-            {
-                goto Entry;
-            }
-            if (req_val == -1)
-            {
-                goto Entry_delete_no_clr;
-            }
-
-            buffer[strcspn(buffer, "\r\n")] = 0;
-            unsigned id = (unsigned)strtoul(buffer, NULL, 10);
-
-            Target *t = NULL;
-            if (isalpha((unsigned char)buffer[0]) || !(t = FindTargetByID(target_list, id)))
-            {
-                clear_terminal();
-                print_colored(COLOR_ERROR, "Invalid input!\n", 1);
-                goto Entry_no_clr;
-            }
-            else
-            {
-                printf("\n Selected target:\n");
-                printf("   ID: %u\n", t->id);
-                printf("   Label: %s\n", t->label);
-                printf("   Location: %.3f°, %.3f°\n", t->coord.latitude, t->coord.longitude);
-                printf("   Altitude: %.2f m\n", t->coord.altitude);
-
-                printf("\n Confirm deletion of this target? ");
-                cmd_help_inline(NULL, CMD_C_YESNO, NULL);
-
-                printf("\n");
-                if (GetCommand(CMD_C_MODAL | CMD_C_YESNO, NULL) == CMD_NO)
-                {
-                    printf(COLOR_ERROR " Operation cancelled.\n");
-                    goto Entry_delete_no_clr;
-                }
-
-                if (delete_Target(target_list, id))
-                    printf(COLOR_SUCCESS "List updated!\n");
-                else
-                    printf(COLOR_ERROR "Delete failed!\n");
-                printf(ANSI_RESET);
-                goto Entry_delete_no_clr;
-            }
-        }
-        default:
-            break;
-        }
-    }
-    cmd_clr_ter(NULL, CMD_C_ALL, NULL);
+    general_list_menu(case_flags, &target_config);
 }
 /**
  * @brief Base management command handler
@@ -360,151 +422,28 @@ Entry_no_clr:
  * Note: Structure is nearly identical to cmd_target() and cmd_ammo().
  * So in the future I consider refactoring these function's into a general helper function
  */
+void print_Base_List_wrapper(Base_List *list)
+{
+    print_Base_List(list, S_RUNNING);
+}
+
 void cmd_base(const char *args, Command_case case_flags, PROCESS *running)
 {
     (void)args;
     (void)running;
-Entry:
-    clear_terminal();
-Entry_no_clr:
-    if (!(case_flags & CMD_C_NOCOMMENT))
-    {
-        printf("\n Bases menu\n");
-        add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "list" ANSI_GRAY "]\n", "Display list");
-        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "add" ANSI_GRAY "]\n", "Add to list");
-        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "delete" ANSI_GRAY "]\n", "Delete from list");
-        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "back" ANSI_GRAY "]\n", "Step back");
-        add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-        printf(ANSI_RESET);
+    ListManagerConfig base_config = {
+        .name = "base",
+        .list_ptr = base_list,
+        .print_ = (void (*)(DisplayType, void *))base_info_print,
+        .print_list = (void (*)(void *))print_Base_List_wrapper,
+        .add_handler = (P_HRESULT (*)(char *, void *, int *))handle_base,
+        .find_by_id = (void *(*)(void *, unsigned))FindBaseByID,
+        .delete_by_id = (int (*)(void *, unsigned))delete_BaseById};
 
-        /* add_seperator_c(ANSI_GRAY, ANSI_YELLOW, "bases", '-', NORMAL_SEPERATOR_SIZE);
-         printf("%-39s <[%s]>\n", "What would you like to do?", "back");
-         printf("\t- %-30s [%s]\n", "show base list", "list");
-         printf("\t- %-30s [%s]\n", "add base to list", "add");
-         printf("\t- %-30s [%s]\n", "remove base from list", "delete");
-         add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);*/
-    }
-
-    // waits for a valid command
-    // on list, it exit's. In other cases it just returns, making it easier to input multiple parameters
-    Command_t cmd;
-    while ((cmd = GetCommand(CMD_C_LOAD | CMD_C_MODAL, NULL)) != CMD_BACK)
-        switch (cmd)
-        {
-        case CMD_LIST:
-            print_Base_List(base_list, S_DEBUG);
-            return;
-        case CMD_ADD:
-        {
-            clear_terminal();
-            printf("\n Add base\n");
-            add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-            printf(
-                COLOR_INFO
-                " Format:\n"
-                "   I<id> L<label> CLA<lat> CLO<lon> CA<alt> AMS<:{id:count,...}>\n"
-                "\n"
-                " Example:\n"
-                "   I1 LAlpha CLA47.5 CLO19.0 CA120 AMS:{2:50,5:10}\n");
-            printf("Type 'back' to return to the previous menu.\n");
-            add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-
-        Entry_add_no_clr:
-
-            char buffer[1024];
-            int req_val = back_request(buffer, sizeof(buffer));
-            if (req_val == 1)
-            {
-                goto Entry;
-            }
-            if (req_val == -1)
-            {
-                goto Entry_add_no_clr;
-            }
-
-            buffer[strcspn(buffer, "\r\n")] = 0;
-
-            if (handle_base(buffer, base_list, NULL) == P_S_FALSE)
-            {
-                clear_terminal();
-                print_colored(COLOR_ERROR, "Invalid input!\n", 1);
-                goto Entry_no_clr;
-            }
-            else
-            {
-                print_colored(COLOR_SUCCESS, "List updated!\n", 1);
-                goto Entry_add_no_clr;
-            }
-            break;
-        }
-        case CMD_DELETE:
-        {
-            clear_terminal();
-            printf("\n Delete base\n");
-            add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-            printf(
-                COLOR_INFO
-                " Enter the ID of the base to delete.\n"
-                " Type 'back' to return to the previous menu.\n");
-            add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-
-        Entry_delete_no_clr:
-
-            char buffer[1024];
-            int req_val = back_request(buffer, sizeof(buffer));
-            if (req_val == 1)
-            {
-                goto Entry;
-            }
-            if (req_val == -1)
-            {
-                goto Entry_delete_no_clr;
-            }
-
-            buffer[strcspn(buffer, "\r\n")] = 0;
-            unsigned id = (unsigned)strtoul(buffer, NULL, 10);
-
-            Base *b = NULL;
-            if (isalpha((unsigned char)buffer[0]) || !(b = FindBaseByID(base_list, id)))
-            {
-                clear_terminal();
-                print_colored(COLOR_ERROR, "Invalid input!\n", 1);
-                goto Entry_no_clr;
-            }
-            else
-            {
-                printf("\n Selected base:\n");
-                printf("   ID: %u\n", b->id);
-                printf("   Label: %s\n", b->label);
-                printf("   Location: %.3f°, %.3f°\n", b->coord.latitude, b->coord.longitude);
-                printf("   Altitude: %.2f m\n", b->coord.altitude);
-
-                printf("\n Confirm deletion of this base? ");
-                cmd_help_inline(NULL, CMD_C_YESNO, NULL);
-
-                printf("\n");
-                if (GetCommand(CMD_C_MODAL | CMD_C_YESNO, NULL) == CMD_NO)
-                {
-                    printf(COLOR_ERROR " Operation cancelled.\n");
-                    goto Entry_delete_no_clr;
-                }
-
-                if (delete_BaseById(base_list, id) != -1)
-                    printf(COLOR_SUCCESS "List updated!\n");
-                else
-                    printf(COLOR_ERROR "Delete failed!\n");
-                goto Entry_delete_no_clr;
-            }
-            break;
-        }
-        default:
-            break;
-        }
-    cmd_clr_ter(NULL, CMD_C_ALL, NULL);
+    general_list_menu(case_flags, &base_config);
 }
 /**
- * @brief Base management command handler
+ * @brief ammo management command handler
  *
  * Note: Structure is nearly identical to cmd_target() and cmd_base().
  * So in the future I consider refactoring these function's into a general helper function
@@ -514,63 +453,82 @@ void cmd_ammo(const char *args, Command_case case_flags, PROCESS *running)
     (void)args;
     (void)running;
 
+    ListManagerConfig ammo_config = {
+        .name = "ammo_t",
+        .list_ptr = ammo_t_list,
+        .print_ = (void (*)(DisplayType, void *))ammo_info_print,
+        .print_list = (void (*)(void *))print_Ammo_t_List,
+        .add_handler = (P_HRESULT (*)(char *, void *, int *))handle_ammo_t,
+        .find_by_id = (void *(*)(void *, unsigned))FindAmmoByID,
+        .delete_by_id = (int (*)(void *, unsigned))delete_Ammo_t};
+
+    general_list_menu(case_flags, &ammo_config);
+}
+
+void general_list_menu(Command_case case_flags, ListManagerConfig *config)
+{
+    // function parameters
+    //   -case_flags
+    //
+    //   -display function display data by call case display_base(Command_t cmd_t) this way it's static only,
+    //    could make a unique enum for the display options
+    //
+    //   -list_print fp
+    //
+    //   -add_handler fp
+    //
+    //   -search_id fp
+    //
+    //   -delete_handler fp
+
+    // 1. entry text
+    // 3. add parameters
+    // 4. add handler
+    // 5. delete parameters
+
+    // 2. list_print pointer
+    // 6. find by id
+    // 7. delete handler
+
 Entry:
     clear_terminal();
-
 Entry_no_clr:
     if (!(case_flags & CMD_C_NOCOMMENT))
     {
-
-        printf("\n Ammo type menu\n");
-        add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "list" ANSI_GRAY "]\n", "Display list");
-        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "add" ANSI_GRAY "]\n", "Add to list");
-        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "delete" ANSI_GRAY "]\n", "Delete from list");
-        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "back" ANSI_GRAY "]\n", "Step back");
-        add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-        printf(ANSI_RESET);
-
-        /*add_seperator_c(NULL, ANSI_YELLOW, "ammo", '-', NORMAL_SEPERATOR_SIZE);
-        printf("%-39s <[%s]>\n", "What would you like to do?", "back");
-        printf("\t- %-30s [%s]\n", "show ammo type list", "list");
-        printf("\t- %-30s [%s]\n", "add ammo type to list", "add");
-        printf("\t- %-30s [%s]\n", "remove ammo type from list", "delete");
-        add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);*/
+        if (!config->print_)
+        {
+            Error_message("Missing print_ parameter for %s!\n", config->name);
+            return;
+        }
+        config->print_(LIST_MENU_ENTRY, NULL);
     }
-
     Command_t cmd;
     while ((cmd = GetCommand(CMD_C_LOAD | CMD_C_MODAL, NULL)) != CMD_BACK)
     {
         switch (cmd)
         {
         case CMD_LIST:
-            print_Ammo_t_List(ammo_t_list);
+            config->print_list(config->list_ptr);
             return;
         case CMD_ADD:
         {
             clear_terminal();
-            add_seperator_c(NULL, ANSI_YELLOW, "add ammo", '-', NORMAL_SEPERATOR_SIZE);
-            printf("Use the following structure for the input:\n"
-                   "\t[I]   : id of ammo\n"
-                   "\t[L] : label(name)\n"
-                   "\t[W] : weight\n"
-                   "\t[D] : diameter (caliber)\n"
-                   "\t[BR] : blast radius\n"
-                   "\t[BC] : ballistic coefficient\n");
-            add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
+            config->print_(LIST_MENU_ADD, NULL);
         Entry_add_no_clr:
 
             char buffer[1024];
-
+            // write the input into buffer, and process if back request
             int req = back_request(buffer, sizeof(buffer));
             if (req == 1)
                 goto Entry;
             if (req == -1)
                 goto Entry_add_no_clr;
 
+            // remove traling carrig feed or new line
             buffer[strcspn(buffer, "\r\n")] = 0;
 
-            if (handle_ammo_t(buffer, ammo_t_list, NULL) == P_S_FALSE)
+            // handle input error
+            if (config->add_handler(buffer, config->list_ptr, NULL) == P_S_FALSE)
             {
                 clear_terminal();
                 print_colored(COLOR_ERROR, "Invalid input!\n", 1);
@@ -583,32 +541,26 @@ Entry_no_clr:
         case CMD_DELETE:
         {
             clear_terminal();
-            printf("\n Delete ammo\n");
-            add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-            printf(
-                COLOR_INFO
-                " Enter the ID of the ammo to delete.\n"
-                " Type 'back' to return to the previous menu.\n");
-            add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+            config->print_(LIST_MENU_DELETE, NULL);
 
         Entry_delete_no_clr:
 
             char buffer[1024];
+            // write the input into buffer, and process if back request
             int req_val = back_request(buffer, sizeof(buffer));
             if (req_val == 1)
-            {
                 goto Entry;
-            }
-            if (req_val == -1)
-            {
+            else if (req_val == -1)
                 goto Entry_delete_no_clr;
-            }
 
+            // remove trailing carrige return or new line
             buffer[strcspn(buffer, "\r\n")] = 0;
+            // extract id
             unsigned id = (unsigned)strtoul(buffer, NULL, 10);
 
-            Ammo_t *a = NULL;
-            if (isalpha((unsigned char)buffer[0]) || !(a = FindAmmoByID(ammo_t_list, id)))
+            // handle id
+            void *node = NULL;
+            if (isalpha((unsigned char)buffer[0]) || !(node = config->find_by_id(config->list_ptr, id)))
             {
                 clear_terminal();
                 print_colored(COLOR_ERROR, "Invalid input!\n", 1);
@@ -616,25 +568,24 @@ Entry_no_clr:
             }
             else
             {
-                printf("\n Selected ammo:\n");
-                printf("   ID: %u\n", a->id);
-                printf("   Label: %s\n", a->name);
-                printf("   Mass: %f\n", a->weight);
-                printf("   Bore: %f\n", a->diameter);
-                printf("\n Confirm deletion of this target? ");
+                config->print_(LIST_MENU_DEL_CONFIR, node);
+
+                // confirm deletion
+                printf("\n Confirm deletion? ");
                 cmd_help_inline(NULL, CMD_C_YESNO, NULL);
 
                 printf("\n");
                 if (GetCommand(CMD_C_MODAL | CMD_C_YESNO, NULL) == CMD_NO)
                 {
-                    printf(COLOR_ERROR " Operation cancelled.\n");
+                    printf(COLOR_ERROR " Operation cancelled.\n" COLOR_RESET);
                     goto Entry_delete_no_clr;
                 }
 
-                if (delete_Ammo_t(ammo_t_list, id) != -1)
-                    printf(COLOR_SUCCESS "List updated!\n");
+                // deletion error handling
+                if (config->delete_by_id(config->list_ptr, id) != -1)
+                    printf(COLOR_SUCCESS " List updated!\n");
                 else
-                    printf(COLOR_ERROR "Delete failed!\n");
+                    Error_message(" Delete failed!\n");
                 printf(ANSI_RESET);
                 goto Entry_delete_no_clr;
             }
@@ -824,7 +775,10 @@ void cmd_debug(const char *args, Command_case case_flags, PROCESS *running)
     printf(ANSI_GRAY ASCI_ANGEL ANSI_RESET);
     printf("\n");
     add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-    printf(ANSI_GRAY " %-10s : " COLOR_TITLE "%d\n", "Terminal width", terminal_width());
+    int x, y;
+    terminal_size(&x, &y);
+    printf(ANSI_GRAY " %-10s : " COLOR_TITLE "%d\n", "Terminal width", x);
+    printf(ANSI_GRAY " %-10s : " COLOR_TITLE "%d\n", "Terminal height", y);
     add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
     printf(ANSI_RESET);
 }

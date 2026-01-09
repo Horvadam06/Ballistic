@@ -48,7 +48,8 @@
 #define COLOR_INFO "\x1b[36m"
 
 /* w char's */
-#define HLINE "\xE2\x94\x80" // char: ─
+#define HLINE "―"
+#define VLINE "│"
 
 /* Reset alias */
 #define COLOR_RESET ANSI_RESET
@@ -96,6 +97,8 @@ typedef enum
 
 ColorMode get_color_mode(void);
 void set_color_mode(ColorMode mode);
+
+void Error_message(const char *format, ...);
 
 P_HRESULT print_colored(const char *color, const char *string, bool always_p);
 void change_colour(const char *color);

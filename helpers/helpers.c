@@ -1,5 +1,6 @@
 #include "helpers.h"
 #include "helpers\color.h"
+#include "os\terminal_info.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -187,6 +188,14 @@ void NormalizeInput(char *input)
             input[i] += 'a' - 'A';
 }
 
+void print_substring(const char *start, const char *end)
+{
+    size_t length = end - start;
+    if (length > 0)
+    {
+        fwrite(start, 1, length, stdout);
+    }
+}
 /**
  * @brief Prints a formatted separator line with optional centered text
  *
@@ -263,24 +272,18 @@ void add_seperator_s(const char *sep_colour, const char *str_colour, const char 
 #include <stdarg.h>
 
 // if 0 is the width, auto clamp to the input length, use │ for seperation
-void print_header(size_t width, const char *box_colour, const char *__format, ...)
+void print_header(size_t width, const char *box_colour, const char *format, ...)
 {
-    // make it dynamic, so it's scans the input, and put the down thingis, where there is a │ in the mid data
-    // like this ...┬...
-    //       data...│...
-    //           ...┴...
     size_t row_n = 3;
     if (width == 0)
         return;
     va_list ap;
-    const char *inputs;
 
-    va_start(ap, __format);
-    inputs = __format;
+    va_start(ap, format);
 
     // modify later to use dynamic memory alloc
     char buffer[1024];
-    vsprintf(buffer, __format, ap);
+    vsprintf(buffer, format, ap);
 
     // or the phrased length
     for (size_t row = 1; row <= row_n; row++)
@@ -320,8 +323,7 @@ void print_header(size_t width, const char *box_colour, const char *__format, ..
                 }
 
                 printf("─");
-
-                if (j == 0)
+                /*if (j == 0)
                 {
                     int esc_code_len_sum = 0;
                     for (; buffer[j] != '\0'; j++)
@@ -336,6 +338,7 @@ void print_header(size_t width, const char *box_colour, const char *__format, ..
 
                             column = j + 1 - esc_code_len_sum;
                 }
+                */
             }
             else
             {
@@ -368,83 +371,7 @@ void print_header(size_t width, const char *box_colour, const char *__format, ..
         printf("%s\n", (row == 1) ? "┐" : ((row == row_n) ? "┘" : "│"));
         printf(ANSI_RESET);
     }
-    //vprintf(__format, ap);
-
     va_end(ap);
-
-    /* top border */
-    /*for (size_t i = 1; i <= row_n * width; i++)
-    {
-        int rem = i % width;
-
-        if (i == 1)
-            printf("┌");
-        else if (i == width)
-            printf("┐");
-        else if (i == (row_n - 1) * width + 1)
-            printf("└");
-        else if (i == row_n * width)
-            printf("┘");
-        else if (rem == 0 || rem == 1)
-            printf("│");
-        else if (i < width || i > (row_n - 1) * width)
-            printf("─");
-        else
-            putchar(' ');
-
-        if (rem == 0)
-            putchar('\n');
-
-        /*else if (*inputs)
-        {
-            size_t needed = j + strlen(inputs);
-            if (needed <= width)
-            {
-                if (printed)
-                {
-                    printf("│");
-                    printed = 0;
-                }
-                else
-                {
-                    printed = 1;
-                    do
-                    {
-                        printf("─");
-                        j++;
-                    } while (j <= needed);
-
-                    inputs = va_arg(ap, const char *);
-                }
-            }
-            else if (j + 1 < width)
-                printf(COLOR_ERROR "E" ANSI_RESET);
-        }
-
-        else if (*inputs)
-        {
-            size_t needed = j + strlen(inputs);
-            if (needed < width)
-            {
-                if (printed)
-                {
-                    printf("│");
-                    needed++;
-                }
-                else
-                    printed = 1;
-
-                printf("%s", inputs);
-
-                j = needed;
-                inputs = va_arg(ap, const char *);
-            }
-            else if (j + 1 < width)
-
-                printf(COLOR_ERROR "E" ANSI_RESET);
-        }
-
-    }*/
 }
 
 /**
@@ -492,9 +419,9 @@ void render_progress_bar(unsigned percent, progress_hook_fn before, progress_hoo
         printf("\r[");
 
     for (unsigned i = 0; i < bar_width; ++i)
-        putchar(i < filled ? '#' : '-');
+        printf(i < filled ? (COLOR_RESET">") : (COLOR_HINT " "));
 
-    printf("] %3u%%", percent);
+    printf(COLOR_RESET"] %3u%%", percent);
     if (after)
         after(arg_a);
     fflush(stdout);
@@ -510,3 +437,37 @@ const char *skip_spaces(const char *str)
 
     return str;
 }
+
+
+void split_screen_demo(void) {
+    int width, height;
+    terminal_size(&width, &height);
+    
+    // Clear screen
+    clear_terminal();
+    
+    // Draw vertical line in middle
+    for (int y = 0; y < height - 2; y++) {
+        printf("\033[%d;%dH│", y + 1, width / 2);
+    }
+    
+    // Write to left panel
+    printf("\033[2;2H");  // Move to row 2, column 2
+    printf("LEFT PANEL");
+    printf("\033[3;2H");
+    printf("Item 1");
+    printf("\033[4;2H");
+    printf("Item 2");
+    
+    // Write to right panel
+    printf("\033[2;%dH", width / 2 + 2);
+    printf("RIGHT PANEL");
+    printf("\033[3;%dH", width / 2 + 2);
+    printf("Value A");
+    printf("\033[4;%dH", width / 2 + 2);
+    printf("Value B");
+    
+    // Keep cursor at bottom
+    printf("\033[%d;1H", height);
+}
+

@@ -57,6 +57,9 @@
  * @note Sets up global data structures (ammo_t_list, base_list, target_list)
  * @note Handles both fresh install (creates config) and existing install scenarios
  */
+#define DEFAULT_WIN_WIDTH 125 // 80 for calc
+#define DEFAULT_WIN_HEIGHT 35
+
 PROCESS Setup()
 {
     printf("\nStarting setup...\n");
@@ -64,13 +67,12 @@ PROCESS Setup()
     if (build_command_keys() != S_RUNNING)
         return S_TERMINATE;
 
-    enable_ansi_colors();
+    enable_ansi_escape();
 
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
 #endif
-
     add_seperator_s(NULL, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
     printf("\n");
 
@@ -78,51 +80,33 @@ PROCESS Setup()
     // Step 1: Load or create configuration
     if (P_FAILED(test_and_run_config("config.txt", S_RUNNING)))
         return S_TERMINATE;
+    printf("\n");
 
     // Step 2: Run system self-test
     if (P_FAILED(run_pre_test(S_RUNNING)))
         return S_TERMINATE;
-
-    char folder_buffer[1024];
-
-    // Step 3: Load ammunition catalogue (if not already loaded by pre-test)
-    if (!ammo_t_list)
-    {
-        strcpy(folder_buffer, folder_path);
-        strcat(folder_buffer, "ammo_catalouge.txt");
-        init_Ammo_t_List(&ammo_t_list);
-        scan(folder_buffer, handle_ammo_t, ammo_t_list, S_RUNNING);
-    }
-
-    // Step 4: Load base list (if not already loaded by pre-test)
-    if (!base_list)
-    {
-        strcpy(folder_buffer, folder_path);
-        strcat(folder_buffer, "bases.txt");
-        init_Base_List(&base_list);
-        scan(folder_buffer, handle_base, base_list, S_RUNNING);
-    }
-
-    // Step 5: Load target list (if not already loaded by pre-test)
-    if (!target_list)
-    {
-        strcpy(folder_buffer, folder_path);
-        strcat(folder_buffer, "targets.txt");
-        init_Target_List(&target_list);
-        scan(folder_buffer, handle_target, target_list, S_RUNNING);
-    }
+    printf("\n");
 
     print_colored(COLOR_SUCCESS, "Setup finished!\n", 1);
     add_seperator_s(NULL, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
 
-    // Step 6: Clear terminal if color mode is enabled
+    // Step 6: Adjust terminal size
+    int x, y;
+    terminal_size(&x, &y);
+    if (x < DEFAULT_WIN_WIDTH || y < DEFAULT_WIN_HEIGHT)
+    {
+        printf(COLOR_WARNING "Terminal size [%d, %d] is smaller than advised, changing to [%d, %d]...\n" COLOR_RESET, x, y, DEFAULT_WIN_WIDTH, DEFAULT_WIN_HEIGHT);
+        printf("\033[8;%d;%dt", DEFAULT_WIN_HEIGHT, DEFAULT_WIN_WIDTH);
+    }
+
+    // Step 7: Clear terminal if color mode is enabled
     if (get_color_mode())
         clear_terminal();
 
-    // Step 7: Display introduction banner
+    // Step 8: Display introduction banner
     add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-    printf(ANSI_GRAY " Ballistic trajectory calculator\n");
-    add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);    
+    printf(ANSI_GRAY "Ballistic trajectory calculator\n");
+    add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
 
     return S_RUNNING;
 }
@@ -170,6 +154,7 @@ void CleanUp()
  */
 int main(void)
 {
+
     // Initialize application state and load data
     PROCESS state = Setup();
 

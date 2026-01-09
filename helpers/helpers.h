@@ -38,13 +38,15 @@ P_HRESULT norm_strncmp(const char *record, const char *str2);
 
 void NormalizeInput(char *input);
 
+void print_substring(const char* start, const char* end);
+
 /*Prints formatted separator line with optional centered text */
 
 void add_seperator_c(const char *sep_colour, const char *str_colour, const char *str, char symbol, unsigned sep_length);
 
 void add_seperator_s(const char *sep_colour, const char *str_colour, const char *str, const char *symbol, unsigned sep_length);
 
-void print_header(size_t width, const char *box_colour, const char *__format, ...);
+void print_header(size_t width, const char *box_colour, const char *format, ...);
 
 /*Clears terminal using ANSI codes if color mode enabled */
 
@@ -54,5 +56,7 @@ unsigned progress_percent(unsigned current, unsigned total);
 
 typedef void (*progress_hook_fn)(void *arg);
 void render_progress_bar(unsigned percent, progress_hook_fn before, progress_hook_fn after, void *arg_b, void *arg_a);
+
+void split_screen_demo(void);
 
 #endif

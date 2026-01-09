@@ -1,5 +1,6 @@
 #include "color.h"
-#include "stdio.h"
+#include <stdio.h>
+#include <stdarg.h>
 
 // static to make it "private" to this file
 static ColorMode current_mode = CM_MONO;
@@ -44,4 +45,13 @@ void change_colour(const char *color)
 {
     if (get_color_mode() == CM_COLOUR)
         printf(color);
+}
+
+void Error_message(const char *format, ...)
+{
+  va_list ap;
+  va_start(ap, format);
+  printf(COLOR_ERROR "[Error] ");
+  vprintf(format, ap);
+  printf(COLOR_RESET);
 }

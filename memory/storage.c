@@ -1471,12 +1471,12 @@ void Save_Ammo_t_List_file(FILE *fp)
             "Use the following structure for the inputs:\n"
             "--------The defaults---------------------------------\n"
             "\t[I]  : the id of the ammo\n"
-            "\t[N]  : the name string\n"
+            "\t[L]  : label\n"
             "--------The parameters-------------------------------\n"
             "\t[W]  : the weight\n"
             "\t[D]  : the diameter (caliber)\n"
             "\t[BR] : the blast radius\n"
-            "\t[BC] : ballistic coefficient"
+            "\t[BC] : ballistic coefficient\n"
             "=====================================================\n"
             "-The data structure has no order\n"
             "-The id gets normalized\n"
@@ -1493,7 +1493,7 @@ void Save_Ammo_t_List_file(FILE *fp)
         if (b)
         {
             fprintf(fp,
-                    "I%u   N%s   W%.3f  D%.3f   BR%.3f   MV%.3f   BC%.3f;\n",
+                    "I%u   L%s   W%.3f  D%.3f   BR%.3f   MV%.3f   BC%.3f;\n",
                     b->id,
                     b->name,
                     b->weight,

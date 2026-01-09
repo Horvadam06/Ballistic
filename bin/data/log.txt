@@ -138,3 +138,31 @@ Solution:
   Valid:     YES
 -----------------------------
 
+=== ENTRY @ Thu Jan 08 22:31:37 2026 ===
+Base:
+  ID: 2058
+  Label: Philadelphia
+  Coord: latitude 39.952600, longitude -75.165200, altitude 12.00 m
+
+Target:
+  ID: 2000
+  Label: New_York
+  Coord: latitude 40.712800, longitude -74.006000, altitude 10.00 m
+
+Ammo:
+  ID: 26
+  Name: 81M_SMK
+  Weight: 3.800 kg
+  Diameter: 81.000 mm
+  BlastRadius: 0.000 m
+  MuzzleVel: 250.000 m/s
+  BC(G7): 10.00000
+
+Solution:
+  Elevation: 0.0000 deg
+  Azimuth:   0.0000 deg
+  TOF:       0.0000 s
+  ImpactVel: 0.0000 m/s
+  Valid:     YES
+-----------------------------
+

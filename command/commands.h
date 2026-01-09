@@ -193,6 +193,34 @@ void cmd_help_inline(const char *args, Command_case case_flags, PROCESS *running
  */
 void cmd_calculate(const char *args, Command_case case_flags, PROCESS *running);
 
+typedef enum
+{
+    LIST_MENU_ENTRY,
+    LIST_MENU_ADD,
+    LIST_MENU_DELETE,
+    LIST_MENU_DEL_CONFIR
+} DisplayType;
+
+typedef struct
+{
+    const char* name;
+    void *list_ptr;
+
+    // Display functions
+    void (*print_)(DisplayType display, void *entry_ptr);
+    void (*print_list)(void *list);
+
+    // Input handling
+    P_HRESULT (*add_handler)(char *record, void *data, int *error_flags);
+
+    // Search/delete
+    void *(*find_by_id)(void *list, unsigned id);
+    int (*delete_by_id)(void *list, unsigned id);
+
+} ListManagerConfig;
+
+void general_list_menu(Command_case case_flags, ListManagerConfig *config);
+
 /**
  * @brief Base operations handler
  * @param args Command arguments

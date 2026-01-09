@@ -87,7 +87,7 @@ The only reason it's was left in the program, to show my development*/
  * @note Supports nested comments and error reporting for partial records
  * @see ParseState enum for parsing states
  */
-P_HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS mode)
+P_HRESULT scan(const char *filename, RecordHandler handler, void *data, int *err_cnt, PROCESS mode)
 {
     FILE *file = fopen(filename, "r"); // "r" open file in read only mode
     if (!file)
@@ -98,9 +98,11 @@ P_HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS 
 
     int c;
     ParseState state = NORMAL;
-    char buffer[512];
+    char buffer[1024];
     int index = 0;
     P_HRESULT hr = P_S_OK; // handle to a result
+    if (err_cnt)
+        *err_cnt = 0;
 
     // Process file character by character with state machine
     while ((c = fgetc(file)) != EOF && SUCCEEDED(hr))
@@ -168,7 +170,7 @@ P_HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS 
                 // terminate buffer
                 buffer[index] = '\0';
                 int error_flags[5] = {0};
-                // a 512 sized array gets passed to the handler, so you can safely step it's ptr
+                // a 1024 sized array gets passed to the handler
                 if (handler)
                     hr = handler(buffer, data, error_flags); // pass the buffer and the user input address to the function
 
@@ -183,9 +185,12 @@ P_HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS 
                 {
                     char error[128] = {0};
                     if (format_basic_error_string(error, error_flags) == S_FALSE)
-                        printf("[Error] : Error buffer overflow!\n");
-                    printf("[Warning] : Missing parameter in the file [%s] : \nat the line [%s] : \n suggested parameters to add [%s]\n", filename, buffer, error);
+                        Error_message("Error buffer overflow!\n");
+                    Error_message("Missing parameter in the file [%s] : \nat the line [%s] : \n suggested parameters to add [%s]\n", filename, buffer, error);
                 }
+                else if (err_cnt && hr == P_S_FALSE)
+                    err_cnt++;
+
                 index = 0;
                 state = NORMAL;
             }
@@ -197,7 +202,7 @@ P_HRESULT scan(const char *filename, RecordHandler handler, void *data, PROCESS 
             }
             else
             {
-                printf("[Error] buffer overflow!");
+                Error_message("buffer overflow!");
                 hr = S_FALSE;
             }
 
@@ -346,7 +351,7 @@ P_HRESULT test_and_run_config(const char *config_file, PROCESS mode)
         }
         case CMD_NO:
         {
-            printf(COLOR_ERROR "Config creation was interrupted!\n");
+            Error_message(" Config creation was interrupted!\n");
             hr = E_FAIL;
             break;
         }
@@ -369,7 +374,7 @@ ReadConfig:
         print_colored(COLOR_SUCCESS, "Config loaded succesfully!\n", 1);
     }
     else
-        print_colored(COLOR_ERROR, "Failed to load config!\n", 1);
+        Error_message(" Failed to load config!\n");
 
     add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
     printf(ANSI_RESET "\n");
@@ -501,12 +506,11 @@ P_HRESULT read_config(const char *config_file)
     FILE *configfile = fopen(config_file, "r");
     if (!configfile)
     {
-
-        printf(COLOR_ERROR "Failed to open or locate [%s] in the working directory!\n" ANSI_RESET, config_file);
+        Error_message(" Failed to open or locate [%s] in the working directory!\n", config_file);
         return S_FALSE;
     }
 
-    scan(config_file, handle_config, NULL, S_RUNNING);
+    scan(config_file, handle_config, NULL, NULL, S_RUNNING);
 
     if (fclose(configfile) == EOF)
         return E_FAIL;
@@ -554,6 +558,15 @@ P_HRESULT handle_config(char *record, void *data, int *error_flags)
 // DATA FILE HANDLERS (Ammo, Base, Target)
 // ===========================================================================
 
+// helper for phrasing error formating
+void print_phrase_fail(const char *record_cpy, char *record, char *end)
+{
+    Error_message("");
+    printf(COLOR_ERROR "Invalid token '" ANSI_BRIGHT_RED ANSI_UNDERLINE);
+    record = strtoken(record, &end);
+    print_substring(record, end);
+    printf(ANSI_RESET COLOR_ERROR "' in line '" ANSI_BRIGHT_RED "%s" COLOR_ERROR "'!\n" COLOR_RESET, record_cpy);
+}
 /**
  * @brief Ammunition type record handler
  *
@@ -576,12 +589,14 @@ P_HRESULT handle_ammo_t(char *record, void *data, int *error_flags)
     // record in the scan case is only on the stack, so I can modify the pointer without a problem
     Ammo_t ammo;
     ammo.name = NULL;
+    char *ptr_cpy = record;
+    char *end = NULL;
 
     // hard cap, so if the user gives some invalid parameters, the program won't get stuck
     int i = 0;
     for (i = 0; i < Param_Check_Limit && strlen(record) > 0; i++)
     {
-        char *end = NULL;
+        end = NULL;
 
         /*id*/
         if (norm_strncmp(record, "I") == P_S_OK)
@@ -591,7 +606,7 @@ P_HRESULT handle_ammo_t(char *record, void *data, int *error_flags)
             record = strtoken(end, &end);
         }
         /*name*/
-        if (norm_strncmp(record, "N") == P_S_OK)
+        if (norm_strncmp(record, "L") == P_S_OK)
         {
             record = strtoken(record, &end);
             record++;
@@ -644,6 +659,8 @@ P_HRESULT handle_ammo_t(char *record, void *data, int *error_flags)
     }
     if (i == Param_Check_Limit)
     {
+        print_phrase_fail(ptr_cpy, record, end);
+
         if (ammo.name)
             free(ammo.name);
         return P_S_FALSE;
@@ -679,12 +696,14 @@ P_HRESULT handle_base(char *record, void *data, int *error_flags)
     // record in the scan case is only on the stack, so I can modify the pointer without a problem
     Base base;
     base.label = NULL;
+    char *ptr_cpy = record;
+    char *end = NULL;
 
     // hard cap, so if the user gives some invalid parameters, the program won't get stuck
     int i = 0;
     for (i = 0; i < Param_Check_Limit && strlen(record) > 0; i++)
     {
-        char *end = NULL;
+        end = NULL;
 
         // id
         if (norm_strncmp(record, "I") == P_S_OK)
@@ -755,6 +774,8 @@ P_HRESULT handle_base(char *record, void *data, int *error_flags)
     }
     if (i == Param_Check_Limit)
     {
+        print_phrase_fail(ptr_cpy, record, end);
+
         if (base.label)
             free(base.label);
         return P_S_FALSE;
@@ -789,11 +810,14 @@ P_HRESULT handle_target(char *record, void *data, int *error_flags)
     Target target;
     target.label = NULL;
 
+    char *ptr_cpy = record;
+    char *end = NULL;
+
     // hard cap, so if the user gives some invalid parameters, the program won't get stuck
     int i = 0;
     for (i = 0; i < Param_Check_Limit && strlen(record) > 0; i++)
     {
-        char *end = NULL;
+        end = NULL;
 
         // id
         if (norm_strncmp(record, "I") == P_S_OK)
@@ -847,6 +871,8 @@ P_HRESULT handle_target(char *record, void *data, int *error_flags)
     }
     if (i == Param_Check_Limit)
     {
+        print_phrase_fail(ptr_cpy, record, end);
+
         if (target.label)
             free(target.label);
         return P_S_FALSE;
@@ -882,7 +908,7 @@ void LogResult(const Base *base, const Target *tgt, const Ammo_t *ammo, const Ba
 {
     if (!base || !tgt || !ammo || !res)
     {
-        printf("LogResult: invalid argument.\n");
+        Error_message(" LogResult: invalid argument.\n");
         return;
     }
 
@@ -892,7 +918,7 @@ void LogResult(const Base *base, const Target *tgt, const Ammo_t *ammo, const Ba
     FILE *fp = fopen(folder_buffer, "a");
     if (!fp)
     {
-        printf("Failed to open log.txt for writing.\n");
+        Error_message("Failed to open log.txt for writing.\n");
         return;
     }
 
@@ -972,8 +998,8 @@ int HandleParameterSelection(void)
     unsigned baseID, targetID, ammoID;
     char input[128] = {0};
     add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
-    printf("Enter parameters: <base_id> <target_id> <ammo_id>\n");
-    printf("Type [back] to return or to view/expand the available [list]!\n");
+    printf(" Enter parameters: <base_id> <target_id> <ammo_id>\n");
+    printf(" Type [back] to return or to view/expand the available [list]!\n");
     add_seperator_c(NULL, NULL, NULL, '-', NORMAL_SEPERATOR_SIZE);
     printf("\n");
 
@@ -992,8 +1018,8 @@ int HandleParameterSelection(void)
     // Parse numerical IDs
     if (sscanf(input, "%u %u %u", &baseID, &targetID, &ammoID) != 3)
     {
-        printf(COLOR_ERROR "Invalid input. Expected format: <base_id> <target_id> <ammo_id>\n" ANSI_RESET);
-        printf("Press any key to return!\n");
+        printf(COLOR_ERROR " Invalid input. Expected format: <base_id> <target_id> <ammo_id>\n" ANSI_RESET);
+        printf(" Press any key to return!\n");
         while (!input_available())
             ;
         input_getchar();
@@ -1051,10 +1077,10 @@ int HandleParameterSelection(void)
         if (GetCommand(CMD_C_MODAL | CMD_C_YESNO, NULL) == CMD_NO)
             return 0;
 
-        printf(" Finding best available base and ammo for [id: %3d | label: %10s]\n", tgt->id, tgt->label);
+        printf(" Finding base and ammo for [id: %3d | label: %10s]\n", tgt->id, tgt->label);
         printf(" This may take a while...\n");
         printf(" Press [q] or [Esc] to terminate the calculation!\n");
-
+        printf(COLOR_HINT ASCI_ANGEL COLOR_RESET);
         // the entry for the calculation model loop for multi threading
 
         if (!SuggestBestBaseAndAmmo_Parallel(base_list, tgt, &base, &ammo))
