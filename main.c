@@ -105,7 +105,7 @@ PROCESS Setup()
 
     // Step 8: Display introduction banner
     add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-    printf(ANSI_GRAY "Ballistic trajectory calculator\n");
+    printf(ANSI_GRAY "Ballistic trajectory simulator\n");
     add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
 
     return S_RUNNING;

@@ -6,6 +6,7 @@
 #include "memory\load.h"
 #include "helpers\helpers.h"
 #include "os\terminal_info.h"
+#include "os\about_program.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -208,7 +209,7 @@ void cmd_help_inline(const char *args, Command_case case_flags, PROCESS *running
 
 // ==================== BASE DISPLAY FUNCTIONS ====================
 
-void base_info_print(DisplayType display, void *entry_ptr)
+P_HRESULT base_info_print(DisplayType display, void *entry_ptr)
 {
     switch (display)
     {
@@ -225,23 +226,19 @@ void base_info_print(DisplayType display, void *entry_ptr)
 
     case LIST_MENU_ADD:
         printf("\n Add base wizard\n");
-        add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-        int state = 1;
-        char *step[] = {
+
+        int state = 0;
+        const char *step[] = {
+            "Add base",
             "Enter ID",
             "Enter label",
             "Enter position",
             "Enter altitude",
             "Enter ammo stock",
             "Confirm"};
-        int n = sizeof(step) / sizeof(char *);
 
-        for (int i = state; i <= n; i++)
-            printf(COLOR_RESET " %d." COLOR_HINT " %s\n", i, (i > 0) ? step[i - 1] : "nan");
-
-        add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-
-        printf(COLOR_HINT " Add base (%d/%u) : " COLOR_RESET "%s\n", state, n, (state > 0) ? step[state - 1] : "nan");
+        if (!general_state_options(step, SIZE_OF_STRING_ARRAY(step), state))
+            return P_S_FALSE;
 
         break;
 
@@ -269,11 +266,13 @@ void base_info_print(DisplayType display, void *entry_ptr)
     default:
         Error_message("Missing display type!\n");
     }
+
+    return P_S_OK;
 }
 
 // ==================== TARGET DISPLAY FUNCTIONS ====================
 
-void target_info_print(DisplayType display, void *entry_ptr)
+P_HRESULT target_info_print(DisplayType display, void *entry_ptr)
 {
     switch (display)
     {
@@ -290,17 +289,18 @@ void target_info_print(DisplayType display, void *entry_ptr)
 
     case LIST_MENU_ADD:
         printf("\n Add target wizard\n");
-        add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-        int state = 1;
-        char *step[] = {"Enter ID", "Enter label", "Enter position", "Enter altitude", "Enter area", "Confirm"};
-        int n = sizeof(step) / sizeof(char *);
+        int state = 2;
+        const char *step[] = {
+            "Add target",
+            "Enter ID",
+            "Enter label",
+            "Enter position",
+            "Enter altitude",
+            "Enter area",
+            "Confirm"};
 
-        for (int i = state; i <= n; i++)
-            printf(COLOR_RESET " %d." COLOR_HINT " %s\n", i, (i > 0) ? step[i - 1] : "nan");
-
-        add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-
-        printf(COLOR_HINT " Add target (%d/%u) : " COLOR_RESET "%s\n", state, n, (state > 0) ? step[state - 1] : "nan");
+        if (!general_state_options(step, SIZE_OF_STRING_ARRAY(step), state))
+            return P_S_FALSE;
 
         break;
 
@@ -329,11 +329,12 @@ void target_info_print(DisplayType display, void *entry_ptr)
     default:
         Error_message("Missing display type!\n");
     }
+    return P_S_OK;
 }
 
 // ==================== AMMO_T DISPLAY FUNCTIONS ====================
 
-void ammo_info_print(DisplayType display, void *entry_ptr)
+P_HRESULT ammo_info_print(DisplayType display, void *entry_ptr)
 {
     switch (display)
     {
@@ -349,15 +350,19 @@ void ammo_info_print(DisplayType display, void *entry_ptr)
         break;
     case LIST_MENU_ADD:
         printf("\n Add ammo_t wizard\n");
-        add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
         int state = 1;
-        char *step[] = {"Enter ID", "Enter label", "Enter weight", "Enter diameter", "Enter blast radius", "Enter ballistic coefficient", "Confirm"};
-        int n = sizeof(step) / sizeof(char *);
-        for (int i = state; i <= n; i++)
-            printf(COLOR_RESET " %d." COLOR_HINT " %s\n", i, (i > 0) ? step[i - 1] : "nan");
-        add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+        const char *step[] = {
+            "Add ammo_t",
+            "Enter ID",
+            "Enter label",
+            "Enter weight",
+            "Enter diameter",
+            "Enter blast radius",
+            "Enter ballistic coefficient",
+            "Confirm"};
 
-        printf(COLOR_HINT " Add base (%d/%u) : " COLOR_RESET "%s\n", state, n, (state > 0) ? step[state - 1] : "nan");
+        if (!general_state_options(step, SIZE_OF_STRING_ARRAY(step), state))
+            return P_S_FALSE;
 
         break;
     case LIST_MENU_DELETE:
@@ -373,7 +378,7 @@ void ammo_info_print(DisplayType display, void *entry_ptr)
         if (!entry_ptr)
         {
             Error_message("Missing node ptr!\n");
-            return;
+            return P_S_FALSE;
         }
         Ammo_t *a = (Ammo_t *)entry_ptr;
         printf("\n Selected ammo:\n");
@@ -386,6 +391,8 @@ void ammo_info_print(DisplayType display, void *entry_ptr)
     default:
         Error_message("Missing display type!\n");
     }
+
+    return P_S_OK;
 }
 
 /**
@@ -408,7 +415,7 @@ void cmd_target(const char *args, Command_case case_flags, PROCESS *running)
     ListManagerConfig target_config = {
         .name = "target",
         .list_ptr = target_list,
-        .print_ = (void (*)(DisplayType, void *))target_info_print,
+        .print_ = (P_HRESULT (*)(DisplayType, void *))target_info_print,
         .print_list = (void (*)(void *))print_Target_List,
         .add_handler = (P_HRESULT (*)(char *, void *, int *))handle_target,
         .find_by_id = (void *(*)(void *, unsigned))FindTargetByID,
@@ -434,7 +441,7 @@ void cmd_base(const char *args, Command_case case_flags, PROCESS *running)
     ListManagerConfig base_config = {
         .name = "base",
         .list_ptr = base_list,
-        .print_ = (void (*)(DisplayType, void *))base_info_print,
+        .print_ = (P_HRESULT (*)(DisplayType, void *))base_info_print,
         .print_list = (void (*)(void *))print_Base_List_wrapper,
         .add_handler = (P_HRESULT (*)(char *, void *, int *))handle_base,
         .find_by_id = (void *(*)(void *, unsigned))FindBaseByID,
@@ -456,7 +463,7 @@ void cmd_ammo(const char *args, Command_case case_flags, PROCESS *running)
     ListManagerConfig ammo_config = {
         .name = "ammo_t",
         .list_ptr = ammo_t_list,
-        .print_ = (void (*)(DisplayType, void *))ammo_info_print,
+        .print_ = (P_HRESULT (*)(DisplayType, void *))ammo_info_print,
         .print_list = (void (*)(void *))print_Ammo_t_List,
         .add_handler = (P_HRESULT (*)(char *, void *, int *))handle_ammo_t,
         .find_by_id = (void *(*)(void *, unsigned))FindAmmoByID,
@@ -512,8 +519,11 @@ Entry_no_clr:
             return;
         case CMD_ADD:
         {
+        Entry_add:
             clear_terminal();
-            config->print_(LIST_MENU_ADD, NULL);
+            if (config->print_(LIST_MENU_ADD, NULL) == P_S_FALSE)
+                goto Entry_no_clr;
+
         Entry_add_no_clr:
 
             char buffer[1024];
@@ -528,6 +538,20 @@ Entry_no_clr:
             buffer[strcspn(buffer, "\r\n")] = 0;
 
             // handle input error
+            // option 1.
+            // make it so it's somewhat self contained, it return if the token was correct with S_OK maybe, if no S_FALSE
+            // probably a stand alone enum state machine would be the best, which returns the process state (finished, running, etc)
+            // Always return's to Entry_add, so the command handling is already processed. If it signals finished,
+            // only then continue with the process
+            // ammo and target should be the easiest, bases ammo stock is the problem
+            // Biggest issues:a very big chance of memory leak
+            //
+            // option 2.
+            // make it fully self contained
+            // pros: memory safe
+            // cons : duplicated code for command handling, maybe can be avoided if the command managment is modified to be self contained
+
+            //self contained command handling parameters, back, help, and that's it. Maybe can be avoided using buffer command handler???
             if (config->add_handler(buffer, config->list_ptr, NULL) == P_S_FALSE)
             {
                 clear_terminal();
@@ -597,6 +621,30 @@ Entry_no_clr:
     cmd_clr_ter(NULL, CMD_C_ALL, NULL);
 }
 
+int general_state_options(const char *array[], int n, int step)
+{
+    if (step > n)
+    {
+        Error_message("For the array: 0x%p, he given step: %d, is larger than the array's size: %d!\n", array, step, n);
+        return 0;
+    }
+    else if (step == 0)
+    {
+        Error_message("For the array: 0x%p the position: %d is protected!\n", array, step);
+        return 0;
+    }
+
+    add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+    for (int i = 1; i < n; i++)
+        printf(COLOR_RESET " %d.%s %s\n",
+               i, (i == step) ? "" : COLOR_HINT, array[i]);
+    add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+
+    printf(COLOR_HINT "%s (%d/%d) : " COLOR_RESET "%s\n",
+           array[0], step, n - 1, array[step]);
+
+    return 1;
+}
 /**
  * @brief Test command handler
  *
@@ -757,9 +805,9 @@ void cmd_info(const char *args, Command_case case_flags, PROCESS *running)
         return;
     printf("\n");
     add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-    printf(ANSI_GRAY " %-10s : " COLOR_TITLE "Ballistic trajectory calculator\n", "Product");
-    printf(ANSI_GRAY " %-10s : " COLOR_TITLE "Adam Jozsef Horvath\n", "Author");
-    printf(ANSI_GRAY " %-10s : " COLOR_TITLE "7.3.0\n", "Version");
+    printf(ANSI_GRAY " %-10s : " COLOR_TITLE P_NAME "\n", "Product");
+    printf(ANSI_GRAY " %-10s : " COLOR_TITLE P_AUTHOR "\n", "Author");
+    printf(ANSI_GRAY " %-10s : " COLOR_TITLE P_VERSION "\n", "Version");
     add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
     printf(ANSI_RESET);
     printf("\n");

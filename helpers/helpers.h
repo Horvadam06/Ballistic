@@ -8,6 +8,7 @@
 #define HIDE_CURSOR() printf("\x1b[?25l")
 #define SHOW_CURSOR() printf("\x1b[?25h")
 #define NORMAL_SEPERATOR_SIZE 60
+#define SIZE_OF_STRING_ARRAY(array) (sizeof(array) / sizeof(char *))
 
 #include <ctype.h>
 #include "helpers\debug.h"

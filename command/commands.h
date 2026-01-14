@@ -207,7 +207,7 @@ typedef struct
     void *list_ptr;
 
     // Display functions
-    void (*print_)(DisplayType display, void *entry_ptr);
+    P_HRESULT (*print_)(DisplayType display, void *entry_ptr);
     void (*print_list)(void *list);
 
     // Input handling
@@ -221,6 +221,7 @@ typedef struct
 
 void general_list_menu(Command_case case_flags, ListManagerConfig *config);
 
+int general_state_options(const char *array[], int n, int step);
 /**
  * @brief Base operations handler
  * @param args Command arguments
