@@ -403,29 +403,87 @@ P_HRESULT base_string_state_token(char *buffer, size_t buffer_n, char *token, si
     (void)buffer_n;
     (void)state;
     buffer[0] = 's';
-    //plan
-    //search for the required token with strchr, if it's in the 0th pos, it's a token for sure, if not
-    //check if there is an empty space before it, if there is it's a token for sure
+    // plan
+    // search for the required token with strchr, if it's in the 0th pos, it's a token for sure, if not
+    // check if there is an empty space before it, if there is it's a token for sure
+    // THIS CHECK CAN ONLY WORK IF I DON'T ALLOW SPACES IN FOR EXAMPLE LSOMETHING CLA, can only work with SOMETHING_CLA,
+    // maybe rework the phraser, to convert the user input to automaticly add _ in the place of spaces
 
-    switch (state)
-    {
-    case 1:
-
-        break;
-    case 2:
-        break;
-    case 3:
-        break;
-    case 4:
-        break;
-    case 5:
-        break;
-    case 6:
-        break;
-
-    default:
+    // make the token finding automatic, so if it isn't a token start, then continue the search from where it failed
+    if (state > 6 || state < 1)
         return P_S_FALSE;
+
+    if (state < 6)
+    {
+        state--;
+        char *id[] = {"I", "L", "CLA", "CA", "ANS"};
+        int failed = 1;
+        char *token_srch = buffer;
+        while (failed)
+        {
+            token_srch = strchr(token_srch, id[state]);
+            if (token_srch == buffer)
+            {
+                failed = 0;
+            }
+            else
+            {
+                //check the space before the value
+            }
+        }
+        switch (state)
+        {
+        case 0:
+        {
+            token_srch = strchr(buffer, 'I');
+            if (token_srch == buffer)
+            {
+            }
+
+            break;
+        }
+        case 1:
+        {
+            token_srch = strchr(buffer, 'L');
+            if (token_srch == buffer)
+            {
+            }
+
+            break;
+        }
+        case 2:
+        {
+            token_srch = strchr(buffer, 'CLA');
+            if (token_srch == buffer)
+            {
+            }
+
+            break;
+        }
+        case 3:
+        {
+            token_srch = strchr(buffer, 'CA');
+            if (token_srch == buffer)
+            {
+            }
+
+            break;
+        }
+        case 4:
+        {
+            token_srch = strchr(buffer, 'AMS');
+            if (token_srch == buffer)
+            {
+            }
+
+            break;
+        }
+
+        default:
+            return P_S_FALSE;
+        }
     }
+
     return P_S_FALSE;
 }
 
