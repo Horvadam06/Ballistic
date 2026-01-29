@@ -91,7 +91,7 @@ P_HRESULT run_pre_test(PROCESS process_state)
     }*/
 
     putchar('\n');
-    print_header(NORMAL_SEPERATOR_SIZE, COLOR_HINT,
+    add_header(NORMAL_SEPERATOR_SIZE, COLOR_HINT,
                  COLOR_HINT "%-15s"COLOR_HINT"|""%-14s""|""%-14s",
                  "List test sum.", "node count", "null node count");
     unsigned null_cnt;

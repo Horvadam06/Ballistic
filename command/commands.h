@@ -207,11 +207,11 @@ typedef struct
     void *list_ptr;
 
     // Display functions
-    P_HRESULT (*print_)(DisplayType display, void *entry_ptr);
+    P_HRESULT (*print_)(DisplayType display, void *entry_ptr, void *data);
     void (*print_list)(void *list);
 
     // Input handling
-    P_HRESULT (*add_handler)(char *record, void *data, int *error_flags);
+    P_HRESULT (*phrase_tokens)(char *buffer, size_t buffer_n, char* token, size_t token_n, int state);
 
     // Search/delete
     void *(*find_by_id)(void *list, unsigned id);
@@ -221,7 +221,7 @@ typedef struct
 
 void general_list_menu(Command_case case_flags, ListManagerConfig *config);
 
-int general_state_options(const char *array[], int n, int step);
+int general_state_options(const char *array[], int n, int protected_pos, int step);
 /**
  * @brief Base operations handler
  * @param args Command arguments

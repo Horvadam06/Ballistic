@@ -271,19 +271,35 @@ void add_seperator_s(const char *sep_colour, const char *str_colour, const char 
 
 #include <stdarg.h>
 
-// if 0 is the width, auto clamp to the input length, use │ for seperation
-void print_header(size_t width, const char *box_colour, const char *format, ...)
+static size_t visible_len(const char *s)
 {
-    size_t row_n = 3;
+    size_t len = 0;
+    int esc = 0;
+    for (; *s; s++)
+    {
+        if (*s == '\033') esc = 1;
+        else if (esc && *s == 'm') esc = 0;
+        else if (!esc) len++;
+    }
+    return len;
+}
+
+// rewrite to work with new line charcters
+void add_header(size_t width, const char *box_colour, const char *format, ...)
+{
+
     if (width == 0)
         return;
-    va_list ap;
 
+    va_list ap;
     va_start(ap, format);
 
     // modify later to use dynamic memory alloc
     char buffer[1024];
     vsprintf(buffer, format, ap);
+
+    size_t row_n = 3;
+    size_t print_pos = 0;
 
     // or the phrased length
     for (size_t row = 1; row <= row_n; row++)
@@ -343,23 +359,23 @@ void print_header(size_t width, const char *box_colour, const char *format, ...)
             else
             {
 
-                if (j == 0)
+                if (print_pos == 0)
                 {
                     int in_esc_code = 0;
                     int trimmed_length = 0;
-                    for (; buffer[j] != '\0'; j++)
+                    for (; buffer[print_pos] != '\0'; j++, print_pos++)
                     {
-                        if (buffer[j] == '\033')
+                        if (buffer[print_pos] == '\033')
                             in_esc_code = 1;
-                        else if (in_esc_code && buffer[j] == 'm')
+                        else if (in_esc_code && buffer[print_pos] == 'm')
                             in_esc_code = 0;
                         else if (!in_esc_code)
                             trimmed_length++;
 
-                        if (buffer[j] == '|')
+                        if (buffer[print_pos] == '|')
                             printf("│");
                         else
-                            printf("%c", buffer[j]);
+                            printf("%c", buffer[print_pos]);
                     }
                     column = trimmed_length + 1;
                 }
@@ -372,6 +388,8 @@ void print_header(size_t width, const char *box_colour, const char *format, ...)
         printf(ANSI_RESET);
     }
     va_end(ap);
+
+    //┬ ┴ ┼
 }
 
 /**
@@ -419,9 +437,9 @@ void render_progress_bar(unsigned percent, progress_hook_fn before, progress_hoo
         printf("\r[");
 
     for (unsigned i = 0; i < bar_width; ++i)
-        printf(i < filled ? (COLOR_RESET">") : (COLOR_HINT " "));
+        printf(i < filled ? (COLOR_RESET ">") : (COLOR_HINT " "));
 
-    printf(COLOR_RESET"] %3u%%", percent);
+    printf(COLOR_RESET "] %3u%%", percent);
     if (after)
         after(arg_a);
     fflush(stdout);
@@ -438,27 +456,28 @@ const char *skip_spaces(const char *str)
     return str;
 }
 
-
-void split_screen_demo(void) {
+void split_screen_demo(void)
+{
     int width, height;
     terminal_size(&width, &height);
-    
+
     // Clear screen
     clear_terminal();
-    
+
     // Draw vertical line in middle
-    for (int y = 0; y < height - 2; y++) {
+    for (int y = 0; y < height - 2; y++)
+    {
         printf("\033[%d;%dH│", y + 1, width / 2);
     }
-    
+
     // Write to left panel
-    printf("\033[2;2H");  // Move to row 2, column 2
+    printf("\033[2;2H"); // Move to row 2, column 2
     printf("LEFT PANEL");
     printf("\033[3;2H");
     printf("Item 1");
     printf("\033[4;2H");
     printf("Item 2");
-    
+
     // Write to right panel
     printf("\033[2;%dH", width / 2 + 2);
     printf("RIGHT PANEL");
@@ -466,8 +485,7 @@ void split_screen_demo(void) {
     printf("Value A");
     printf("\033[4;%dH", width / 2 + 2);
     printf("Value B");
-    
+
     // Keep cursor at bottom
     printf("\033[%d;1H", height);
 }
-

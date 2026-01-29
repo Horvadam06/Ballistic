@@ -57,7 +57,7 @@
  * @note Sets up global data structures (ammo_t_list, base_list, target_list)
  * @note Handles both fresh install (creates config) and existing install scenarios
  */
-#define DEFAULT_WIN_WIDTH 125 // 80 for calc
+#define DEFAULT_WIN_WIDTH 80 // 80 for calc
 #define DEFAULT_WIN_HEIGHT 35
 
 PROCESS Setup()
@@ -68,6 +68,7 @@ PROCESS Setup()
         return S_TERMINATE;
 
     enable_ansi_escape();
+    
 
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
@@ -184,14 +185,14 @@ int main(void)
     // Determine exit status based on final state
     if (state == S_END)
     {
-        printf(COLOR_SUCCESS "Program exited succesfully!\n");
+        printf(COLOR_SUCCESS "Program exited succesfully!\n" COLOR_RESET);
         return 0;
     }
     else if (state == S_TERMINATE)
     {
         fprintf(stderr, "Terminated with fatal error!\n");
         // Optional: Uncomment to keep terminal open for error inspection
-        printf(COLOR_WARNING "Press any key, to close the window!\n");
+        printf(COLOR_WARNING "Press any key, to close the window!\n"COLOR_RESET);
         while (!input_available())
             Sleep(20);
         return -1;

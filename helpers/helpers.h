@@ -9,6 +9,7 @@
 #define SHOW_CURSOR() printf("\x1b[?25h")
 #define NORMAL_SEPERATOR_SIZE 60
 #define SIZE_OF_STRING_ARRAY(array) (sizeof(array) / sizeof(char *))
+#define SIZE_OF_CHAR_ARRAY(array) (sizeof(array) / sizeof(char))
 
 #include <ctype.h>
 #include "helpers\debug.h"
@@ -47,7 +48,7 @@ void add_seperator_c(const char *sep_colour, const char *str_colour, const char 
 
 void add_seperator_s(const char *sep_colour, const char *str_colour, const char *str, const char *symbol, unsigned sep_length);
 
-void print_header(size_t width, const char *box_colour, const char *format, ...);
+void add_header(size_t width, const char *box_colour, const char *format, ...);
 
 /*Clears terminal using ANSI codes if color mode enabled */
 

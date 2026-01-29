@@ -13,6 +13,8 @@
 #include <string.h>
 #include <assert.h>
 
+#define HELP_DESCRIPTION_ALIGMENT 24
+
 //========================================================================
 // GLOBAL COMMAND TABLE
 //========================================================================
@@ -145,10 +147,10 @@ void cmd_help(const char *args, Command_case case_flags, PROCESS *running)
     // formated list
     if (!(case_flags & CMD_C_NOCOMMENT))
     {
-        print_header(NORMAL_SEPERATOR_SIZE,
-                     COLOR_HINT,
-                     COLOR_TITLE "%-24s" COLOR_HINT " |" COLOR_TITLE "%-10s" COLOR_HINT " |" COLOR_TITLE "%s",
-                     "description", "command", "aliases");
+        add_header(NORMAL_SEPERATOR_SIZE,
+                   COLOR_HINT,
+                   COLOR_TITLE "%-*s" COLOR_HINT " |" COLOR_TITLE "%-10s" COLOR_HINT " |" COLOR_TITLE "%s",
+                   HELP_DESCRIPTION_ALIGMENT, "description", "command", "aliases");
     }
     else
         add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
@@ -157,7 +159,7 @@ void cmd_help(const char *args, Command_case case_flags, PROCESS *running)
         if (!(commands[i].case_mask & case_flags) || (commands[i].type == CMD_HELP))
             continue; // command not available in this mode
 
-        printf(ANSI_GRAY " %-24s │" COLOR_TITLE "%-10s" ANSI_GRAY " │", commands[i].description, commands[i].name);
+        printf(ANSI_GRAY " %-*s │" COLOR_TITLE "%-10s" ANSI_GRAY " │", HELP_DESCRIPTION_ALIGMENT, commands[i].description, commands[i].name);
 
         /*change_colour(ANSI_GREEN);
         printf("    %-4s", commands[i].name);
@@ -207,28 +209,29 @@ void cmd_help_inline(const char *args, Command_case case_flags, PROCESS *running
     printf("]");
 }
 
-// ==================== BASE DISPLAY FUNCTIONS ====================
+// Info display =========================================================
 
-P_HRESULT base_info_print(DisplayType display, void *entry_ptr)
+P_HRESULT base_info_print(DisplayType display, void *entry_ptr, void *data)
 {
     switch (display)
     {
     case LIST_MENU_ENTRY:
-        printf("\n Bases menu\n");
-        add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "list" ANSI_GRAY "]\n", "Display list");
-        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "add" ANSI_GRAY "]\n", "Add to list");
-        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "delete" ANSI_GRAY "]\n", "Delete from list");
-        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "back" ANSI_GRAY "]\n", "Step back");
+        printf("\n");
+        add_header(NORMAL_SEPERATOR_SIZE, ANSI_GRAY, "%-*s " ANSI_GRAY "|" COLOR_RESET "%s", HELP_DESCRIPTION_ALIGMENT, "Bases menu", "command");
+        printf(ANSI_GRAY " %-*s " VLINE COLOR_TITLE "list" ANSI_GRAY "\n", HELP_DESCRIPTION_ALIGMENT, "Display list");
+        printf(ANSI_GRAY " %-*s " VLINE COLOR_TITLE "add" ANSI_GRAY "\n", HELP_DESCRIPTION_ALIGMENT, "Add to list");
+        printf(ANSI_GRAY " %-*s " VLINE COLOR_TITLE "delete" ANSI_GRAY "\n", HELP_DESCRIPTION_ALIGMENT, "Delete from list");
+        printf(ANSI_GRAY " %-*s " VLINE COLOR_TITLE "back" ANSI_GRAY "\n", HELP_DESCRIPTION_ALIGMENT, "Step back");
         add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
         printf(ANSI_RESET);
         break;
 
     case LIST_MENU_ADD:
-        printf("\n Add base wizard\n");
 
-        int state = 0;
+        // phrase state data pointer to state
+        int state = (data) ? *((int *)data) : 0;
         const char *step[] = {
+            "Add base wizard",
             "Add base",
             "Enter ID",
             "Enter label",
@@ -237,7 +240,7 @@ P_HRESULT base_info_print(DisplayType display, void *entry_ptr)
             "Enter ammo stock",
             "Confirm"};
 
-        if (!general_state_options(step, SIZE_OF_STRING_ARRAY(step), state))
+        if (!general_state_options(step, SIZE_OF_STRING_ARRAY(step), 1, state))
             return P_S_FALSE;
 
         break;
@@ -270,27 +273,26 @@ P_HRESULT base_info_print(DisplayType display, void *entry_ptr)
     return P_S_OK;
 }
 
-// ==================== TARGET DISPLAY FUNCTIONS ====================
-
-P_HRESULT target_info_print(DisplayType display, void *entry_ptr)
+P_HRESULT target_info_print(DisplayType display, void *entry_ptr, void *data)
 {
     switch (display)
     {
     case LIST_MENU_ENTRY:
-        printf("\n Targets menu\n");
-        add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "list" ANSI_GRAY "]\n", "Display list");
-        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "add" ANSI_GRAY "]\n", "Add to list");
-        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "delete" ANSI_GRAY "]\n", "Delete from list");
-        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "back" ANSI_GRAY "]\n", "Step back");
+        printf("\n");
+        add_header(NORMAL_SEPERATOR_SIZE, ANSI_GRAY, "%-*s " ANSI_GRAY "|" COLOR_RESET "%s", HELP_DESCRIPTION_ALIGMENT, "Targets menu", "command");
+        printf(ANSI_GRAY " %-*s " VLINE COLOR_TITLE "list" ANSI_GRAY "\n", HELP_DESCRIPTION_ALIGMENT, "Display list");
+        printf(ANSI_GRAY " %-*s " VLINE COLOR_TITLE "add" ANSI_GRAY "\n", HELP_DESCRIPTION_ALIGMENT, "Add to list");
+        printf(ANSI_GRAY " %-*s " VLINE COLOR_TITLE "delete" ANSI_GRAY "\n", HELP_DESCRIPTION_ALIGMENT, "Delete from list");
+        printf(ANSI_GRAY " %-*s " VLINE COLOR_TITLE "back" ANSI_GRAY "\n", HELP_DESCRIPTION_ALIGMENT, "Step back");
         add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
         printf(ANSI_RESET);
         break;
 
     case LIST_MENU_ADD:
-        printf("\n Add target wizard\n");
-        int state = 2;
+
+        int state = (data) ? *((int *)data) : 0;
         const char *step[] = {
+            "Add target wizard",
             "Add target",
             "Enter ID",
             "Enter label",
@@ -299,7 +301,7 @@ P_HRESULT target_info_print(DisplayType display, void *entry_ptr)
             "Enter area",
             "Confirm"};
 
-        if (!general_state_options(step, SIZE_OF_STRING_ARRAY(step), state))
+        if (!general_state_options(step, SIZE_OF_STRING_ARRAY(step), 1, state))
             return P_S_FALSE;
 
         break;
@@ -332,26 +334,25 @@ P_HRESULT target_info_print(DisplayType display, void *entry_ptr)
     return P_S_OK;
 }
 
-// ==================== AMMO_T DISPLAY FUNCTIONS ====================
-
-P_HRESULT ammo_info_print(DisplayType display, void *entry_ptr)
+P_HRESULT ammo_info_print(DisplayType display, void *entry_ptr, void *data)
 {
     switch (display)
     {
     case LIST_MENU_ENTRY:
-        printf("\n Ammo type menu\n");
-        add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "list" ANSI_GRAY "]\n", "Display list");
-        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "add" ANSI_GRAY "]\n", "Add to list");
-        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "delete" ANSI_GRAY "]\n", "Delete from list");
-        printf(ANSI_GRAY " %-20s : [" COLOR_TITLE "back" ANSI_GRAY "]\n", "Step back");
+        printf("\n");
+        add_header(NORMAL_SEPERATOR_SIZE, ANSI_GRAY, "%-*s " ANSI_GRAY "|" COLOR_RESET "%s", HELP_DESCRIPTION_ALIGMENT, "Ammo type menu", "command");
+        printf(ANSI_GRAY " %-*s " VLINE COLOR_TITLE "list" ANSI_GRAY "\n", HELP_DESCRIPTION_ALIGMENT, "Display list");
+        printf(ANSI_GRAY " %-*s " VLINE COLOR_TITLE "add" ANSI_GRAY "\n", HELP_DESCRIPTION_ALIGMENT, "Add to list");
+        printf(ANSI_GRAY " %-*s " VLINE COLOR_TITLE "delete" ANSI_GRAY "\n", HELP_DESCRIPTION_ALIGMENT, "Delete from list");
+        printf(ANSI_GRAY " %-*s " VLINE COLOR_TITLE "back" ANSI_GRAY "\n", HELP_DESCRIPTION_ALIGMENT, "Step back");
         add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
         printf(ANSI_RESET);
+
         break;
     case LIST_MENU_ADD:
-        printf("\n Add ammo_t wizard\n");
-        int state = 1;
+        int state = (data) ? *((int *)data) : 0;
         const char *step[] = {
+            "Add ammo_t wizard",
             "Add ammo_t",
             "Enter ID",
             "Enter label",
@@ -361,7 +362,7 @@ P_HRESULT ammo_info_print(DisplayType display, void *entry_ptr)
             "Enter ballistic coefficient",
             "Confirm"};
 
-        if (!general_state_options(step, SIZE_OF_STRING_ARRAY(step), state))
+        if (!general_state_options(step, SIZE_OF_STRING_ARRAY(step), 1, state))
             return P_S_FALSE;
 
         break;
@@ -395,6 +396,55 @@ P_HRESULT ammo_info_print(DisplayType display, void *entry_ptr)
     return P_S_OK;
 }
 
+// Phrase add state to buffer ============================================
+
+P_HRESULT base_string_state_token(char *buffer, size_t buffer_n, char *token, size_t token_n, int state)
+{
+    (void)buffer_n;
+    (void)state;
+    buffer[0] = 's';
+    //plan
+    //search for the required token with strchr, if it's in the 0th pos, it's a token for sure, if not
+    //check if there is an empty space before it, if there is it's a token for sure
+
+    switch (state)
+    {
+    case 1:
+
+        break;
+    case 2:
+        break;
+    case 3:
+        break;
+    case 4:
+        break;
+    case 5:
+        break;
+    case 6:
+        break;
+
+    default:
+        return P_S_FALSE;
+    }
+    return P_S_FALSE;
+}
+
+P_HRESULT target_string_state_token(char *buffer, size_t buffer_n, int state)
+{
+    (void)buffer_n;
+    (void)state;
+    buffer[0] = 's';
+    return P_S_FALSE;
+}
+
+P_HRESULT ammo_t_string_state_token(char *buffer, size_t buffer_n, int state)
+{
+    (void)buffer_n;
+    (void)state;
+    buffer[0] = 's';
+    return P_S_FALSE;
+}
+
 /**
  * @brief Target management command handler
  *
@@ -415,9 +465,9 @@ void cmd_target(const char *args, Command_case case_flags, PROCESS *running)
     ListManagerConfig target_config = {
         .name = "target",
         .list_ptr = target_list,
-        .print_ = (P_HRESULT (*)(DisplayType, void *))target_info_print,
+        .print_ = (P_HRESULT (*)(DisplayType, void *, void *))target_info_print,
         .print_list = (void (*)(void *))print_Target_List,
-        .add_handler = (P_HRESULT (*)(char *, void *, int *))handle_target,
+        .phrase_tokens = (P_HRESULT (*)(char *, size_t, char *, size_t, int))target_string_state_token,
         .find_by_id = (void *(*)(void *, unsigned))FindTargetByID,
         .delete_by_id = (int (*)(void *, unsigned))delete_Target};
 
@@ -441,9 +491,9 @@ void cmd_base(const char *args, Command_case case_flags, PROCESS *running)
     ListManagerConfig base_config = {
         .name = "base",
         .list_ptr = base_list,
-        .print_ = (P_HRESULT (*)(DisplayType, void *))base_info_print,
+        .print_ = (P_HRESULT (*)(DisplayType, void *, void *))base_info_print,
         .print_list = (void (*)(void *))print_Base_List_wrapper,
-        .add_handler = (P_HRESULT (*)(char *, void *, int *))handle_base,
+        .phrase_tokens = (P_HRESULT (*)(char *, size_t, char *, size_t, int))base_string_state_token,
         .find_by_id = (void *(*)(void *, unsigned))FindBaseByID,
         .delete_by_id = (int (*)(void *, unsigned))delete_BaseById};
 
@@ -463,9 +513,9 @@ void cmd_ammo(const char *args, Command_case case_flags, PROCESS *running)
     ListManagerConfig ammo_config = {
         .name = "ammo_t",
         .list_ptr = ammo_t_list,
-        .print_ = (P_HRESULT (*)(DisplayType, void *))ammo_info_print,
+        .print_ = (P_HRESULT (*)(DisplayType, void *, void *))ammo_info_print,
         .print_list = (void (*)(void *))print_Ammo_t_List,
-        .add_handler = (P_HRESULT (*)(char *, void *, int *))handle_ammo_t,
+        .phrase_tokens = (P_HRESULT (*)(char *, size_t, char *, size_t, int))ammo_t_string_state_token,
         .find_by_id = (void *(*)(void *, unsigned))FindAmmoByID,
         .delete_by_id = (int (*)(void *, unsigned))delete_Ammo_t};
 
@@ -507,9 +557,10 @@ Entry_no_clr:
             Error_message("Missing print_ parameter for %s!\n", config->name);
             return;
         }
-        config->print_(LIST_MENU_ENTRY, NULL);
+        config->print_(LIST_MENU_ENTRY, NULL, NULL);
     }
     Command_t cmd;
+    char handler_buffer[1024] = {'\0'};
     while ((cmd = GetCommand(CMD_C_LOAD | CMD_C_MODAL, NULL)) != CMD_BACK)
     {
         switch (cmd)
@@ -519,9 +570,11 @@ Entry_no_clr:
             return;
         case CMD_ADD:
         {
+            // it's preaty whacky, should revise it later
+            int state = 1;
         Entry_add:
             clear_terminal();
-            if (config->print_(LIST_MENU_ADD, NULL) == P_S_FALSE)
+            if (config->print_(LIST_MENU_ADD, NULL, &state) == P_S_FALSE)
                 goto Entry_no_clr;
 
         Entry_add_no_clr:
@@ -537,6 +590,12 @@ Entry_no_clr:
             // remove traling carrig feed or new line
             buffer[strcspn(buffer, "\r\n")] = 0;
 
+            if (!isalpha((unsigned char)buffer[0]))
+            {
+                state = (int)strtof(buffer, NULL);
+                goto Entry_add;
+            }
+
             // handle input error
             // option 1.
             // make it so it's somewhat self contained, it return if the token was correct with S_OK maybe, if no S_FALSE
@@ -551,8 +610,29 @@ Entry_no_clr:
             // pros: memory safe
             // cons : duplicated code for command handling, maybe can be avoided if the command managment is modified to be self contained
 
-            //self contained command handling parameters, back, help, and that's it. Maybe can be avoided using buffer command handler???
-            if (config->add_handler(buffer, config->list_ptr, NULL) == P_S_FALSE)
+            // self contained command handling parameters, back, help, and that's it. Maybe can be avoided using buffer command handler???
+
+            // something is needed, which ectracts the tyoe and the data from the token, and checks it's validity,
+            //  if it's valid, then it writes it to the temp data type, on exit, or succes, it free's up all of the allocated memory, then calls the appripiate call function
+            // basicly a per token handler
+            //
+            // the cleanest would be a self contained function, because then it won't pollute the command logic further,
+            // with backend stuff, so should be at load.c or storage.c, the only problem would be, that it would cause the "gui" to freeze, or maybe just move the ui displaying to there
+            // basicly it should be the same as the deticated handler, the only difference would be, that instead of the tokenizer stepping on the buffer, it would only phrase
+            // one token
+            //
+            // this is a self contained loop, maybe create an internal buffer, which get's modified in the
+            //"handler", it would string together the input data, and when finished pass it to the "real" handler??
+            // the data can be raw, so no id tokens are needed, because they type would depend on the state
+            //
+
+            // maybe pass the struct to the function too, so it can display the value set, and not just rawdogging the value's by head
+            // handler should be seperate, later I need to add it back
+            // config->handler(buffer, config->list_ptr, NULL) == P_S_FALSE
+            if (config->phrase_tokens(
+                    handler_buffer, SIZE_OF_CHAR_ARRAY(handler_buffer),
+                    buffer, SIZE_OF_CHAR_ARRAY(buffer),
+                    state))
             {
                 clear_terminal();
                 print_colored(COLOR_ERROR, "Invalid input!\n", 1);
@@ -565,7 +645,7 @@ Entry_no_clr:
         case CMD_DELETE:
         {
             clear_terminal();
-            config->print_(LIST_MENU_DELETE, NULL);
+            config->print_(LIST_MENU_DELETE, NULL, NULL);
 
         Entry_delete_no_clr:
 
@@ -592,7 +672,7 @@ Entry_no_clr:
             }
             else
             {
-                config->print_(LIST_MENU_DEL_CONFIR, node);
+                config->print_(LIST_MENU_DEL_CONFIR, node, NULL);
 
                 // confirm deletion
                 printf("\n Confirm deletion? ");
@@ -621,27 +701,45 @@ Entry_no_clr:
     cmd_clr_ter(NULL, CMD_C_ALL, NULL);
 }
 
-int general_state_options(const char *array[], int n, int step)
+/**
+ * @brief display state machine
+ * @param array state string array
+ * @param n array size
+ * @param protected_pos choose the list start, -1 for no hidden string
+ * @param step Pointer to program state
+ * @ingroup CommandHandling
+ */
+int general_state_options(const char *array[], int n, int protected_pos, int step)
 {
-    if (step > n)
+    if (protected_pos < -1)
+        protected_pos = -1;
+    int start_i = protected_pos + 1;
+    int adjusted_step = start_i + step - 1;
+    if (adjusted_step >= n)
     {
-        Error_message("For the array: 0x%p, he given step: %d, is larger than the array's size: %d!\n", array, step, n);
+        Error_message("For the array: 0x%p, the given step: %d, exceeds the array's limit: %d!\n", array, adjusted_step, n);
         return 0;
     }
-    else if (step == 0)
+    else if (adjusted_step <= protected_pos)
     {
-        Error_message("For the array: 0x%p the position: %d is protected!\n", array, step);
+        Error_message("For the array: 0x%p, the value: %d, is protected!\n", array, step);
         return 0;
     }
 
-    add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
-    for (int i = 1; i < n; i++)
+    if (protected_pos >= 0)
+        add_header(NORMAL_SEPERATOR_SIZE, ANSI_GRAY, "%s", array[0]);
+
+    // add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+    for (int i = start_i; i < n; i++)
         printf(COLOR_RESET " %d.%s %s\n",
-               i, (i == step) ? "" : COLOR_HINT, array[i]);
+               i - start_i + 1, (i == adjusted_step) ? "" : COLOR_HINT, array[i]);
     add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
 
-    printf(COLOR_HINT "%s (%d/%d) : " COLOR_RESET "%s\n",
-           array[0], step, n - 1, array[step]);
+    if (protected_pos >= 1)
+        printf(COLOR_HINT "%s (%d/%d) : " COLOR_RESET "%s\n",
+               array[1], step, n - protected_pos - 1, array[adjusted_step]);
+    // add_header(NORMAL_SEPERATOR_SIZE, ANSI_GRAY, COLOR_HINT "%s (%d/%d) | " COLOR_RESET "%s",
+    //             array[1], step, n - protected_pos - 1, array[adjusted_step]);
 
     return 1;
 }

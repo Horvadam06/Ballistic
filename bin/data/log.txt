@@ -166,3 +166,31 @@ Solution:
   Valid:     YES
 -----------------------------
 
+=== ENTRY @ Tue Jan 20 14:12:09 2026 ===
+Base:
+  ID: 1026
+  Label: TokyoBay
+  Coord: latitude 35.650000, longitude 139.700000, altitude 5.00 m
+
+Target:
+  ID: 1000
+  Label: Tokyo
+  Coord: latitude 35.689500, longitude 139.691700, altitude 40.00 m
+
+Ammo:
+  ID: 19
+  Name: 300SMERCH_TB
+  Weight: 820.000 kg
+  Diameter: 300.000 mm
+  BlastRadius: 260.000 m
+  MuzzleVel: 1100.000 m/s
+  BC(G7): 62.00000
+
+Solution:
+  Elevation: 0.0000 deg
+  Azimuth:   0.0000 deg
+  TOF:       0.0000 s
+  ImpactVel: 0.0000 m/s
+  Valid:     YES
+-----------------------------
+
