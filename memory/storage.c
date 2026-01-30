@@ -290,7 +290,6 @@ unsigned list_count_nodes(void *head, void *tail, size_t next_offset, int (*is_v
     unsigned cnt = 0;
     if (null_cnt)
         *null_cnt = 0;
-
     void *node = *(void **)((char *)head + next_offset);
 
     while (node != tail)

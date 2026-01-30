@@ -51,6 +51,10 @@
 #define HLINE "―"
 #define VLINE "│"
 
+#define CURSOR_HIDE  "\033[?25l"
+#define CURSOR_SHOW  "\033[?25h"
+
+
 /* Reset alias */
 #define COLOR_RESET ANSI_RESET
 

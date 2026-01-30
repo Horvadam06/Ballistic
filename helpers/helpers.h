@@ -59,6 +59,8 @@ unsigned progress_percent(unsigned current, unsigned total);
 typedef void (*progress_hook_fn)(void *arg);
 void render_progress_bar(unsigned percent, progress_hook_fn before, progress_hook_fn after, void *arg_b, void *arg_a);
 
+int clamp_with_warning(int value, int min, int max);
+
 void split_screen_demo(void);
 
 #endif

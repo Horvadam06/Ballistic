@@ -7,6 +7,7 @@
 #include "helpers\helpers.h"
 #include "os\terminal_info.h"
 #include "os\about_program.h"
+#include "os\input_poll.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,6 +33,8 @@ Command commands[] = {
     CMD_INIT("add", CMD_ADD, NULL, "Add a value", CMD_C_LOAD),
     CMD_INIT("delete", CMD_DELETE, NULL, "Delete a value", CMD_C_LOAD),
     CMD_INIT("back", CMD_BACK, NULL, "Step back", CMD_C_LOAD | CMD_C_SELECT | CMD_C_BACK),
+    CMD_INIT("next", CMD_NEXT, NULL, "Switch to next", CMD_C_SWITCH),
+    CMD_INIT("previous", CMD_PREV, NULL, "Switch to previous", CMD_C_SWITCH),
 
     CMD_INIT("bases", CMD_BASE, cmd_base, "Work with bases", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_CALC),
     CMD_INIT("targets", CMD_TARGET, cmd_target, "Work with targets", CMD_C_GENERIC | CMD_C_DEFAULT | CMD_C_CALC),
@@ -58,6 +61,9 @@ static const CommandAlias aliases[] = {
     {"y", CMD_YES},
     {"n", CMD_NO},
     {"b", CMD_BACK},
+    {"nxt", CMD_NEXT},
+    {"prv", CMD_PREV},
+    {"prev", CMD_PREV},
     {"bas", CMD_BASE},
     {"tgt", CMD_TARGET},
     {"am", CMD_AMMO},
@@ -211,7 +217,7 @@ void cmd_help_inline(const char *args, Command_case case_flags, PROCESS *running
 
 // Info display =========================================================
 
-P_HRESULT base_info_print(DisplayType display, void *entry_ptr, void *data)
+P_HRESULT base_info_print(ListManagerConfig *config, DisplayType display, void *entry_ptr, void *data)
 {
     switch (display)
     {
@@ -230,17 +236,8 @@ P_HRESULT base_info_print(DisplayType display, void *entry_ptr, void *data)
 
         // phrase state data pointer to state
         int state = (data) ? *((int *)data) : 0;
-        const char *step[] = {
-            "Add base wizard",
-            "Add base",
-            "Enter ID",
-            "Enter label",
-            "Enter position",
-            "Enter altitude",
-            "Enter ammo stock",
-            "Confirm"};
 
-        if (!general_state_options(step, SIZE_OF_STRING_ARRAY(step), 1, state))
+        if (!general_state_options(config->add_steps, config->add_steps_n, config->add_steps_prot_pos, state))
             return P_S_FALSE;
 
         break;
@@ -273,7 +270,7 @@ P_HRESULT base_info_print(DisplayType display, void *entry_ptr, void *data)
     return P_S_OK;
 }
 
-P_HRESULT target_info_print(DisplayType display, void *entry_ptr, void *data)
+P_HRESULT target_info_print(ListManagerConfig *config, DisplayType display, void *entry_ptr, void *data)
 {
     switch (display)
     {
@@ -334,7 +331,7 @@ P_HRESULT target_info_print(DisplayType display, void *entry_ptr, void *data)
     return P_S_OK;
 }
 
-P_HRESULT ammo_info_print(DisplayType display, void *entry_ptr, void *data)
+P_HRESULT ammo_info_print(ListManagerConfig *config, DisplayType display, void *entry_ptr, void *data)
 {
     switch (display)
     {
@@ -400,106 +397,126 @@ P_HRESULT ammo_info_print(DisplayType display, void *entry_ptr, void *data)
 
 P_HRESULT base_string_state_token(char *buffer, size_t buffer_n, char *token, size_t token_n, int state)
 {
-    (void)buffer_n;
-    (void)state;
-    buffer[0] = 's';
     // plan
     // search for the required token with strchr, if it's in the 0th pos, it's a token for sure, if not
     // check if there is an empty space before it, if there is it's a token for sure
     // THIS CHECK CAN ONLY WORK IF I DON'T ALLOW SPACES IN FOR EXAMPLE LSOMETHING CLA, can only work with SOMETHING_CLA,
     // maybe rework the phraser, to convert the user input to automaticly add _ in the place of spaces
 
-    // make the token finding automatic, so if it isn't a token start, then continue the search from where it failed
-    if (state > 6 || state < 1)
+    // PSUEDO PLAN (or something)
+    //   check the state validity
+    //   check the input type validity
+    //   search for the token id in the buffer
+    //       if (exists)
+    //           replace it, and offset everything by the pre calculated input length
+    //       else
+    //           add the id to it & slap it to the end, and let the handler take care of it
+    //
+    //
+
+    const int STATE_CONFIRM = 6;
+    // state validity check
+    if (state > STATE_CONFIRM || state < 1)
         return P_S_FALSE;
-
-    if (state < 6)
+    else if (state == STATE_CONFIRM)
     {
-        state--;
-        char *id[] = {"I", "L", "CLA", "CA", "ANS"};
-        int failed = 1;
-        char *token_srch = buffer;
-        while (failed)
-        {
-            token_srch = strchr(token_srch, id[state]);
-            if (token_srch == buffer)
-            {
-                failed = 0;
-            }
-            else
-            {
-                //check the space before the value
-            }
-        }
-        switch (state)
-        {
-        case 0:
-        {
-            token_srch = strchr(buffer, 'I');
-            if (token_srch == buffer)
-            {
-            }
+        return handle_base(buffer, base_list, NULL);
+    }
 
+    state--;
+    char *id[] = {
+        "I",          // id
+        "L",          // label
+        "CLA", "CLO", // coordinates (latitude, longitude)[degree]
+        "CA",         // altitude [meter]
+        "AMS"         // ammo stock
+    };
+    int failed = 1;
+    char *token_srch = buffer;
+    while (failed)
+    {
+        if (!token_srch)
             break;
-        }
-        case 1:
+        // check if it exists already in the buffer
+        token_srch = strstr(token_srch, id[state]);
+        if (token_srch == buffer)
         {
-            token_srch = strchr(buffer, 'L');
-            if (token_srch == buffer)
-            {
-            }
-
-            break;
+            failed = 0;
         }
-        case 2:
+        else
         {
-            token_srch = strchr(buffer, 'CLA');
-            if (token_srch == buffer)
-            {
-            }
-
-            break;
+            // check the space before the value
         }
-        case 3:
+    }
+
+    switch (state)
+    {
+    case 0:
+    {
+        token_srch = strstr(buffer, "I");
+        if (token_srch == buffer)
         {
-            token_srch = strchr(buffer, 'CA');
-            if (token_srch == buffer)
-            {
-            }
-
-            break;
         }
-        case 4:
+
+        break;
+    }
+    case 1:
+    {
+        token_srch = strstr(buffer, "L");
+        if (token_srch == buffer)
         {
-            token_srch = strchr(buffer, 'AMS');
-            if (token_srch == buffer)
-            {
-            }
-
-            break;
         }
 
-        default:
-            return P_S_FALSE;
+        break;
+    }
+    case 2:
+    {
+        token_srch = strstr(buffer, "CLA");
+        if (token_srch == buffer)
+        {
         }
+
+        break;
+    }
+    case 3:
+    {
+        token_srch = strstr(buffer, "CA");
+        if (token_srch == buffer)
+        {
+        }
+
+        break;
+    }
+    case 4:
+    {
+        token_srch = strstr(buffer, "AMS");
+        if (token_srch == buffer)
+        {
+        }
+
+        break;
+    }
+
+    default:
+        return P_S_FALSE;
     }
 
     return P_S_FALSE;
 }
 
-P_HRESULT target_string_state_token(char *buffer, size_t buffer_n, int state)
+P_HRESULT target_string_state_token(char *buffer, size_t buffer_n, char *token, size_t tokent_n, int state)
 {
     (void)buffer_n;
     (void)state;
-    buffer[0] = 's';
+    (buffer)[0] = 's';
     return P_S_FALSE;
 }
 
-P_HRESULT ammo_t_string_state_token(char *buffer, size_t buffer_n, int state)
+P_HRESULT ammo_t_string_state_token(char *buffer, size_t buffer_n, char *token, size_t token_n, int state)
 {
     (void)buffer_n;
     (void)state;
-    buffer[0] = 's';
+    (buffer)[0] = 's';
     return P_S_FALSE;
 }
 
@@ -523,7 +540,7 @@ void cmd_target(const char *args, Command_case case_flags, PROCESS *running)
     ListManagerConfig target_config = {
         .name = "target",
         .list_ptr = target_list,
-        .print_ = (P_HRESULT (*)(DisplayType, void *, void *))target_info_print,
+        .print_ = (P_HRESULT (*)(ListManagerConfig *, DisplayType, void *, void *))target_info_print,
         .print_list = (void (*)(void *))print_Target_List,
         .phrase_tokens = (P_HRESULT (*)(char *, size_t, char *, size_t, int))target_string_state_token,
         .find_by_id = (void *(*)(void *, unsigned))FindTargetByID,
@@ -546,12 +563,25 @@ void cmd_base(const char *args, Command_case case_flags, PROCESS *running)
 {
     (void)args;
     (void)running;
+    const char *steps[] = {
+        "Add base wizard",
+        "Add base",
+        "Enter ID",
+        "Enter label",
+        "Enter position",
+        "Enter altitude",
+        "Enter ammo stock",
+        "Confirm"};
+
     ListManagerConfig base_config = {
         .name = "base",
         .list_ptr = base_list,
-        .print_ = (P_HRESULT (*)(DisplayType, void *, void *))base_info_print,
+        .print_ = (P_HRESULT (*)(ListManagerConfig *, DisplayType, void *, void *))base_info_print,
         .print_list = (void (*)(void *))print_Base_List_wrapper,
         .phrase_tokens = (P_HRESULT (*)(char *, size_t, char *, size_t, int))base_string_state_token,
+        .add_steps = steps,
+        .add_steps_n = SIZE_OF_STRING_ARRAY(steps),
+        .add_steps_prot_pos = 1,
         .find_by_id = (void *(*)(void *, unsigned))FindBaseByID,
         .delete_by_id = (int (*)(void *, unsigned))delete_BaseById};
 
@@ -571,13 +601,184 @@ void cmd_ammo(const char *args, Command_case case_flags, PROCESS *running)
     ListManagerConfig ammo_config = {
         .name = "ammo_t",
         .list_ptr = ammo_t_list,
-        .print_ = (P_HRESULT (*)(DisplayType, void *, void *))ammo_info_print,
+        .print_ = (P_HRESULT (*)(ListManagerConfig *, DisplayType, void *, void *))ammo_info_print,
         .print_list = (void (*)(void *))print_Ammo_t_List,
         .phrase_tokens = (P_HRESULT (*)(char *, size_t, char *, size_t, int))ammo_t_string_state_token,
         .find_by_id = (void *(*)(void *, unsigned))FindAmmoByID,
         .delete_by_id = (int (*)(void *, unsigned))delete_Ammo_t};
 
     general_list_menu(case_flags, &ammo_config);
+}
+
+static int wrap_state(int state, int min, int max)
+{
+    int range = max - min + 1;
+    return min + (state - (min - range)) % range;
+    // min +, because we can't go lower than that
+    //
+}
+
+static int parse_state_selector(const char *s, int *out_state)
+{
+
+    if (s[0] != 's' && s[0] != 'S')
+        return 0;
+    if (!isdigit((unsigned char)s[1]))
+        return 0;
+
+    char *end;
+    long v = strtol(s + 1, &end, 10);
+
+    if (*end != '\0')
+        return 0;
+
+    *out_state = (int)v;
+    return 1;
+}
+
+/**
+ * @brief general_list_menu_add helper
+ * @return 0 Entry_no_clr |
+ * @return 1 Entry
+ *
+ *
+ */
+static int general_list_menu_add(ListManagerConfig *config)
+{
+    // it's preaty whacky, should revise it later
+    int state = 1;
+    char handler_buffer[1024] = {'\0'};
+Entry_add:
+    clear_terminal();
+Entry_add_after_clr:
+    printf(CURSOR_HIDE);
+    if (config->print_(config, LIST_MENU_ADD, NULL, &state) == P_S_FALSE)
+    {
+        printf(CURSOR_SHOW);
+        return 0;
+    }
+
+Entry_add_no_clr:
+
+    char buffer[1024];
+    // write the input into buffer, and process if back request
+    printf("> " CURSOR_SHOW);
+    while (!input_available())
+        ;
+    char edg_trig_inp = input_getchar();
+
+    Command_t add_cmd = CMD_INVALID;
+
+    if (edg_trig_inp == '\t')
+        add_cmd = CMD_NEXT;
+
+    else
+    {
+        
+        ungetc(edg_trig_inp, stdin);
+        putchar(edg_trig_inp);
+        fgets(buffer, sizeof(buffer), stdin);
+        // remove traling carrig feed or new line
+        buffer[strcspn(buffer, "\r\n")] = 0;
+        add_cmd = ParseCommandFromBuffer(buffer, CMD_C_BACK | CMD_C_SWITCH | CMD_C_NOCOMMENT, NULL);
+    }
+
+    int valid_step_cnt = config->add_steps_n - config->add_steps_prot_pos - 1;
+
+    switch (add_cmd)
+    {
+    case CMD_MODAL:
+        goto Entry_add_no_clr;
+        break;
+    case CMD_BACK:
+        return 1;
+        break;
+    case CMD_NEXT:
+        state = wrap_state(++state, 1, valid_step_cnt);
+        goto Entry_add;
+        break;
+    case CMD_PREV:
+        state = wrap_state(--state, 1, valid_step_cnt);
+        // state = (state + valid_step_cnt - 1) % (valid_step_cnt + ((state == 1) ? 2 : 0));
+        goto Entry_add;
+        break;
+
+    default:
+        if (parse_state_selector(buffer, &state))
+        {
+            clear_terminal();
+            // 0 causes some issue
+            state = clamp_with_warning(state, 1, valid_step_cnt);
+            goto Entry_add_after_clr;
+        }
+        break;
+    }
+
+    /*
+    int req = back_request(buffer, sizeof(buffer));
+    if (req == 1)
+        return 1;
+    if (req == -1)
+        goto Entry_add_no_clr;
+
+    // remove traling carrig feed or new line
+    buffer[strcspn(buffer, "\r\n")] = 0;
+
+    // remove when proper command handling
+    if (!isalpha((unsigned char)buffer[0]))
+    {
+        state = (int)strtof(buffer, NULL);
+        goto Entry_add;
+    }*/
+
+    // handle input error
+    // option 1.
+    // make it so it's somewhat self contained, it return if the token was correct with S_OK maybe, if no S_FALSE
+    // probably a stand alone enum state machine would be the best, which returns the process state (finished, running, etc)
+    // Always return's to Entry_add, so the command handling is already processed. If it signals finished,
+    // only then continue with the process
+    // ammo and target should be the easiest, bases ammo stock is the problem
+    // Biggest issues:a very big chance of memory leak
+    //
+    // option 2.
+    // make it fully self contained
+    // pros: memory safe
+    // cons : duplicated code for command handling, maybe can be avoided if the command managment is modified to be self contained
+
+    // self contained command handling parameters, back, help, and that's it. Maybe can be avoided using buffer command handler???
+
+    // something is needed, which ectracts the tyoe and the data from the token, and checks it's validity,
+    //  if it's valid, then it writes it to the temp data type, on exit, or succes, it free's up all of the allocated memory, then calls the appripiate call function
+    // basicly a per token handler
+    //
+    // the cleanest would be a self contained function, because then it won't pollute the command logic further,
+    // with backend stuff, so should be at load.c or storage.c, the only problem would be, that it would cause the "gui" to freeze, or maybe just move the ui displaying to there
+    // basicly it should be the same as the deticated handler, the only difference would be, that instead of the tokenizer stepping on the buffer, it would only phrase
+    // one token
+    //
+    // this is a self contained loop, maybe create an internal buffer, which get's modified in the
+    //"handler", it would string together the input data, and when finished pass it to the "real" handler??
+    // the data can be raw, so no id tokens are needed, because they type would depend on the state
+    //
+
+    // maybe pass the struct to the function too, so it can display the value set, and not just rawdogging the value's by head
+    // handler should be seperate, later I need to add it back
+    // config->handler(buffer, config->list_ptr, NULL) == P_S_FALSE
+    // internal state handling or some fuck
+    if (config->phrase_tokens(
+            handler_buffer, SIZE_OF_CHAR_ARRAY(handler_buffer),
+            buffer, SIZE_OF_CHAR_ARRAY(buffer),
+            state))
+    {
+        clear_terminal();
+        print_colored(COLOR_ERROR, "Invalid input!\n", 1);
+        return 0;
+    }
+
+    print_colored(COLOR_SUCCESS, "List updated!\n", 1);
+    goto Entry_add_no_clr;
+
+    return 0;
 }
 
 void general_list_menu(Command_case case_flags, ListManagerConfig *config)
@@ -615,10 +816,10 @@ Entry_no_clr:
             Error_message("Missing print_ parameter for %s!\n", config->name);
             return;
         }
-        config->print_(LIST_MENU_ENTRY, NULL, NULL);
+        config->print_(config, LIST_MENU_ENTRY, NULL, NULL);
     }
     Command_t cmd;
-    char handler_buffer[1024] = {'\0'};
+
     while ((cmd = GetCommand(CMD_C_LOAD | CMD_C_MODAL, NULL)) != CMD_BACK)
     {
         switch (cmd)
@@ -628,82 +829,15 @@ Entry_no_clr:
             return;
         case CMD_ADD:
         {
-            // it's preaty whacky, should revise it later
-            int state = 1;
-        Entry_add:
-            clear_terminal();
-            if (config->print_(LIST_MENU_ADD, NULL, &state) == P_S_FALSE)
-                goto Entry_no_clr;
-
-        Entry_add_no_clr:
-
-            char buffer[1024];
-            // write the input into buffer, and process if back request
-            int req = back_request(buffer, sizeof(buffer));
-            if (req == 1)
+            if (general_list_menu_add(config))
                 goto Entry;
-            if (req == -1)
-                goto Entry_add_no_clr;
-
-            // remove traling carrig feed or new line
-            buffer[strcspn(buffer, "\r\n")] = 0;
-
-            if (!isalpha((unsigned char)buffer[0]))
-            {
-                state = (int)strtof(buffer, NULL);
-                goto Entry_add;
-            }
-
-            // handle input error
-            // option 1.
-            // make it so it's somewhat self contained, it return if the token was correct with S_OK maybe, if no S_FALSE
-            // probably a stand alone enum state machine would be the best, which returns the process state (finished, running, etc)
-            // Always return's to Entry_add, so the command handling is already processed. If it signals finished,
-            // only then continue with the process
-            // ammo and target should be the easiest, bases ammo stock is the problem
-            // Biggest issues:a very big chance of memory leak
-            //
-            // option 2.
-            // make it fully self contained
-            // pros: memory safe
-            // cons : duplicated code for command handling, maybe can be avoided if the command managment is modified to be self contained
-
-            // self contained command handling parameters, back, help, and that's it. Maybe can be avoided using buffer command handler???
-
-            // something is needed, which ectracts the tyoe and the data from the token, and checks it's validity,
-            //  if it's valid, then it writes it to the temp data type, on exit, or succes, it free's up all of the allocated memory, then calls the appripiate call function
-            // basicly a per token handler
-            //
-            // the cleanest would be a self contained function, because then it won't pollute the command logic further,
-            // with backend stuff, so should be at load.c or storage.c, the only problem would be, that it would cause the "gui" to freeze, or maybe just move the ui displaying to there
-            // basicly it should be the same as the deticated handler, the only difference would be, that instead of the tokenizer stepping on the buffer, it would only phrase
-            // one token
-            //
-            // this is a self contained loop, maybe create an internal buffer, which get's modified in the
-            //"handler", it would string together the input data, and when finished pass it to the "real" handler??
-            // the data can be raw, so no id tokens are needed, because they type would depend on the state
-            //
-
-            // maybe pass the struct to the function too, so it can display the value set, and not just rawdogging the value's by head
-            // handler should be seperate, later I need to add it back
-            // config->handler(buffer, config->list_ptr, NULL) == P_S_FALSE
-            if (config->phrase_tokens(
-                    handler_buffer, SIZE_OF_CHAR_ARRAY(handler_buffer),
-                    buffer, SIZE_OF_CHAR_ARRAY(buffer),
-                    state))
-            {
-                clear_terminal();
-                print_colored(COLOR_ERROR, "Invalid input!\n", 1);
+            else
                 goto Entry_no_clr;
-            }
-
-            print_colored(COLOR_SUCCESS, "List updated!\n", 1);
-            goto Entry_add_no_clr;
         }
         case CMD_DELETE:
         {
             clear_terminal();
-            config->print_(LIST_MENU_DELETE, NULL, NULL);
+            config->print_(config, LIST_MENU_DELETE, NULL, NULL);
 
         Entry_delete_no_clr:
 
@@ -730,7 +864,7 @@ Entry_no_clr:
             }
             else
             {
-                config->print_(LIST_MENU_DEL_CONFIR, node, NULL);
+                config->print_(config, LIST_MENU_DEL_CONFIR, node, NULL);
 
                 // confirm deletion
                 printf("\n Confirm deletion? ");
@@ -767,7 +901,7 @@ Entry_no_clr:
  * @param step Pointer to program state
  * @ingroup CommandHandling
  */
-int general_state_options(const char *array[], int n, int protected_pos, int step)
+int general_state_options(const char *const array[], int n, int protected_pos, int step)
 {
     if (protected_pos < -1)
         protected_pos = -1;

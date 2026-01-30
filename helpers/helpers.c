@@ -419,6 +419,7 @@ unsigned progress_percent(unsigned current, unsigned total)
     return (current * 100u) / total;
 }
 
+//progress hook are for costum things that you want to update with the progress bar
 void render_progress_bar(unsigned percent, progress_hook_fn before, progress_hook_fn after, void *arg_b, void *arg_a)
 {
     const unsigned bar_width = 30;
@@ -489,3 +490,28 @@ void split_screen_demo(void)
     // Keep cursor at bottom
     printf("\033[%d;1H", height);
 }
+
+//clamp a value within the limits, and return it's value
+int clamp_with_warning(int value, int min, int max)
+{
+    if (value > max)
+    {
+        printf(COLOR_WARNING
+               "Value %d exceeds the maximum allowed (%d). Using the maximum value instead.\n"
+               COLOR_RESET,
+               value, max);
+        return max;
+    }
+
+    if (value < min)
+    {
+        printf(COLOR_WARNING
+               "Value %d is below the minimum allowed (%d). Using the minimum value instead.\n"
+               COLOR_RESET,
+               value, min);
+        return min;
+    }
+
+    return value;
+}
+

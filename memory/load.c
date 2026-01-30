@@ -772,7 +772,7 @@ P_HRESULT handle_base(char *record, void *data, int *error_flags)
             }
         }
     }
-    if (i == Param_Check_Limit)
+    if (i == Param_Check_Limit || i == 0 || !record)
     {
         print_phrase_fail(ptr_cpy, record, end);
 

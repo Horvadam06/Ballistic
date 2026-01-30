@@ -29,6 +29,8 @@ typedef enum
     CMD_SAVE,      ///< Save data
     CMD_CANCEL,    ///< Cancel operation
     CMD_SELECT,    ///< Select option
+    CMD_NEXT,      ///< switch to next
+    CMD_PREV,      ///< switch to previous
     CMD_BACK,      ///< Go back/return
     CMD_CALCULATE, ///< Calculate trajectory
     CMD_RESET,     ///< Reset system
@@ -65,6 +67,7 @@ typedef enum
     CMD_C_SELECT = 1 << 8,     ///< Selection commands
     CMD_C_BACK = 1 << 9,       ///< Back/return commands
     CMD_C_CANCEL = 1 << 10,    ///< Cancel commands
+    CMD_C_SWITCH = 1 << 11,    ///< Case for next/prev switching commands
     CMD_C_DEBUG = 1 << 13,     ///< Access for debug commands
     CMD_C_MODAL = 1 << 20,     ///< Special: loop until valid input
     CMD_C_NOHANDLE = 1 << 21,  ///< Cancel's out the commands handler
@@ -201,17 +204,20 @@ typedef enum
     LIST_MENU_DEL_CONFIR
 } DisplayType;
 
-typedef struct
+typedef struct ListManagerConfig_
 {
-    const char* name;
+    const char *name;
     void *list_ptr;
 
     // Display functions
-    P_HRESULT (*print_)(DisplayType display, void *entry_ptr, void *data);
+    P_HRESULT (*print_)(struct ListManagerConfig_ *config, DisplayType display, void *entry_ptr, void *data);
     void (*print_list)(void *list);
 
     // Input handling
-    P_HRESULT (*phrase_tokens)(char *buffer, size_t buffer_n, char* token, size_t token_n, int state);
+    P_HRESULT (*phrase_tokens)(char *buffer, size_t buffer_n, char *token, size_t token_n, int state);
+    const char * const *add_steps;
+    int add_steps_prot_pos;
+    size_t add_steps_n;
 
     // Search/delete
     void *(*find_by_id)(void *list, unsigned id);
@@ -221,7 +227,7 @@ typedef struct
 
 void general_list_menu(Command_case case_flags, ListManagerConfig *config);
 
-int general_state_options(const char *array[], int n, int protected_pos, int step);
+int general_state_options(const char * const array[], int n, int protected_pos, int step);
 /**
  * @brief Base operations handler
  * @param args Command arguments
