@@ -20,6 +20,8 @@
 // Should be initialized via config file and used for all file operations
 char *folder_path = NULL;
 
+int prompt_save = 1;
+
 // sets an upper limit for the number of parameters,
 // so if the user gives an unfinished definiton, after 15 iterations the loop exits
 #define Param_Check_Limit 15
@@ -92,11 +94,18 @@ P_HRESULT scan(const char *filename, RecordHandler handler, void *data, int *err
     FILE *file = fopen(filename, "r"); // "r" open file in read only mode
     if (!file)
     {
-        printf("Failed to open or locate [%s] in the working directory!\n", filename);
-        return S_FALSE;
+        Error_message("Failed to open or locate '"ANSI_BRIGHT_RED "%s" COLOR_ERROR"' in the working directory!\n", filename);
+        return P_S_FALSE;
     }
 
-    int c;
+    int c = fgetc(file);
+    if (c == EOF)
+    {
+        Error_message("Failed to read, or empty '"ANSI_BRIGHT_RED "%s" COLOR_ERROR"'!\n", filename);
+        return P_S_FALSE;
+    }
+    ungetc(c, file);
+
     ParseState state = NORMAL;
     char buffer[1024];
     int index = 0;
@@ -177,7 +186,7 @@ P_HRESULT scan(const char *filename, RecordHandler handler, void *data, int *err
                 else
                 {
                     printf("No input handler!\n");
-                    hr = S_FALSE;
+                    hr = P_S_FALSE;
                 }
 
                 // Handle partial records (missing required parameters)
@@ -203,7 +212,7 @@ P_HRESULT scan(const char *filename, RecordHandler handler, void *data, int *err
             else
             {
                 Error_message("buffer overflow!");
-                hr = S_FALSE;
+                hr = P_S_FALSE;
             }
 
             break;
@@ -212,7 +221,10 @@ P_HRESULT scan(const char *filename, RecordHandler handler, void *data, int *err
     }
 
     if (fclose(file) == EOF)
+    {
+        Error_message("Failed to close '" ANSI_BRIGHT_RED "%s" COLOR_ERROR "'!\n");
         hr = E_FAIL;
+    }
     return hr;
 }
 
@@ -302,7 +314,7 @@ P_HRESULT format_basic_error_string(char *error_buffer, int *error_flags)
                 continue;
             }
             }
-            return S_FALSE;
+            return P_S_FALSE;
         }
     }
     // the error_buffer string is finsihed up, with a null terminator, just to be sure
@@ -344,14 +356,17 @@ P_HRESULT test_and_run_config(const char *config_file, PROCESS mode)
         case CMD_YES:
         {
             printf("Starting config creation...\n");
-            hr = generate_config(config_file);
+            hr = evaluate_generate_config(config_file);
             if (P_SUCCEEDED(hr))
+            {
                 goto ReadConfig;
+            }
+
             break;
         }
         case CMD_NO:
         {
-            Error_message(" Config creation was interrupted!\n");
+            Error_message("Config creation was interrupted!\n");
             hr = E_FAIL;
             break;
         }
@@ -371,7 +386,7 @@ ReadConfig:
     {
         if (mode == S_DEBUG)
             printf(ANSI_GRAY "Working directory have been set to: [%s]\n", folder_path);
-        print_colored(COLOR_SUCCESS, "Config loaded succesfully!\n", 1);
+        printf(COLOR_SUCCESS "Config loaded succesfully!\n" COLOR_RESET);
     }
     else
         Error_message(" Failed to load config!\n");
@@ -397,8 +412,8 @@ P_HRESULT recreate_config(const char *config_file, PROCESS mode)
 {
     P_HRESULT hr = P_S_OK;
 
-    if (generate_config(config_file) == S_FALSE)
-        return S_FALSE;
+    if (evaluate_generate_config(config_file) == P_S_FALSE)
+        return P_S_FALSE;
 
     hr = read_config(config_file);
     if (SUCCEEDED(hr))
@@ -428,58 +443,67 @@ P_HRESULT recreate_config(const char *config_file, PROCESS mode)
  */
 P_HRESULT generate_config(const char *config_file)
 {
+    const char *file_list[] = {
+        "bases.txt",
+        "targets.txt",
+        "ammo_catalouge.txt"};
+
+Entry:
     printf("Enter a new folder path or type ");
     cmd_help_inline(NULL, CMD_C_BACK, NULL);
     printf(" to exit:\n");
-Entry:
+
+Entry_no_print:
 
     char temp[1024]; // temporary buffer for user input
+    printf("> ");
     if (fgets(temp, sizeof(temp), stdin))
     {
         Command_t cmd = ParseCommandFromBuffer(temp, CMD_C_BACK | CMD_C_NOCOMMENT, NULL);
         if (cmd == CMD_BACK)
-            return S_FALSE;
+            return P_S_FALSE;
         if (cmd == CMD_HELP)
-            goto Entry;
+            goto Entry_no_print;
 
         temp[strcspn(temp, "\n")] = '\0'; // remove trailing newline
 
         ensure_trailing_backslash(temp);
-        Normalize_path(temp);
-
+        int valid_path = 1;
+        for (size_t i = 0; i < SIZE_OF_STRING_ARRAY(file_list); i++)
+        {
+            Normalize_path(temp);
+            if (validate_file_path("%s%s", temp, file_list[i]) == P_S_FALSE)
+            {
+                Error_message("Missing file '" ANSI_BRIGHT_RED "%s" COLOR_ERROR "' at '" ANSI_BRIGHT_RED "%s" COLOR_ERROR "'!\n", file_list[i], temp);
+                valid_path = 0;
+            }
+        }
+        if (!valid_path)
+            goto Entry;
         set_folder_path(temp);
     }
 
     FILE *configfile = fopen(config_file, "w"); // create a new config file
     if (!config_file)
-        return S_FALSE;
+        return P_S_FALSE;
 
-    printf("Enter the colour mode:\n");
-
-    switch (GetCommand(CMD_C_MODAL | CMD_C_SETUP, NULL))
-    {
-    case CMD_COLOUR:
-        set_color_mode(CM_COLOUR);
-        break;
-    case CMD_MONO:
-        set_color_mode(CM_MONO);
-        break;
-    default:
-        break;
-    }
+    printf("Enable save prompt on exit? ");
+    cmd_help_inline(NULL, CMD_C_YESNO, NULL);
+    putchar('\n');
+    prompt_save = (GetCommand(CMD_C_MODAL | CMD_C_YESNO, NULL) == CMD_YES);
 
     // Write configuration file with helpful comments
     fprintf(configfile, "/*\n=====================================================\n");
     fprintf(configfile, "--------Parameters-------------------------------\n");
     fprintf(configfile, "working directory :\n");
-    fprintf(configfile, "color mode : [0=monochrome, 1=coloured]\n");
+    fprintf(configfile, "Display the option to save on exit : [0=leave without saving, 1=propmt save]\n");
     fprintf(configfile, "=====================================================\n");
     fprintf(configfile, "-the id gets normalized\n");
     fprintf(configfile, "-end every line with ;\n");
     fprintf(configfile, "=====================================================\n*/\n");
     fprintf(configfile, "\n");
     fprintf(configfile, "DIR: \"%s\";\n", folder_path);
-    fprintf(configfile, "COLOUR_M: %d;\n", get_color_mode());
+    fprintf(configfile, "PROMPT_SAVE: %d;\n", prompt_save);
 
     if (fclose(configfile) != 0)
     {
@@ -489,6 +513,17 @@ Entry:
     return P_S_OK;
 }
 
+P_HRESULT evaluate_generate_config(const char *config_file)
+{
+    P_HRESULT hr = generate_config(config_file);
+    if (hr == P_S_OK)
+    {
+        printf(COLOR_SUCCESS "Config creation succeded!\n" COLOR_RESET);
+        return hr;
+    }
+    Error_message("Config creation failed!\n");
+    return hr;
+}
 /**
  * Reads and parses existing configuration file
  *
@@ -507,10 +542,23 @@ P_HRESULT read_config(const char *config_file)
     if (!configfile)
     {
         Error_message(" Failed to open or locate [%s] in the working directory!\n", config_file);
-        return S_FALSE;
+        return P_S_FALSE;
     }
 
-    scan(config_file, handle_config, NULL, NULL, S_RUNNING);
+    P_HRESULT hr = scan(config_file, handle_config, NULL, NULL, S_RUNNING);
+    if (hr == E_FAIL)
+        return E_FAIL;
+    if (hr == P_S_FALSE)
+    {
+        printf("Recreate config? ");
+        cmd_help_inline(NULL, CMD_C_YESNO, NULL);
+        putchar('\n');
+        if (GetCommand(CMD_C_YESNO | CMD_C_MODAL, NULL) == CMD_YES)
+        {
+            if (evaluate_generate_config(config_file) == P_S_FALSE)
+                return E_FAIL;
+        }
+    }
 
     if (fclose(configfile) == EOF)
         return E_FAIL;
@@ -538,20 +586,21 @@ P_HRESULT handle_config(char *record, void *data, int *error_flags)
     (void)error_flags;
     char *end = NULL;
 
-    /*searches for the normlaized DIR token, then if it is, searches for the value after the ':' charcter*/
+    // searches for the normlaized DIR token, then if it is, searches for the value after the ':' charcter
     if (norm_strncmp(strtoken(record, &end), "DIR") == P_S_OK && (record = strchr(end, ':')) != NULL)
     {
         set_folder_path(Normalize_path(ensure_trailing_backslash(remove_quotes((char *)strtoken(record, &record), '\"'))));
         return P_S_OK;
     }
 
-    /*searches for the normlaized COLOUR_M token, then if it is, searches for the value after  the ':' charcter*/
-    if (norm_strncmp(strtoken(record, &end), "COLOUR_M") == P_S_OK && (record = strchr(end, ':')) != NULL)
+    // searches for the normlaized COLOUR_M token, then if it is, searches for the value after  the ':' charcter
+    if (norm_strncmp(strtoken(record, &end), "PROMPT_SAVE") == P_S_OK && (record = strchr(end, ':')) != NULL)
     {
-        set_color_mode((int)strtof(strtoken(record, &end), &record));
+        prompt_save = ((int)strtof(strtoken(record, &end), &record) > 0) ? 1 : 0;
         return P_S_OK;
     }
-    return P_S_OK;
+
+    return P_S_FALSE;
 }
 
 // ===========================================================================
@@ -1126,4 +1175,28 @@ unsigned get_base_ammo_t_count(const Base *base)
     }
 
     return total;
+}
+
+/**
+ * @brief Validates a file path
+ *
+ * @return P_S_OK if it exists, P_S_FALSE if not
+ *
+ * @param const char *folder_path: the files folder path
+ * @param ... the file name to validate
+ */
+P_HRESULT validate_file_path(const char *folder_path, ...)
+{
+    char buffer[1024];
+    FILE *fp = NULL;
+    va_list ap;
+    va_start(ap, folder_path);
+    vsprintf(buffer, folder_path, ap);
+
+    fp = fopen(buffer, "r");
+    if (!fp)
+        return P_S_FALSE;
+
+    fclose(fp);
+    return P_S_OK;
 }

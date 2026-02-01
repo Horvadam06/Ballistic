@@ -1,7 +1,7 @@
 /**
  * @defgroup Loading File Loading and Configuration
  * @brief File parsing, configuration management, and data loading
- * 
+ *
  * This module handles all file I/O operations including configuration,
  * data file parsing with custom format, and logging of results.
  */
@@ -53,11 +53,13 @@ typedef enum
 
 /**
  * @brief Pointer to current working directory path
- * 
+ *
  * Set via configuration file. All data files are loaded relative to this path.
  * @ingroup Loading
  */
 extern char *folder_path;
+
+extern int prompt_save;
 
 /**
  * @brief Set the working directory path
@@ -74,7 +76,7 @@ void free_folder_path(void);
 
 /**
  * @brief Record handler function type for parser
- * 
+ *
  * Callback function called by parser for each complete record.
  * @param record Complete record string (without trailing ';')
  * @param data User data passed to parser
@@ -86,7 +88,7 @@ typedef P_HRESULT (*RecordHandler)(char *record, void *data, int *error_flags);
 
 /**
  * @brief Parse a file and call handler for each record
- * 
+ *
  * Handles comments (// and \* *\) and record separation by ';'.
  * @param filename File to parse
  * @param handler Callback function for each record
@@ -127,6 +129,8 @@ P_HRESULT format_basic_error_string(char *error_buffer, int *error_flags);
  * @ingroup Loading
  */
 P_HRESULT generate_config(const char *config_file);
+
+P_HRESULT evaluate_generate_config(const char *config_file);
 
 /**
  * @brief Recreate configuration file with new settings
@@ -205,7 +209,7 @@ P_HRESULT handle_target(char *record, void *data, int *error_flags);
 
 /**
  * @brief Interactive parameter selection for calculations
- * 
+ *
  * Guides user through selecting base, target, and ammunition IDs.
  * Provides suggestions if invalid combinations are selected.
  * @return 0 on success, -1 to return to menu
@@ -215,7 +219,7 @@ int HandleParameterSelection(void);
 
 /**
  * @brief Log calculation result to file
- * 
+ *
  * Appends detailed firing solution to log.txt in working directory.
  * @param base Pointer to firing base
  * @param tgt Pointer to target
@@ -226,5 +230,7 @@ int HandleParameterSelection(void);
 void LogResult(const Base *base, const Target *tgt, const Ammo_t *ammo, const BallisticResult *res);
 
 unsigned get_base_ammo_t_count(const Base *base);
+
+P_HRESULT validate_file_path(const char *path, ...);
 
 #endif /* LOAD_H */

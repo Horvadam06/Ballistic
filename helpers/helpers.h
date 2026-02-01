@@ -63,4 +63,10 @@ int clamp_with_warning(int value, int min, int max);
 
 void split_screen_demo(void);
 
+void append_strings(char *buffer, const char *format, ...);
+
+P_HRESULT replace_token_a(char *buffer, const char *token_id, const char *token, int (*validate_fp)(const char *));
+
+P_HRESULT validate_int(const char* token);
+
 #endif

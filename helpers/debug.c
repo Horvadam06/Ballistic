@@ -29,7 +29,10 @@ P_HRESULT run_pre_test(PROCESS process_state)
     printf(ANSI_GRAY "Starting test...\n");
     add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
     P_HRESULT hr = P_S_OK;
-
+    if (!folder_path){
+        Error_message("Missing folder path 0x%p!\n", folder_path);
+        return P_E_FAIL;
+    }
     char folder_buffer[1024];
     int error_cnt = -1;
     // load ammo catalogue (if not already loaded)
@@ -108,29 +111,13 @@ P_HRESULT run_pre_test(PROCESS process_state)
     //printf(" %-22s| %-6u| %s : %6u\n", "Target snode count", all_cnt, "null node count", null_cnt);
     add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
 
-    if (process_state == S_DEBUG)
-    {
-        add_seperator_s(NULL, ANSI_YELLOW, "Colour mode test", HLINE, NORMAL_SEPERATOR_SIZE);
-        if (print_colored(ANSI_RED, "This text should be RED!\n", false) == P_S_FALSE)
-        {
-            // This executes if color output failed (e.g., ANSI codes disabled)
-            printf("This text shouldn't be RED!\n");
-        }
-        else
-        { // Color succeeded - provide Windows terminal configuration help
-            printf("if not, use the following command in the windows terminal, ");
-            printf("to enable ansi escape codes\n");
-            printf("\"reg add HKCU\\Console /v VirtualTerminalLevel /t REG_DWORD /d 1 /f\"\n");
-        }
-    }
-
     // test result summary
     if (hr == P_S_OK)
         // Success - display in green
-        print_colored(ANSI_GREEN, "Test succeeded!\n", false);
+        printf(ANSI_GREEN "Test succeeded!\n" COLOR_RESET);
     else
         // Failure - display in red with newline
-        print_colored(ANSI_RED, "Test failed!\n", true);
+        Error_message("Test failed!\n");
 
     add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
     printf("\n");

@@ -217,6 +217,23 @@ void cmd_help_inline(const char *args, Command_case case_flags, PROCESS *running
 
 // Info display =========================================================
 
+char *get_token_from_buffer(const char *buffer, const char *token_id)
+{
+    char *token_srch = (char *)buffer;
+    while (token_srch)
+    {
+        token_srch = strstr(token_srch, token_id);
+        if (token_srch)
+        {
+            if (token_srch == buffer || *(token_srch - 1) == ' ')
+            {
+                return token_srch;
+            }
+        }
+    }
+    return NULL;
+}
+
 P_HRESULT base_info_print(ListManagerConfig *config, DisplayType display, void *entry_ptr, void *data)
 {
     switch (display)
@@ -236,7 +253,7 @@ P_HRESULT base_info_print(ListManagerConfig *config, DisplayType display, void *
 
         // phrase state data pointer to state
         int state = (data) ? *((int *)data) : 0;
-
+        char *idk = get_token_from_buffer((char*)entry_ptr, "I");
         if (!general_state_options(config->add_steps, config->add_steps_n, config->add_steps_prot_pos, state))
             return P_S_FALSE;
 
@@ -288,17 +305,8 @@ P_HRESULT target_info_print(ListManagerConfig *config, DisplayType display, void
     case LIST_MENU_ADD:
 
         int state = (data) ? *((int *)data) : 0;
-        const char *step[] = {
-            "Add target wizard",
-            "Add target",
-            "Enter ID",
-            "Enter label",
-            "Enter position",
-            "Enter altitude",
-            "Enter area",
-            "Confirm"};
 
-        if (!general_state_options(step, SIZE_OF_STRING_ARRAY(step), 1, state))
+        if (!general_state_options(config->add_steps, config->add_steps_n, 1, state))
             return P_S_FALSE;
 
         break;
@@ -348,18 +356,8 @@ P_HRESULT ammo_info_print(ListManagerConfig *config, DisplayType display, void *
         break;
     case LIST_MENU_ADD:
         int state = (data) ? *((int *)data) : 0;
-        const char *step[] = {
-            "Add ammo_t wizard",
-            "Add ammo_t",
-            "Enter ID",
-            "Enter label",
-            "Enter weight",
-            "Enter diameter",
-            "Enter blast radius",
-            "Enter ballistic coefficient",
-            "Confirm"};
 
-        if (!general_state_options(step, SIZE_OF_STRING_ARRAY(step), 1, state))
+        if (!general_state_options(config->add_steps, config->add_steps_n, 1, state))
             return P_S_FALSE;
 
         break;
@@ -415,7 +413,7 @@ P_HRESULT base_string_state_token(char *buffer, size_t buffer_n, char *token, si
     //
 
     const int STATE_CONFIRM = 6;
-    // state validity check
+    // state validity check5
     if (state > STATE_CONFIRM || state < 1)
         return P_S_FALSE;
     else if (state == STATE_CONFIRM)
@@ -424,75 +422,52 @@ P_HRESULT base_string_state_token(char *buffer, size_t buffer_n, char *token, si
     }
 
     state--;
-    char *id[] = {
+    const char *id[] = {
         "I",          // id
         "L",          // label
         "CLA", "CLO", // coordinates (latitude, longitude)[degree]
         "CA",         // altitude [meter]
         "AMS"         // ammo stock
     };
-    int failed = 1;
-    char *token_srch = buffer;
-    while (failed)
-    {
-        if (!token_srch)
-            break;
-        // check if it exists already in the buffer
-        token_srch = strstr(token_srch, id[state]);
-        if (token_srch == buffer)
-        {
-            failed = 0;
-        }
-        else
-        {
-            // check the space before the value
-        }
-    }
+
+    // merge the 2 together somehow, it works via the state, and ids array
+
+    // check if it exists already in the buffer
+
+    // id
+    // label
+    // coordinate
+    // height
+    // ammo stock
 
     switch (state)
     {
     case 0:
     {
-        token_srch = strstr(buffer, "I");
-        if (token_srch == buffer)
-        {
-        }
-
+        if (replace_token_a(buffer, id[0], token, validate_int) == P_S_OK)
+            return P_S_PARTIAL;
         break;
     }
     case 1:
     {
-        token_srch = strstr(buffer, "L");
-        if (token_srch == buffer)
-        {
-        }
-
+        if (replace_token_a(buffer, id[1], token, NULL) == P_S_OK)
+            return P_S_PARTIAL;
         break;
     }
     case 2:
     {
-        token_srch = strstr(buffer, "CLA");
-        if (token_srch == buffer)
-        {
-        }
-
+        // replace_token_a(buffer, id[2], token, NULL);
+        // replace_token_a(buffer, id[3], token, NULL);
         break;
     }
     case 3:
     {
-        token_srch = strstr(buffer, "CA");
-        if (token_srch == buffer)
-        {
-        }
-
+        if (replace_token_a(buffer, id[4], token, validate_int) == P_S_OK)
+            return P_S_PARTIAL;
         break;
     }
     case 4:
     {
-        token_srch = strstr(buffer, "AMS");
-        if (token_srch == buffer)
-        {
-        }
 
         break;
     }
@@ -501,7 +476,7 @@ P_HRESULT base_string_state_token(char *buffer, size_t buffer_n, char *token, si
         return P_S_FALSE;
     }
 
-    return P_S_FALSE;
+    return P_S_OK;
 }
 
 P_HRESULT target_string_state_token(char *buffer, size_t buffer_n, char *token, size_t tokent_n, int state)
@@ -537,12 +512,26 @@ void cmd_target(const char *args, Command_case case_flags, PROCESS *running)
 {
     (void)args;
     (void)running;
+
+    const char *steps[] = {
+        "Add target wizard",
+        "Add target",
+        "Enter ID",
+        "Enter label",
+        "Enter position",
+        "Enter altitude",
+        "Enter area",
+        "Confirm"};
+
     ListManagerConfig target_config = {
         .name = "target",
         .list_ptr = target_list,
         .print_ = (P_HRESULT (*)(ListManagerConfig *, DisplayType, void *, void *))target_info_print,
         .print_list = (void (*)(void *))print_Target_List,
         .phrase_tokens = (P_HRESULT (*)(char *, size_t, char *, size_t, int))target_string_state_token,
+        .add_steps = steps,
+        .add_steps_n = SIZE_OF_STRING_ARRAY(steps),
+        .add_steps_prot_pos = 1,
         .find_by_id = (void *(*)(void *, unsigned))FindTargetByID,
         .delete_by_id = (int (*)(void *, unsigned))delete_Target};
 
@@ -563,6 +552,7 @@ void cmd_base(const char *args, Command_case case_flags, PROCESS *running)
 {
     (void)args;
     (void)running;
+
     const char *steps[] = {
         "Add base wizard",
         "Add base",
@@ -598,12 +588,26 @@ void cmd_ammo(const char *args, Command_case case_flags, PROCESS *running)
     (void)args;
     (void)running;
 
+    const char *steps[] = {
+        "Add ammo_t wizard",
+        "Add ammo_t",
+        "Enter ID",
+        "Enter label",
+        "Enter weight",
+        "Enter diameter",
+        "Enter blast radius",
+        "Enter ballistic coefficient",
+        "Confirm"};
+
     ListManagerConfig ammo_config = {
         .name = "ammo_t",
         .list_ptr = ammo_t_list,
         .print_ = (P_HRESULT (*)(ListManagerConfig *, DisplayType, void *, void *))ammo_info_print,
         .print_list = (void (*)(void *))print_Ammo_t_List,
         .phrase_tokens = (P_HRESULT (*)(char *, size_t, char *, size_t, int))ammo_t_string_state_token,
+        .add_steps = steps,
+        .add_steps_n = SIZE_OF_STRING_ARRAY(steps),
+        .add_steps_prot_pos = 1,
         .find_by_id = (void *(*)(void *, unsigned))FindAmmoByID,
         .delete_by_id = (int (*)(void *, unsigned))delete_Ammo_t};
 
@@ -652,7 +656,7 @@ Entry_add:
     clear_terminal();
 Entry_add_after_clr:
     printf(CURSOR_HIDE);
-    if (config->print_(config, LIST_MENU_ADD, NULL, &state) == P_S_FALSE)
+    if (config->print_(config, LIST_MENU_ADD, handler_buffer, &state) == P_S_FALSE)
     {
         printf(CURSOR_SHOW);
         return 0;
@@ -663,25 +667,25 @@ Entry_add_no_clr:
     char buffer[1024];
     // write the input into buffer, and process if back request
     printf("> " CURSOR_SHOW);
-    while (!input_available())
+    /*while (!input_available())
         ;
-    char edg_trig_inp = input_getchar();
+    char edg_trig_inp = input_getchar();*/
 
     Command_t add_cmd = CMD_INVALID;
 
-    if (edg_trig_inp == '\t')
+    /*if (edg_trig_inp == '\t')
         add_cmd = CMD_NEXT;
 
     else
-    {
-        
-        ungetc(edg_trig_inp, stdin);
-        putchar(edg_trig_inp);
-        fgets(buffer, sizeof(buffer), stdin);
-        // remove traling carrig feed or new line
-        buffer[strcspn(buffer, "\r\n")] = 0;
-        add_cmd = ParseCommandFromBuffer(buffer, CMD_C_BACK | CMD_C_SWITCH | CMD_C_NOCOMMENT, NULL);
-    }
+    {*/
+
+    // ungetc(edg_trig_inp, stdin);
+    // putchar(edg_trig_inp);
+    fgets(buffer, sizeof(buffer), stdin);
+    // remove traling carrig feed or new line
+    buffer[strcspn(buffer, "\r\n")] = 0;
+    add_cmd = ParseCommandFromBuffer(buffer, CMD_C_BACK | CMD_C_SWITCH | CMD_C_NOCOMMENT, NULL);
+    //}
 
     int valid_step_cnt = config->add_steps_n - config->add_steps_prot_pos - 1;
 
@@ -699,7 +703,6 @@ Entry_add_no_clr:
         break;
     case CMD_PREV:
         state = wrap_state(--state, 1, valid_step_cnt);
-        // state = (state + valid_step_cnt - 1) % (valid_step_cnt + ((state == 1) ? 2 : 0));
         goto Entry_add;
         break;
 
@@ -707,7 +710,6 @@ Entry_add_no_clr:
         if (parse_state_selector(buffer, &state))
         {
             clear_terminal();
-            // 0 causes some issue
             state = clamp_with_warning(state, 1, valid_step_cnt);
             goto Entry_add_after_clr;
         }
@@ -765,17 +767,29 @@ Entry_add_no_clr:
     // handler should be seperate, later I need to add it back
     // config->handler(buffer, config->list_ptr, NULL) == P_S_FALSE
     // internal state handling or some fuck
-    if (config->phrase_tokens(
-            handler_buffer, SIZE_OF_CHAR_ARRAY(handler_buffer),
-            buffer, SIZE_OF_CHAR_ARRAY(buffer),
-            state))
+    P_HRESULT hr = config->phrase_tokens(
+        handler_buffer, SIZE_OF_CHAR_ARRAY(handler_buffer),
+        buffer, SIZE_OF_CHAR_ARRAY(buffer),
+        state);
+    switch (hr)
     {
+    case P_S_OK:
+        break;
+    case P_S_PARTIAL:
+        printf(COLOR_SUCCESS "Value updated!\n" COLOR_RESET);
+        goto Entry_add_no_clr;
+        break;
+    case P_S_FALSE:
         clear_terminal();
-        print_colored(COLOR_ERROR, "Invalid input!\n", 1);
-        return 0;
+        Error_message("Invalid input!\n");
+        goto Entry_add_after_clr;
+        break;
+
+    default:
+        break;
     }
 
-    print_colored(COLOR_SUCCESS, "List updated!\n", 1);
+    printf(COLOR_SUCCESS "idgaf about wtf is goin' on\n" COLOR_RESET);
     goto Entry_add_no_clr;
 
     return 0;
@@ -859,7 +873,7 @@ Entry_no_clr:
             if (isalpha((unsigned char)buffer[0]) || !(node = config->find_by_id(config->list_ptr, id)))
             {
                 clear_terminal();
-                print_colored(COLOR_ERROR, "Invalid input!\n", 1);
+                Error_message("Invalid input!\n");
                 goto Entry_no_clr;
             }
             else
@@ -921,10 +935,10 @@ int general_state_options(const char *const array[], int n, int protected_pos, i
     if (protected_pos >= 0)
         add_header(NORMAL_SEPERATOR_SIZE, ANSI_GRAY, "%s", array[0]);
 
-    // add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
     for (int i = start_i; i < n; i++)
-        printf(COLOR_RESET " %d.%s %s\n",
+        printf(COLOR_RESET " %d.%s %s type shiii\n",
                i - start_i + 1, (i == adjusted_step) ? "" : COLOR_HINT, array[i]);
+
     add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
 
     if (protected_pos >= 1)
@@ -958,7 +972,6 @@ void cmd_colour(const char *args, Command_case case_flags, PROCESS *running)
     (void)args;
     (void)case_flags;
     (void)running;
-    set_color_mode(CM_COLOUR);
 }
 /**
  * @brief Color mode command handler (Monochrome)
@@ -970,7 +983,6 @@ void cmd_mono(const char *args, Command_case case_flags, PROCESS *running)
     (void)args;
     (void)case_flags;
     (void)running;
-    set_color_mode(CM_MONO);
 }
 /**
  * @brief Clear terminal command handler

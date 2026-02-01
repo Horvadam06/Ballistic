@@ -2,7 +2,7 @@
 =====================================================
 --------Parameters-------------------------------
 working directory :
-color mode : [0=monochrome, 1=coloured]
+Display the option to save on exit : [0=leave without saving, 1=propmt save]
 =====================================================
 -the id gets normalized
 -end every line with ;
@@ -10,4 +10,4 @@ color mode : [0=monochrome, 1=coloured]
 */
 
 DIR: "c:/vscode/ballistic/bin/data/";
-COLOUR_M: 1;
+PROMPT_SAVE: 0;

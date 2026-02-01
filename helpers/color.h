@@ -104,7 +104,6 @@ void set_color_mode(ColorMode mode);
 
 void Error_message(const char *format, ...);
 
-P_HRESULT print_colored(const char *color, const char *string, bool always_p);
 void change_colour(const char *color);
 
 #endif

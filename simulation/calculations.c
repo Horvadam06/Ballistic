@@ -718,7 +718,7 @@ int SuggestBestBaseAndAmmo_Parallel(Base_List *list, Target *tgt, Base **outBase
                 hook_status_before,
                 hook_status_after, &ctx, NULL);
 
-            printf("\033[%dA", 4);
+            printf("\033[%dA", 4);  //move cursor up 4 lines
         }
 
         old_percent = cur_percent;

@@ -277,9 +277,12 @@ static size_t visible_len(const char *s)
     int esc = 0;
     for (; *s; s++)
     {
-        if (*s == '\033') esc = 1;
-        else if (esc && *s == 'm') esc = 0;
-        else if (!esc) len++;
+        if (*s == '\033')
+            esc = 1;
+        else if (esc && *s == 'm')
+            esc = 0;
+        else if (!esc)
+            len++;
     }
     return len;
 }
@@ -287,7 +290,6 @@ static size_t visible_len(const char *s)
 // rewrite to work with new line charcters
 void add_header(size_t width, const char *box_colour, const char *format, ...)
 {
-
     if (width == 0)
         return;
 
@@ -389,7 +391,7 @@ void add_header(size_t width, const char *box_colour, const char *format, ...)
     }
     va_end(ap);
 
-    //┬ ┴ ┼
+    // ┬ ┴ ┼
 }
 
 /**
@@ -404,8 +406,7 @@ void add_header(size_t width, const char *box_colour, const char *format, ...)
  */
 void clear_terminal()
 {
-    if (get_color_mode() == CM_COLOUR)
-        printf("\033[2J\033[H");
+    printf("\033[2J\033[H");
 };
 
 unsigned progress_percent(unsigned current, unsigned total)
@@ -419,7 +420,7 @@ unsigned progress_percent(unsigned current, unsigned total)
     return (current * 100u) / total;
 }
 
-//progress hook are for costum things that you want to update with the progress bar
+// progress hook are for costum things that you want to update with the progress bar
 void render_progress_bar(unsigned percent, progress_hook_fn before, progress_hook_fn after, void *arg_b, void *arg_a)
 {
     const unsigned bar_width = 30;
@@ -491,14 +492,13 @@ void split_screen_demo(void)
     printf("\033[%d;1H", height);
 }
 
-//clamp a value within the limits, and return it's value
+// clamp a value within the limits, and return it's value
 int clamp_with_warning(int value, int min, int max)
 {
     if (value > max)
     {
         printf(COLOR_WARNING
-               "Value %d exceeds the maximum allowed (%d). Using the maximum value instead.\n"
-               COLOR_RESET,
+               "Value %d exceeds the maximum allowed (%d). Using the maximum value instead.\n" COLOR_RESET,
                value, max);
         return max;
     }
@@ -506,8 +506,7 @@ int clamp_with_warning(int value, int min, int max)
     if (value < min)
     {
         printf(COLOR_WARNING
-               "Value %d is below the minimum allowed (%d). Using the minimum value instead.\n"
-               COLOR_RESET,
+               "Value %d is below the minimum allowed (%d). Using the minimum value instead.\n" COLOR_RESET,
                value, min);
         return min;
     }
@@ -515,3 +514,85 @@ int clamp_with_warning(int value, int min, int max)
     return value;
 }
 
+// rewrite later, so it doesn't need the NULL at the end
+void append_strings(char *buffer, const char *format, ...)
+{
+    /*
+    va_list args;
+    va_start(args, buffer_n);
+    size_t current_len = strlen(buffer);
+
+    char *arg = NULL;
+    while ((arg = va_arg(args, char*)) != NULL) {
+        size_t arg_len = strlen(arg);
+        if (current_len + arg_len < buffer_n - 1) {
+            strcpy(buffer + current_len, arg);
+            current_len += arg_len;
+        }
+    }
+    va_end(args);*/
+
+    char *end = strchr(buffer, '\0');
+
+    va_list ap;
+    va_start(ap, format);
+
+    vsprintf(end, format, ap);
+}
+
+// replaces a tokens value in a buffer with apend
+P_HRESULT replace_token_a(char *buffer, const char *token_id, const char *token, int (*validate_fp)(const char *))
+{
+    char *token_srch = buffer;
+    int failed = 1;
+
+    while (failed)
+    {
+        token_srch = strstr(token_srch, token_id);
+        // check if it had been added
+        if (token_srch)
+        {
+            if (token_srch == buffer || *(token_srch - 1) == ' ')
+            {
+                char *token_end = strchr(token_srch, ' ');
+                if (!token_end)
+                    token_end = strchr(token_srch, '\0');
+                if (!token_end)
+                {
+                    Error_message("Couldn't prase %s!", token_srch);
+                    return P_S_FALSE;
+                }
+                int offset = (token_end - token_srch) + 1;
+                for (int i = 0; token_srch[i + offset - 1] != '\0'; i++)
+                {
+                    token_srch[i] = token_srch[i + offset];
+                }
+                // if + offset, go from the back <--> if - start from the front, and offset like that
+            }
+        }
+        // if not add it to the end
+
+        if (validate_fp &&
+            validate_fp(token) != P_S_OK)
+            return P_S_FALSE;
+
+        append_strings(buffer, "%s%s ", token_id, token);
+        failed = 0;
+    }
+
+    return P_S_OK;
+}
+
+P_HRESULT validate_int(const char *token)
+{
+    // check the validity
+    if (!isdigit((unsigned char)token[0])){
+        Error_message("Invalid format '"ANSI_BRIGHT_RED"%s"COLOR_ERROR"'!\n", token);
+        return P_S_FALSE;}
+    char *end;
+    strtol(token, &end, 10);
+    if (*end != '\0')
+        return P_S_FALSE;
+
+    return P_S_OK;
+}

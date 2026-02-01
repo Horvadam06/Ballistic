@@ -40,6 +40,7 @@
 // Created by.: Horvath Adam Jozsef
 // Starting date: 2025.10.17
 // Finishing date: 2025.12.02
+// Last modified: 2026.01.31
 //=========================================
 
 /**
@@ -61,6 +62,7 @@
 #define DEFAULT_WIN_HEIGHT 35
 
 PROCESS Setup()
+
 {
     printf("\nStarting setup...\n");
 
@@ -68,7 +70,6 @@ PROCESS Setup()
         return S_TERMINATE;
 
     enable_ansi_escape();
-    
 
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
@@ -88,7 +89,7 @@ PROCESS Setup()
         return S_TERMINATE;
     printf("\n");
 
-    print_colored(COLOR_SUCCESS, "Setup finished!\n", 1);
+    printf(COLOR_SUCCESS "Setup finished!\n" COLOR_RESET);
     add_seperator_s(NULL, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
 
     // Step 6: Adjust terminal size
@@ -101,8 +102,7 @@ PROCESS Setup()
     }
 
     // Step 7: Clear terminal if color mode is enabled
-    if (get_color_mode())
-        clear_terminal();
+    clear_terminal();
 
     // Step 8: Display introduction banner
     add_seperator_s(ANSI_GRAY, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
@@ -170,7 +170,7 @@ int main(void)
     }
 
     // Perform cleanup before exit
-    if (state != S_TERMINATE)
+    if (state != S_TERMINATE && prompt_save)
     {
         printf("Do you want to save before leaving? ");
         cmd_help_inline(NULL, CMD_C_YESNO, NULL);
@@ -192,7 +192,7 @@ int main(void)
     {
         fprintf(stderr, "Terminated with fatal error!\n");
         // Optional: Uncomment to keep terminal open for error inspection
-        printf(COLOR_WARNING "Press any key, to close the window!\n"COLOR_RESET);
+        printf(COLOR_WARNING "Press any key, to close the window!\n" COLOR_RESET);
         while (!input_available())
             Sleep(20);
         return -1;
