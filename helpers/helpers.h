@@ -69,4 +69,10 @@ P_HRESULT replace_token_a(char *buffer, const char *token_id, const char *token,
 
 P_HRESULT validate_int(const char* token);
 
+int value_wrap_around(int state, int min, int max);
+
+int parse_state_selector(const char *s, int *out_state);
+
+char *get_token_from_buffer(const char *buffer, const char *token_id);
+
 #endif

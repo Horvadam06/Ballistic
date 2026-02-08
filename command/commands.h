@@ -5,12 +5,16 @@
  * This module handles all user commands, provides help system,
  * and manages the interactive command loop with modal support.
  */
-
 #ifndef COMMANDS_H
 #define COMMANDS_H
 
 #include "helpers\error.h"
+#include "memory\storage.h"
+
 #include <stdint.h>
+#include <stdbool.h>
+
+#define HELP_DESCRIPTION_ALIGMENT 24
 
 /**
  * @brief Command type identifiers
@@ -101,6 +105,12 @@ typedef struct
     Command_t target;
 } CommandAlias;
 
+//============================================================
+// Command Registry API
+//============================================================
+
+extern Command commands[];
+
 typedef struct
 {
     const char *key; // "yes", "y", "calc"
@@ -110,22 +120,23 @@ typedef struct
 
 #define CMD_INIT(name, type, handler, description, mask) \
     (Command) { name, sizeof(name) - 1, type, handler, description, mask }
+/*
+Calculates number of commands in the commands array
+sizeof(commands) gives total bytes of the array
+sizeof(commands[0]) gives bytes per element
+Division yields element count - automatically updates when commands are added
+*/
+extern size_t command_count;
+extern size_t alias_count;
 
-typedef struct
-{
-    const char *title;                    // "targets", "bases", "ammo"
-    void (*display_list)(void);           // Function to print the list
-    int (*handle_add)(const char *input); // Function to add an item
-    int (*handle_delete)(unsigned id);    // Function to delete an item
-} Submenu;
-/**
- * @name Core Command Functions
- * @{
- */
+extern CommandKey *command_keys;
 
 PROCESS build_command_keys();
-
 void free_command_keys(void);
+
+/* ============================================================
+ * Command Processing Core
+ * ============================================================ */
 
 /**
  * @brief Get command from user with modal context
@@ -157,15 +168,24 @@ Command_t GetCommand(Command_case case_flags, PROCESS *running);
  * @ingroup CommandHandling
  */
 Command_t ParseCommandFromBuffer(char *input, Command_case case_flags, PROCESS *running);
-/** @} */
 
 /**
- * @name Command Handler Functions
+ * @brief Standalone back request filter
  *
- * Each handler corresponds to a specific command. Handlers receive
- * arguments string and current context flags.
- * @{
+ * Similar to GetCommand but works with pre-existing input buffer.
+ * Useful for parsing back command from buffers
+ *
+ * @param input Input buffer containing command
+ * @param length Buffer length
+ * @return CMD_BACK 1
+ * @return CMD_* -1
+ * @return not cmd 0
  */
+int back_request(char input[], int length);
+
+/* ============================================================
+ * Command Handlers (Public)
+ * ============================================================ */
 
 /**
  * @brief Exit program handler
@@ -185,6 +205,13 @@ void cmd_exit(const char *args, Command_case case_flags, PROCESS *running);
  */
 void cmd_help(const char *args, Command_case case_flags, PROCESS *running);
 
+/**
+ * @brief One line help command handler
+ * @param args Command arguments (unused)
+ * @param case_flags Current context flags (determines which commands to show)
+ * @param running Pointer to program state (unused)
+ * @ingroup CommandHandling
+ */
 void cmd_help_inline(const char *args, Command_case case_flags, PROCESS *running);
 
 /**
@@ -196,38 +223,6 @@ void cmd_help_inline(const char *args, Command_case case_flags, PROCESS *running
  */
 void cmd_calculate(const char *args, Command_case case_flags, PROCESS *running);
 
-typedef enum
-{
-    LIST_MENU_ENTRY,
-    LIST_MENU_ADD,
-    LIST_MENU_DELETE,
-    LIST_MENU_DEL_CONFIR
-} DisplayType;
-
-typedef struct ListManagerConfig_
-{
-    const char *name;
-    void *list_ptr;
-
-    // Display functions
-    P_HRESULT (*print_)(struct ListManagerConfig_ *config, DisplayType display, void *entry_ptr, void *data);
-    void (*print_list)(void *list);
-
-    // Input handling
-    P_HRESULT (*phrase_tokens)(char *buffer, size_t buffer_n, char *token, size_t token_n, int state);
-    const char * const *add_steps;
-    int add_steps_prot_pos;
-    size_t add_steps_n;
-
-    // Search/delete
-    void *(*find_by_id)(void *list, unsigned id);
-    int (*delete_by_id)(void *list, unsigned id);
-
-} ListManagerConfig;
-
-void general_list_menu(Command_case case_flags, ListManagerConfig *config);
-
-int general_state_options(const char * const array[], int n, int protected_pos, int step);
 /**
  * @brief Base operations handler
  * @param args Command arguments
@@ -273,24 +268,6 @@ void cmd_test(const char *args, Command_case case_flags, PROCESS *running);
 void cmd_config(const char *args, Command_case case_flags, PROCESS *running);
 
 /**
- * @brief Set color mode handler
- * @param args Command arguments
- * @param case_flags Current context flags
- * @param running Pointer to program state
- * @ingroup CommandHandling
- */
-void cmd_colour(const char *args, Command_case case_flags, PROCESS *running);
-
-/**
- * @brief Set monochrome mode handler
- * @param args Command arguments
- * @param case_flags Current context flags
- * @param running Pointer to program state
- * @ingroup CommandHandling
- */
-void cmd_mono(const char *args, Command_case case_flags, PROCESS *running);
-
-/**
  * @brief Clear terminal handler
  * @param args Command arguments
  * @param case_flags Current context flags
@@ -326,21 +303,19 @@ void cmd_info(const char *args, Command_case case_flags, PROCESS *running);
  */
 void cmd_debug(const char *args, Command_case case_flags, PROCESS *running);
 
-int back_request(char input[], int length);
-/** @} */
-
 /**
- * @brief Global command table
- *
- * Array of all available commands with their handlers and contexts.
+ * @brief display state machine
+ * @param array state string array
+ * @param n array size
+ * @param protected_pos choose the list start, -1 for no hidden string
+ * @param step Pointer to program state
  * @ingroup CommandHandling
  */
-extern Command commands[];
+int general_state_options(const char *const array[], int n, int protected_pos, int step);
 
-/**
- * @brief Number of commands in command table
- * @ingroup CommandHandling
- */
-// extern int command_count;
+P_HRESULT base_string_state_token(char *buffer, size_t buffer_n, char *token, size_t token_n, int state);
+P_HRESULT target_string_state_token(char *buffer, size_t buffer_n, char *token, size_t tokent_n, int state);
+P_HRESULT ammo_t_string_state_token(char *buffer, size_t buffer_n, char *token, size_t token_n, int state);
+
 
 #endif /* COMMANDS_H */

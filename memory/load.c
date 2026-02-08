@@ -721,7 +721,7 @@ P_HRESULT handle_ammo_t(char *record, void *data, int *error_flags)
     return P_S_OK;
 }
 
-/**F
+/**
  * @brief Base record handler
  *
  * Parses base records from data files. Each record contains base information
@@ -799,7 +799,7 @@ P_HRESULT handle_base(char *record, void *data, int *error_flags)
         // ammo list
         if (norm_strncmp(record, "AMS") == P_S_OK)
         {
-            record += 3;
+            record += 3;    //length of "AMS"
             record = strtoken(record, &end);
             record = strtoken(++record, &end);
 

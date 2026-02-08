@@ -6,6 +6,7 @@
 #include "helpers.h"
 
 #include <stdio.h>
+#include <stdarg.h>
 #include <string.h>
 
 /**
@@ -123,6 +124,15 @@ P_HRESULT run_pre_test(PROCESS process_state)
     printf("\n");
 
     return hr;
+}
+
+void Debug_message(const char *format, ...)
+{
+    va_list ap;
+    va_start(ap, format);
+    printf(COLOR_WARNING "[Debug] ");
+    vprintf(format, ap);
+    printf(COLOR_RESET);
 }
 
 #ifdef _WIN32

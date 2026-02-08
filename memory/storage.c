@@ -1525,15 +1525,15 @@ void Save_Ammo_t_List_file(FILE *fp)
  */
 RangeType GetRange(unsigned id)
 {
-    if (id <= 999)
+    if (id < 1000)
         return RANGE_EUROPE;
-    if (id <= 1999)
+    if (id < 2000)
         return RANGE_ASIA;
-    if (id <= 2999)
+    if (id < 3000)
         return RANGE_AMERICAS;
-    if (id <= 3999)
+    if (id < 4000)
         return RANGE_AFRICA;
-    if (id <= 4999)
+    if (id < 5000)
         return RANGE_OCEANIA;
     if (id >= 5000)
         return RANGE_ANTARCTICA;

@@ -5,13 +5,9 @@
 
 #define EMPTY_MESSAGE printf("Nothing to see here! (yet)\n")
 
-void enable_ansi_escape();
+void Debug_message(const char *fromat, ...);
 
-typedef enum
-{
-    false,
-    true
-} bool;
+void enable_ansi_escape();
 
 P_HRESULT run_pre_test(PROCESS process_state);
 

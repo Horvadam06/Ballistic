@@ -271,7 +271,7 @@ void add_seperator_s(const char *sep_colour, const char *str_colour, const char 
 
 #include <stdarg.h>
 
-static size_t visible_len(const char *s)
+/*static size_t visible_len(const char *s)
 {
     size_t len = 0;
     int esc = 0;
@@ -285,7 +285,7 @@ static size_t visible_len(const char *s)
             len++;
     }
     return len;
-}
+}*/
 
 // rewrite to work with new line charcters
 void add_header(size_t width, const char *box_colour, const char *format, ...)
@@ -596,3 +596,45 @@ P_HRESULT validate_int(const char *token)
 
     return P_S_OK;
 }
+
+int value_wrap_around(int state, int min, int max)
+{
+    int range = max - min + 1;
+    return min + (state - (min - range)) % range;
+}
+
+int parse_state_selector(const char *s, int *out_state)
+{
+
+    if (s[0] != 's' && s[0] != 'S')
+        return 0;
+    if (!isdigit((unsigned char)s[1]))
+        return 0;
+
+    char *end;
+    long v = strtol(s + 1, &end, 10);
+
+    if (*end != '\0')
+        return 0;
+
+    *out_state = (int)v;
+    return 1;
+}
+
+char *get_token_from_buffer(const char *buffer, const char *token_id)
+{
+    char *token_srch = (char *)buffer;
+    while (token_srch)
+    {
+        token_srch = strstr(token_srch, token_id);
+        if (token_srch)
+        {
+            if (token_srch == buffer || *(token_srch - 1) == ' ')
+            {
+                return token_srch;
+            }
+        }
+    }
+    return NULL;
+}
+
