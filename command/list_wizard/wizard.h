@@ -9,13 +9,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-
 //==================================================
 // Type drafts
 //==================================================
 
 typedef struct
 {
+    int state;
+
     unsigned id;
     bool has_id;
 
@@ -26,10 +27,16 @@ typedef struct
     bool has_coord;
     bool has_altitude;
 
-    Ammo_Stock_List *ammo;
-    bool has_ammo;
+    Ammo_Stock_List *ammo_stock;
+    bool has_ammo_stock;
 } Base_Draft;
 
+typedef enum
+{
+    WIZARD_CONFIRM,
+    WIZARD_CANCEL,
+    WIZARD_CONTINUE
+} WizardAction;
 
 /* ============================================================
  * Generic List / Wizard Framework
@@ -66,6 +73,8 @@ typedef struct ListManagerConfig_
 void base_add_wizard(ListManagerConfig *cfg);
 
 void general_list_menu(Command_case case_flags, ListManagerConfig *config);
+
+int parse_state_selector(const char *s, int *out_state);
 
 P_HRESULT base_info_print(ListManagerConfig *config, DisplayType display, void *entry_ptr, void *data);
 P_HRESULT target_info_print(ListManagerConfig *config, DisplayType display, void *entry_ptr, void *data);

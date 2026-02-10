@@ -28,7 +28,7 @@ static int find_command_nontoken(const char *input, const char **cmd_start, size
         (*cmd_len)++;
     }
 
-    *args = (*p) ? skip_spaces(p) : NULL;
+    *args = (*p) ? skip_spaces_dptr(p) : NULL;
     return 1;
 }
 // similiar to find_command_nontoken, but can work in tokened, and non token mode

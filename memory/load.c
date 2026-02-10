@@ -94,14 +94,14 @@ P_HRESULT scan(const char *filename, RecordHandler handler, void *data, int *err
     FILE *file = fopen(filename, "r"); // "r" open file in read only mode
     if (!file)
     {
-        Error_message("Failed to open or locate '"ANSI_BRIGHT_RED "%s" COLOR_ERROR"' in the working directory!\n", filename);
+        Error_message("Failed to open or locate '" ANSI_BRIGHT_RED "%s" COLOR_ERROR "' in the working directory!\n", filename);
         return P_S_FALSE;
     }
 
     int c = fgetc(file);
     if (c == EOF)
     {
-        Error_message("Failed to read, or empty '"ANSI_BRIGHT_RED "%s" COLOR_ERROR"'!\n", filename);
+        Error_message("Failed to read, or empty '" ANSI_BRIGHT_RED "%s" COLOR_ERROR "'!\n", filename);
         return P_S_FALSE;
     }
     ungetc(c, file);
@@ -799,7 +799,7 @@ P_HRESULT handle_base(char *record, void *data, int *error_flags)
         // ammo list
         if (norm_strncmp(record, "AMS") == P_S_OK)
         {
-            record += 3;    //length of "AMS"
+            record += 3; // length of "AMS"
             record = strtoken(record, &end);
             record = strtoken(++record, &end);
 
@@ -807,15 +807,18 @@ P_HRESULT handle_base(char *record, void *data, int *error_flags)
             init_Ammo_Stock_List(&base.ammoStock);
 
             // Parse ammunition stock list: (id amount) pairs
-            while (strlen(record) > 1)
+            while (strlen(record) > 1 && *record != '\0')
             {
+
                 // add ammo type, to combed list
                 unsigned id = (unsigned)strtof(record, &end);
                 record = strtoken(end, &end);
 
                 unsigned ammount = (unsigned)strtof(record, &end);
                 record = strtoken(end, &end);
-                record++;
+
+                if (*record == '}')
+                    record++;
 
                 add_Ammo_Stock(base.ammoStock, GetNode_Ammo_t_List(ammo_t_list, id), ammount);
             }

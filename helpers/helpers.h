@@ -13,6 +13,7 @@
 
 #include <ctype.h>
 #include "helpers\debug.h"
+#include "memory\storage.h"
 
 /*Ensures string ends with backslash for directory paths */
 
@@ -30,7 +31,9 @@ char *strtoken(char *s, char **endptr);
 
 char *remove_quotes(char *str, char symbol);
 
-const char *skip_spaces(const char *str);
+const char *skip_spaces_dptr(const char *str);
+
+char *skip_spaces(char *str);
 
 /*Case-insensitive string comparison with exact length check */
 
@@ -67,11 +70,13 @@ void append_strings(char *buffer, const char *format, ...);
 
 P_HRESULT replace_token_a(char *buffer, const char *token_id, const char *token, int (*validate_fp)(const char *));
 
-P_HRESULT validate_int(const char* token);
+int validate_int(const char* token);
 
 int value_wrap_around(int state, int min, int max);
 
-int parse_state_selector(const char *s, int *out_state);
+int validate_coordinate(Coordinate cord);
+
+void reset_coordinate(Coordinate *cord);
 
 char *get_token_from_buffer(const char *buffer, const char *token_id);
 

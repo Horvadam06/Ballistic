@@ -87,13 +87,13 @@ char *Normalize_path(char *path)
 char *strtoken(char *str, char **endptr)
 {
     // Skip leading delimiters
-    while (*str == ' ' || *str == '\t' || *str == '\n' || *str == ':')
+    while (*str == ' ' || *str == '\t' || *str == '\n' || *str == ':' || *str == ',')
         str++;
 
     char *start = str;
 
     // Find end of token
-    while (*str && *str != ' ' && *str != '\t' && *str != '\n' && *str != ':')
+    while (*str && *str != ' ' && *str != '\t' && *str != '\n' && *str != ':' && *str != ',')
         str++;
 
     if (endptr)
@@ -447,12 +447,23 @@ void render_progress_bar(unsigned percent, progress_hook_fn before, progress_hoo
     fflush(stdout);
 }
 
-const char *skip_spaces(const char *str)
+const char *skip_spaces_dptr(const char *str)
 {
     if (!str)
         return NULL;
 
-    while (*str == ' ')
+    while (*str == ' ' || *str == '\t')
+        str++;
+
+    return str;
+}
+
+char *skip_spaces(char *str)
+{
+    if (!str)
+        return NULL;
+
+    while (*str == ' ' || *str == '\t')
         str++;
 
     return str;
@@ -573,7 +584,7 @@ P_HRESULT replace_token_a(char *buffer, const char *token_id, const char *token,
         // if not add it to the end
 
         if (validate_fp &&
-            validate_fp(token) != P_S_OK)
+            validate_fp(token) != 1)
             return P_S_FALSE;
 
         append_strings(buffer, "%s%s ", token_id, token);
@@ -583,42 +594,42 @@ P_HRESULT replace_token_a(char *buffer, const char *token_id, const char *token,
     return P_S_OK;
 }
 
-P_HRESULT validate_int(const char *token)
+int validate_int(const char *token)
 {
     // check the validity
-    if (!isdigit((unsigned char)token[0])){
-        Error_message("Invalid format '"ANSI_BRIGHT_RED"%s"COLOR_ERROR"'!\n", token);
-        return P_S_FALSE;}
+    if (!isdigit((unsigned char)token[0]))
+    {
+        Error_message("Invalid format '" ANSI_BRIGHT_RED "%s" COLOR_ERROR "'!\n", token);
+        return 0;
+    }
     char *end;
     strtol(token, &end, 10);
     if (*end != '\0')
-        return P_S_FALSE;
+        return 0;
 
-    return P_S_OK;
+    return 1;
+}
+
+int validate_coordinate(Coordinate cord)
+{
+    if (cord.altitude < -90.0 || 90.0 < cord.altitude)
+        return 0;
+
+    if (cord.altitude < -180.0 || 180.0 < cord.altitude)
+        return 0;
+
+    return 1;
+}
+
+void reset_coordinate(Coordinate *cord)
+{
+    cord->longitude = cord->latitude = cord->altitude = 0;
 }
 
 int value_wrap_around(int state, int min, int max)
 {
     int range = max - min + 1;
     return min + (state - (min - range)) % range;
-}
-
-int parse_state_selector(const char *s, int *out_state)
-{
-
-    if (s[0] != 's' && s[0] != 'S')
-        return 0;
-    if (!isdigit((unsigned char)s[1]))
-        return 0;
-
-    char *end;
-    long v = strtol(s + 1, &end, 10);
-
-    if (*end != '\0')
-        return 0;
-
-    *out_state = (int)v;
-    return 1;
 }
 
 char *get_token_from_buffer(const char *buffer, const char *token_id)
@@ -637,4 +648,3 @@ char *get_token_from_buffer(const char *buffer, const char *token_id)
     }
     return NULL;
 }
-

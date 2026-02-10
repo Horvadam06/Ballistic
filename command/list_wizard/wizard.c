@@ -5,14 +5,313 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
+
+static void base_draft_init(Base_Draft *d)
+{
+    memset(d, 0, sizeof(*d));
+    d->state = 1;
+    d->ammo_stock = NULL;
+}
+
+static void base_wizard_render(Base_Draft *d)
+{
+    const char *steps[] = {
+        "Enter ID",
+        "Enter label",
+        "Enter latitude, longitude",
+        "Enter altitude",
+        "Enter ammo stock (id:N,...)",
+        "Confirm"};
+
+    const int total = SIZE_OF_STRING_ARRAY(steps);
+    const int current = d->state;
+
+    add_header(NORMAL_SEPERATOR_SIZE, ANSI_GRAY, "%s", "Add base wizard");
+
+    for (int i = 0; i < total; ++i)
+    {
+        const int step = i + 1;
+        const bool active = (step == current);
+
+        printf(COLOR_RESET " %d.%s %-32s ",
+               step,
+               active ? "" : COLOR_HINT,
+               steps[i]);
+
+        switch (i + 1)
+        {
+        case 1:
+            if (d->has_id)
+                printf("[%u]", d->id);
+            else
+                printf("[nan]");
+            break;
+
+        case 2:
+            if (d->has_label)
+                printf("[%s]", d->label);
+            else
+                printf("[nan]");
+            break;
+
+        case 3:
+            if (d->has_coord)
+                printf("[%.6f, %.6f]",
+                       d->coordinate.latitude,
+                       d->coordinate.longitude);
+            else
+                printf("[nan]");
+            break;
+
+        case 4:
+            if (d->has_altitude)
+                printf("[%.2f]", d->coordinate.altitude);
+            else
+                printf("[nan]");
+            break;
+
+        case 5:
+            printf("[%s]", d->has_ammo_stock ? "ok" : "nan");
+            break;
+
+        default:
+            break;
+        }
+
+        printf("\n");
+    }
+
+    add_seperator_s(COLOR_HINT, NULL, NULL, HLINE, NORMAL_SEPERATOR_SIZE);
+
+    printf(COLOR_HINT "Add base (%d/%d): " COLOR_RESET "%s\n",
+           current,
+           total,
+           steps[current - 1]);
+
+    printf("\nType sN to switch state (e.g. s2)\n");
+    printf("Or enter value for current state.\n");
+    printf("> ");
+}
+
+static void base_draft_free(Base_Draft *d)
+{
+    free(d->label);
+    d->label = NULL;
+
+    if (d->ammo_stock)
+    {
+        free_Ammo_Stock_List(&d->ammo_stock);
+        d->ammo_stock = NULL;
+    }
+}
+
+static int base_draft_is_complete(Base_Draft *d)
+{
+    int succeded = 1;
+
+    if (!d->has_id)
+    {
+        Error_message("Missing id!\n");
+        succeded = 0;
+    }
+    if (!d->has_label)
+    {
+        Error_message("Missing label!\n");
+        succeded = 0;
+    }
+    if (!d->has_coord)
+    {
+        Error_message("Missing coordinate(s)!\n");
+        succeded = 0;
+    }
+    if (!d->has_altitude)
+    {
+        Error_message("Missing altitude!\n");
+        succeded = 0;
+    }
+    if (!d->has_ammo_stock)
+    {
+        Error_message("Missing ammo stock!\n");
+        succeded = 0;
+    }
+
+    return succeded;
+}
+
+static WizardAction base_wizard_handle_input(Base_Draft *d, char *input)
+{
+    int new_state;
+
+    if (parse_state_selector(input, &new_state))
+    {
+        d->state = clamp_with_warning(new_state, 1, 6);
+
+        return WIZARD_CONTINUE;
+    }
+    char *end = NULL;
+
+    switch (d->state)
+    {
+    case 1: // ID
+    {
+        unsigned id = (unsigned)strtoul(input, &end, 10);
+
+        if (errno == ERANGE || *end != '\0')
+        {
+            Error_message("Out of range '%u'\n", id);
+            errno = 0;
+            return WIZARD_CONTINUE;
+        }
+
+        d->id = id;
+        d->has_id = true;
+        d->state++;
+        break;
+    }
+
+    case 2: // Label
+    {
+        free(d->label);
+
+        d->label = malloc(strlen(input) + 1);
+        strcpy(d->label, input);
+
+        d->has_label = true;
+        d->state++;
+        break;
+    }
+
+    case 3: // Latitude, Longitude
+    {
+        Coordinate tmp_crd;
+        tmp_crd.altitude = d->coordinate.altitude;
+        input = skip_spaces(input);
+
+        for (int i = 1; i <= 2; i++)
+        {
+            double v = strtod(input, &end);
+            input = strtoken(end, &end);
+            if (i == 1)
+                tmp_crd.latitude = v;
+            else
+                tmp_crd.longitude = v;
+
+            if (errno == ERANGE || !validate_coordinate(tmp_crd))
+            {
+                Error_message("Out of range '%f'\n", v);
+                errno = 0;
+                return WIZARD_CONTINUE;
+            }
+        }
+
+        d->coordinate = tmp_crd;
+        d->has_coord = true;
+
+        d->state++;
+        break;
+    }
+
+    case 4: // Altitude
+    {
+        double v = strtod(input, &end);
+
+        if (errno == ERANGE || *end != '\0')
+        {
+            Error_message("Out of range '%f'\n", v);
+            errno = 0;
+            return WIZARD_CONTINUE;
+        }
+
+        d->coordinate.altitude = v;
+        d->has_altitude = true;
+        d->state++;
+        break;
+    }
+
+    case 5: // Ammo
+    {
+        Ammo_Stock_List *tmp_list = NULL;
+        init_Ammo_Stock_List(&tmp_list);
+        unsigned type_cnt = list_count_nodes(ammo_t_list->head, ammo_t_list->tail, offsetof(Ammo_t_Node, next), ammo_t_node_valid, NULL);
+
+        while (strlen(input) >= 1)
+        {
+            unsigned id, amount = 0;
+
+            for (int i = 1; i <= 2; i++)
+            {
+                unsigned v = (unsigned)strtoul(input, &end, 10);
+                input = strtoken(end, &end);
+
+                if (i == 1)
+                    id = v;
+                else
+                    amount = v;
+
+                if (errno == ERANGE || (i == 1) ? v > type_cnt : 0)
+                {
+                    Error_message("Invalid %s '" ANSI_BRIGHT_RED "%u" COLOR_ERROR "'!\n", (i == 1) ? "id" : "amount", v);
+                    errno = 0;
+                    if (i == 1)
+                    {
+                        input = strtoken(end, &end);
+                        i = 0;
+                        continue;
+                    }
+                }
+            }
+
+            // input = skip_spaces(input);
+            add_Ammo_Stock(tmp_list, GetNode_Ammo_t_List(ammo_t_list, id), amount);
+        }
+
+        if (d->ammo_stock)
+        {
+            free_Ammo_Stock_List(&d->ammo_stock);
+        }
+
+        d->ammo_stock = tmp_list;
+
+        d->has_ammo_stock = (list_count_nodes(d->ammo_stock->head, d->ammo_stock->tail, offsetof(Ammo_Stock, next), ammo_t_node_valid, NULL) != 0);
+        d->state++;
+        break;
+    }
+
+    case 6: // Confirm
+    {
+        if (!base_draft_is_complete(d))
+        {
+            printf("Missing required fields!\n");
+            d->state = 1;
+            return WIZARD_CONTINUE;
+        }
+
+        printf("Save? ");
+        cmd_help_inline(NULL, CMD_C_YESNO, NULL);
+        putchar('\n');
+
+        if (GetCommand(CMD_C_MODAL | CMD_C_YESNO, NULL) == CMD_YES)
+            return WIZARD_CONFIRM;
+
+        d->state = 1;
+        return WIZARD_CONTINUE;
+    }
+
+    default:
+        break;
+    }
+
+    return WIZARD_CONTINUE;
+}
 
 void base_add_wizard(ListManagerConfig *cfg)
 {
     (void)cfg;
     const char *fn_name = "base_add_wizard";
     Debug_message("Entering '%s'...\n", fn_name);
-    
-    /*Base_Draft draft;
+
+    Base_Draft draft;
     base_draft_init(&draft);
 
     int running = 1;
@@ -23,40 +322,40 @@ void base_add_wizard(ListManagerConfig *cfg)
 
         base_wizard_render(&draft);
 
-        char input[256];
+        char input[1024];
         fgets(input, sizeof(input), stdin);
-        strip_newline(input);
+        input[strcspn(input, "\r\n")] = '\0';
 
         WizardAction action = base_wizard_handle_input(&draft, input);
 
         switch (action)
         {
-            case WIZARD_CONTINUE:
-                break;
+        case WIZARD_CONTINUE:
+            break;
 
-            case WIZARD_CONFIRM:
+        case WIZARD_CONFIRM:
+        {
+            if (!base_draft_is_complete(&draft))
             {
-                if (!base_draft_is_complete(&draft))
-                {
-                    Error_message("Missing required fields!\n");
-                    break;
-                }
-
-                char buffer[1024];
-                base_draft_serialize(&draft, buffer, sizeof(buffer));
-
-                handle_base(buffer, cfg->list_ptr, NULL);
-                running = 0;
+                Error_message("Missing required fields!\n");
                 break;
             }
 
-            case WIZARD_CANCEL:
-                running = 0;
-                break;
+            // char buffer[1024];
+            // base_draft_serialize(&draft, buffer, sizeof(buffer));
+
+            // handle_base(buffer, cfg->list_ptr, NULL);
+            running = 0;
+            break;
+        }
+
+        case WIZARD_CANCEL:
+            running = 0;
+            break;
         }
     }
 
-    base_draft_free(&draft);*/
+    base_draft_free(&draft);
 
     Debug_message("Exiting '%s'...\n", fn_name);
 }
@@ -98,7 +397,7 @@ Entry_add_no_clr:
     // putchar(edg_trig_inp);
     fgets(buffer, sizeof(buffer), stdin);
     // remove traling carrig feed or new line
-    buffer[strcspn(buffer, "\r\n")] = 0;
+    buffer[strcspn(buffer, "\r\n")] = '\0';
     add_cmd = ParseCommandFromBuffer(buffer, CMD_C_BACK | CMD_C_SWITCH | CMD_C_NOCOMMENT, NULL);
 
     switch (add_cmd)
@@ -292,7 +591,7 @@ Entry_no_clr:
                 goto Entry_delete_no_clr;
 
             // remove trailing carrige return or new line
-            buffer[strcspn(buffer, "\r\n")] = 0;
+            buffer[strcspn(buffer, "\r\n")] = '\0';
             // extract id
             unsigned id = (unsigned)strtoul(buffer, NULL, 10);
 
@@ -335,4 +634,26 @@ Entry_no_clr:
         Debug_message("Waiting for list menu command...\n");
     }
     cmd_clr_ter(NULL, CMD_C_ALL, NULL);
+}
+
+//==================================================
+// Public wizard helpers
+//==================================================
+
+int parse_state_selector(const char *s, int *out_state)
+{
+
+    if (tolower(s[0]) != 's')
+        return 0;
+    if (!isdigit((unsigned char)s[1]))
+        return 0;
+
+    char *end;
+    long v = strtol(s + 1, &end, 10);
+
+    if (*end != '\0')
+        return 0;
+
+    *out_state = (int)v;
+    return 1;
 }
