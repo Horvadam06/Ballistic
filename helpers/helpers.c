@@ -525,6 +525,14 @@ int clamp_with_warning(int value, int min, int max)
     return value;
 }
 
+int clamp(int value, int min, int max)
+{
+    if (value < min) return min;
+    if (value > max) return max;
+    return value;
+}
+
+
 // rewrite later, so it doesn't need the NULL at the end
 void append_strings(char *buffer, const char *format, ...)
 {
@@ -610,12 +618,13 @@ int validate_int(const char *token)
     return 1;
 }
 
+//latitude [-90,90] | longitude [-180,180]
 int validate_coordinate(Coordinate cord)
 {
-    if (cord.altitude < -90.0 || 90.0 < cord.altitude)
+    if (cord.latitude < -90.0 || 90.0 < cord.latitude)
         return 0;
 
-    if (cord.altitude < -180.0 || 180.0 < cord.altitude)
+    if (cord.longitude < -180.0 || 180.0 < cord.longitude)
         return 0;
 
     return 1;
@@ -647,4 +656,12 @@ char *get_token_from_buffer(const char *buffer, const char *token_id)
         }
     }
     return NULL;
+}
+
+char *replace_chars(char *source, const char replace_c, const char to_c)
+{
+    for (char *srch = strchr(source, replace_c); srch != NULL; srch = strchr(srch, replace_c))
+        *srch = to_c;
+
+    return source;
 }

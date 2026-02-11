@@ -13,9 +13,23 @@
 // Type drafts
 //==================================================
 
+typedef enum {
+    BASE_ERR_NONE       = 0,
+    BASE_ERR_ID         = 1 << 0,
+    BASE_ERR_LABEL      = 1 << 1,
+    BASE_ERR_COORD      = 1 << 2,
+    BASE_ERR_ALTITUDE   = 1 << 3,
+    BASE_ERR_AMMO       = 1 << 4
+} BaseDraftError;
+
+#define WIZARD_MSG_MAX 512
+
 typedef struct
 {
     int state;
+    uint32_t error_mask;
+    char ui_message[WIZARD_MSG_MAX];
+    bool has_message;
 
     unsigned id;
     bool has_id;

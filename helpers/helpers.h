@@ -64,11 +64,15 @@ void render_progress_bar(unsigned percent, progress_hook_fn before, progress_hoo
 
 int clamp_with_warning(int value, int min, int max);
 
+int clamp(int value, int min, int max);
+
 void split_screen_demo(void);
 
 void append_strings(char *buffer, const char *format, ...);
 
 P_HRESULT replace_token_a(char *buffer, const char *token_id, const char *token, int (*validate_fp)(const char *));
+
+char *replace_chars(char *source, const char replace_c, const char to_c);
 
 int validate_int(const char* token);
 

@@ -103,6 +103,7 @@ ColorMode get_color_mode(void);
 void set_color_mode(ColorMode mode);
 
 void Error_message(const char *format, ...);
+void Warning_message(const char *format, ...);
 
 void change_colour(const char *color);
 

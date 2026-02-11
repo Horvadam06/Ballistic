@@ -15,3 +15,12 @@ void Error_message(const char *format, ...)
     vprintf(format, ap);
     printf(COLOR_RESET);
 }
+
+void Warning_message(const char *format, ...)
+{
+    va_list ap;
+    va_start(ap, format);
+    printf(COLOR_WARNING "[Warning] ");
+    vprintf(format, ap);
+    printf(COLOR_RESET);
+}

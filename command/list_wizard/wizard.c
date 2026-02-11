@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
+#include <stdarg.h>
 
 static void base_draft_init(Base_Draft *d)
 {
@@ -45,14 +46,14 @@ static void base_wizard_render(Base_Draft *d)
             if (d->has_id)
                 printf("[%u]", d->id);
             else
-                printf("[nan]");
+                printf("[null]");
             break;
 
         case 2:
             if (d->has_label)
                 printf("[%s]", d->label);
             else
-                printf("[nan]");
+                printf("[null]");
             break;
 
         case 3:
@@ -61,18 +62,18 @@ static void base_wizard_render(Base_Draft *d)
                        d->coordinate.latitude,
                        d->coordinate.longitude);
             else
-                printf("[nan]");
+                printf("[null]");
             break;
 
         case 4:
             if (d->has_altitude)
                 printf("[%.2f]", d->coordinate.altitude);
             else
-                printf("[nan]");
+                printf("[null]");
             break;
 
         case 5:
-            printf("[%s]", d->has_ammo_stock ? "ok" : "nan");
+            printf("[%s]", d->has_ammo_stock ? "set" : "null");
             break;
 
         default:
@@ -89,9 +90,38 @@ static void base_wizard_render(Base_Draft *d)
            total,
            steps[current - 1]);
 
+    if (d->error_mask)
+    {
+        printf("\n");
+        Warning_message("Missing field(s):\n");
+        printf(COLOR_WARNING);
+
+        if (d->error_mask & BASE_ERR_ID)
+            printf(" - ID\n");
+
+        if (d->error_mask & BASE_ERR_LABEL)
+            printf(" - Label\n");
+
+        if (d->error_mask & BASE_ERR_COORD)
+            printf(" - Coordinates\n");
+
+        if (d->error_mask & BASE_ERR_ALTITUDE)
+            printf(" - Altitude\n");
+
+        if (d->error_mask & BASE_ERR_AMMO)
+            printf(" - Ammo stock\n");
+
+        printf(COLOR_RESET);
+    }
+
+    if (d->has_message)
+    {
+        printf("\n%s\n", d->ui_message);
+        d->has_message = false;
+    }
+
     printf("\nType sN to switch state (e.g. s2)\n");
     printf("Or enter value for current state.\n");
-    printf("> ");
 }
 
 static void base_draft_free(Base_Draft *d)
@@ -108,35 +138,39 @@ static void base_draft_free(Base_Draft *d)
 
 static int base_draft_is_complete(Base_Draft *d)
 {
-    int succeded = 1;
+    d->error_mask = BASE_ERR_NONE;
 
     if (!d->has_id)
-    {
-        Error_message("Missing id!\n");
-        succeded = 0;
-    }
-    if (!d->has_label)
-    {
-        Error_message("Missing label!\n");
-        succeded = 0;
-    }
-    if (!d->has_coord)
-    {
-        Error_message("Missing coordinate(s)!\n");
-        succeded = 0;
-    }
-    if (!d->has_altitude)
-    {
-        Error_message("Missing altitude!\n");
-        succeded = 0;
-    }
-    if (!d->has_ammo_stock)
-    {
-        Error_message("Missing ammo stock!\n");
-        succeded = 0;
-    }
+        d->error_mask |= BASE_ERR_ID;
 
-    return succeded;
+    if (!d->has_label)
+        d->error_mask |= BASE_ERR_LABEL;
+
+    if (!d->has_coord)
+        d->error_mask |= BASE_ERR_COORD;
+
+    if (!d->has_altitude)
+        d->error_mask |= BASE_ERR_ALTITUDE;
+
+    if (!d->has_ammo_stock)
+        d->error_mask |= BASE_ERR_AMMO;
+
+    return d->error_mask == BASE_ERR_NONE;
+}
+
+static void wizard_set_errorf(Base_Draft *d, const char *fmt, ...)
+{
+    if (!d || !fmt)
+        return;
+
+    va_list args;
+    va_start(args, fmt);
+
+    vsnprintf(d->ui_message, WIZARD_MSG_MAX, fmt, args);
+
+    va_end(args);
+
+    d->has_message = true;
 }
 
 static WizardAction base_wizard_handle_input(Base_Draft *d, char *input)
@@ -145,7 +179,7 @@ static WizardAction base_wizard_handle_input(Base_Draft *d, char *input)
 
     if (parse_state_selector(input, &new_state))
     {
-        d->state = clamp_with_warning(new_state, 1, 6);
+        d->state = clamp(new_state, 1, 6);
 
         return WIZARD_CONTINUE;
     }
@@ -155,16 +189,16 @@ static WizardAction base_wizard_handle_input(Base_Draft *d, char *input)
     {
     case 1: // ID
     {
-        unsigned id = (unsigned)strtoul(input, &end, 10);
+        long v = strtol(input, &end, 10);
 
-        if (errno == ERANGE || *end != '\0')
+        if (errno == ERANGE || *end != '\0' || v < 0)
         {
-            Error_message("Out of range '%u'\n", id);
+            wizard_set_errorf(d, COLOR_ERROR "Invalid ID '" ANSI_BRIGHT_RED "%ld" COLOR_ERROR "'!" COLOR_RESET, v);
             errno = 0;
             return WIZARD_CONTINUE;
         }
 
-        d->id = id;
+        d->id = (unsigned)v;
         d->has_id = true;
         d->state++;
         break;
@@ -173,6 +207,10 @@ static WizardAction base_wizard_handle_input(Base_Draft *d, char *input)
     case 2: // Label
     {
         free(d->label);
+
+        const char filler_c = '_';
+
+        input = replace_chars(replace_chars(skip_spaces(input), ' ', filler_c), '\t', filler_c);
 
         d->label = malloc(strlen(input) + 1);
         strcpy(d->label, input);
@@ -184,7 +222,7 @@ static WizardAction base_wizard_handle_input(Base_Draft *d, char *input)
 
     case 3: // Latitude, Longitude
     {
-        Coordinate tmp_crd;
+        Coordinate tmp_crd = {0};
         tmp_crd.altitude = d->coordinate.altitude;
         input = skip_spaces(input);
 
@@ -199,7 +237,7 @@ static WizardAction base_wizard_handle_input(Base_Draft *d, char *input)
 
             if (errno == ERANGE || !validate_coordinate(tmp_crd))
             {
-                Error_message("Out of range '%f'\n", v);
+                wizard_set_errorf(d, COLOR_ERROR "Invalid coordinate(s) '" ANSI_BRIGHT_RED "%f" COLOR_ERROR ", " ANSI_BRIGHT_RED "%f" COLOR_ERROR "'!" COLOR_RESET, tmp_crd.latitude, tmp_crd.longitude);
                 errno = 0;
                 return WIZARD_CONTINUE;
             }
@@ -218,7 +256,7 @@ static WizardAction base_wizard_handle_input(Base_Draft *d, char *input)
 
         if (errno == ERANGE || *end != '\0')
         {
-            Error_message("Out of range '%f'\n", v);
+            wizard_set_errorf(d, COLOR_ERROR "Invalid altitude '" ANSI_BRIGHT_RED "%f" COLOR_ERROR "'!" COLOR_RESET, v);
             errno = 0;
             return WIZARD_CONTINUE;
         }
@@ -235,7 +273,9 @@ static WizardAction base_wizard_handle_input(Base_Draft *d, char *input)
         init_Ammo_Stock_List(&tmp_list);
         unsigned type_cnt = list_count_nodes(ammo_t_list->head, ammo_t_list->tail, offsetof(Ammo_t_Node, next), ammo_t_node_valid, NULL);
 
-        while (strlen(input) >= 1)
+        input = skip_spaces(input);
+
+        while (strlen(input) > 0)
         {
             unsigned id, amount = 0;
 
@@ -251,7 +291,7 @@ static WizardAction base_wizard_handle_input(Base_Draft *d, char *input)
 
                 if (errno == ERANGE || (i == 1) ? v > type_cnt : 0)
                 {
-                    Error_message("Invalid %s '" ANSI_BRIGHT_RED "%u" COLOR_ERROR "'!\n", (i == 1) ? "id" : "amount", v);
+                    wizard_set_errorf(d, COLOR_ERROR "%s got out of range '" ANSI_BRIGHT_RED "%u" COLOR_ERROR "'!" COLOR_RESET, (i == 1) ? "ID" : "Amount", v);
                     errno = 0;
                     if (i == 1)
                     {
@@ -269,25 +309,42 @@ static WizardAction base_wizard_handle_input(Base_Draft *d, char *input)
         if (d->ammo_stock)
         {
             free_Ammo_Stock_List(&d->ammo_stock);
+            d->ammo_stock = NULL;
         }
 
         d->ammo_stock = tmp_list;
 
         d->has_ammo_stock = (list_count_nodes(d->ammo_stock->head, d->ammo_stock->tail, offsetof(Ammo_Stock, next), ammo_t_node_valid, NULL) != 0);
+
+        if (!d->has_ammo_stock)
+        {
+            free_Ammo_Stock_List(&d->ammo_stock);
+            d->ammo_stock = NULL;
+        }
         d->state++;
         break;
     }
 
     case 6: // Confirm
     {
-        if (!base_draft_is_complete(d))
+        // something is wrong about the render / update order
+        // everything get's set, but the error flag doesn't get updated
+
+        if (d->error_mask == BASE_ERR_AMMO)
         {
-            printf("Missing required fields!\n");
-            d->state = 1;
+            d->state = 5;
+            base_draft_is_complete(d);
+        }
+        else if (!base_draft_is_complete(d))
+        {
+            d->state = (d->error_mask == BASE_ERR_AMMO) ? 6 : 1;
             return WIZARD_CONTINUE;
         }
+        else
+        {
+        }
 
-        printf("Save? ");
+        printf("Save%s? ", (d->error_mask == BASE_ERR_AMMO) ? " without stock" : "");
         cmd_help_inline(NULL, CMD_C_YESNO, NULL);
         putchar('\n');
 
@@ -295,6 +352,7 @@ static WizardAction base_wizard_handle_input(Base_Draft *d, char *input)
             return WIZARD_CONFIRM;
 
         d->state = 1;
+
         return WIZARD_CONTINUE;
     }
 
@@ -322,9 +380,27 @@ void base_add_wizard(ListManagerConfig *cfg)
 
         base_wizard_render(&draft);
 
-        char input[1024];
-        fgets(input, sizeof(input), stdin);
-        input[strcspn(input, "\r\n")] = '\0';
+        char input[1024] = {0};
+        if (draft.state != 6) // confirm, internal command handling
+        {
+            draft.error_mask = BASE_ERR_NONE;
+
+            printf("> ");
+            fgets(input, SIZE_OF_CHAR_ARRAY(input), stdin);
+            input[strcspn(input, "\r\n")] = '\0';
+            Command_t cmd = ParseCommandFromBuffer(input, CMD_C_BACK, NULL);
+
+            while (cmd == CMD_MODAL)
+            {
+                printf("> ");
+                fgets(input, SIZE_OF_CHAR_ARRAY(input), stdin);
+                input[strcspn(input, "\r\n")] = '\0';
+                cmd = ParseCommandFromBuffer(input, CMD_C_BACK, NULL);
+            }
+
+            if (cmd == CMD_BACK)
+                running = 0;
+        }
 
         WizardAction action = base_wizard_handle_input(&draft, input);
 
@@ -335,16 +411,21 @@ void base_add_wizard(ListManagerConfig *cfg)
 
         case WIZARD_CONFIRM:
         {
-            if (!base_draft_is_complete(&draft))
+            if ((!(base_draft_is_complete(&draft) || (draft.error_mask == BASE_ERR_AMMO))))
             {
                 Error_message("Missing required fields!\n");
                 break;
             }
 
-            // char buffer[1024];
-            // base_draft_serialize(&draft, buffer, sizeof(buffer));
+            Base bn = {
+                draft.id,
+                draft.label,
+                draft.coordinate,
+                draft.ammo_stock};
 
-            // handle_base(buffer, cfg->list_ptr, NULL);
+            if (add_Base(base_list, bn))
+                draft.ammo_stock = NULL; // so the node list does not get freed up. It's life time handling is passed to the nide
+
             running = 0;
             break;
         }
@@ -564,6 +645,7 @@ Entry_no_clr:
             {
                 Debug_message("case 'on_add'\n");
                 config->on_add();
+                goto Entry;
             }
             else
             {
